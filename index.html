@@ -1140,6 +1140,42 @@ function cancelTimer(){
   document.getElementById('timer-bar').classList.remove('on','break');
   document.getElementById('quick-timer').style.display='block';
   document.getElementById('t-pomo').style.display='none';
+  resetTabIndicator();
+}
+
+function resetTabIndicator(){
+  document.title='道場 Skill Dojo';
+  const link=document.querySelector("link[rel*='icon']")||document.createElement('link');
+  link.type='image/x-icon'; link.rel='shortcut icon';
+  link.href='data:image/x-icon;,';
+  document.head.appendChild(link);
+}
+
+function updateTabIndicator(elapsedSec){
+  const TARGET=90*60;
+  const pct=Math.min(elapsedSec/TARGET,1);
+  const remMin=Math.max(0,Math.ceil((TARGET-elapsedSec)/60));
+  document.title=pct>=1?'✓ Done | 道場':remMin+'min left | 道場';
+  try{
+    const c=document.createElement('canvas'); c.width=32; c.height=32;
+    const x=c.getContext('2d');
+    x.clearRect(0,0,32,32);
+    x.fillStyle='#0d0d1a';
+    x.beginPath(); x.arc(16,16,16,0,Math.PI*2); x.fill();
+    x.strokeStyle='#ffffff18'; x.lineWidth=3;
+    x.beginPath(); x.arc(16,16,11,0,Math.PI*2); x.stroke();
+    const hue=Math.round(pct*120);
+    x.strokeStyle=`hsl(${hue},85%,52%)`;
+    x.lineWidth=4;
+    x.lineCap='round';
+    x.beginPath();
+    x.arc(16,16,11,-Math.PI/2,-Math.PI/2+Math.PI*2*pct);
+    x.stroke();
+    const link=document.querySelector("link[rel*='icon']")||document.createElement('link');
+    link.type='image/png'; link.rel='shortcut icon';
+    link.href=c.toDataURL();
+    document.head.appendChild(link);
+  }catch(e){}
 }
 
 function tickTimer(){
@@ -1174,6 +1210,7 @@ function tickTimer(){
     } else {
       tEl.textContent = h>0?`${h}:${pad(m)}:${pad(s)}`:`${pad(m)}:${pad(s)}`;
     }
+    updateTabIndicator(elapsed);
   } catch(e) { console.error('tickTimer error:', e); }
 }
 
