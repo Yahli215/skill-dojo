@@ -7,6 +7,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#0c0a08">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.svg">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="道場">
@@ -1145,6 +1147,7 @@ function cancelTimer(){
 
 function resetTabIndicator(){
   document.title='道場 Skill Dojo';
+  if('clearAppBadge' in navigator) navigator.clearAppBadge().catch(()=>{});
   const link=document.querySelector("link[rel*='icon']")||document.createElement('link');
   link.type='image/x-icon'; link.rel='shortcut icon';
   link.href='data:image/x-icon;,';
@@ -1156,6 +1159,7 @@ function updateTabIndicator(elapsedSec){
   const pct=Math.min(elapsedSec/TARGET,1);
   const remMin=Math.max(0,Math.ceil((TARGET-elapsedSec)/60));
   document.title=pct>=1?'✓ Done | 道場':remMin+'min left | 道場';
+  if('setAppBadge' in navigator) navigator.setAppBadge(remMin).catch(()=>{});
   try{
     const c=document.createElement('canvas'); c.width=32; c.height=32;
     const x=c.getContext('2d');
@@ -2132,5 +2136,8 @@ function deleteBadgeFromForm() {
   </div>
 </div>
 
+<script>
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
 </body>
 </html>
