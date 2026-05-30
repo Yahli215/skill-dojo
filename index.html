@@ -550,6 +550,8 @@ body.light .page-watermark { opacity: .2; }
 .sat-signal.hold{background:rgba(201,162,39,.15);color:var(--gold2);}
 .sat-signal.down{background:rgba(200,80,80,.15);color:var(--red);}
 .sat-close-btn{margin-top:20px;width:100%;padding:10px;background:var(--s2);border:1px solid var(--b1);border-radius:8px;color:var(--t1);cursor:pointer;font-family:inherit;font-size:12px;letter-spacing:.08em;}
+.sat-opt-btn{width:100%;text-align:left;padding:11px 14px;background:var(--s2);border:1px solid var(--b1);border-radius:8px;color:var(--t1);cursor:pointer;font-family:inherit;font-size:13px;transition:border-color .15s,background .15s;}
+.sat-opt-btn:hover{border-color:var(--gold2);background:var(--s1);}
 </style>
 </head>
 <body class="z">
@@ -1564,22 +1566,172 @@ function renderHabits(){
   el.innerHTML=html;
 }
 
+/* Saturday Review — multi-step wizard */
+let _satAnswers = {};
+const SAT_STEPS = [
+  {
+    id:'motivation',
+    q:'How motivated were you to train this week?',
+    sub:'Be honest — this shapes everything.',
+    opts:[
+      {v:1,label:'1 — Dragging myself'},
+      {v:2,label:'2 — Low drive'},
+      {v:3,label:'3 — Decent'},
+      {v:4,label:'4 — Fired up'},
+      {v:5,label:'5 — Unstoppable'},
+    ]
+  },
+  {
+    id:'quality',
+    q:'When you trained, how focused were you?',
+    sub:'Not how long — how sharp.',
+    opts:[
+      {v:1,label:'1 — Barely present'},
+      {v:2,label:'2 — Distracted'},
+      {v:3,label:'3 — Decent focus'},
+      {v:4,label:'4 — Locked in'},
+      {v:5,label:'5 — Full immersion'},
+    ]
+  },
+  {
+    id:'progress',
+    q:'Do you feel you are actually improving at chess this week?',
+    sub:'Trust the feeling — it matters.',
+    opts:[
+      {v:4,label:'Clearly improving'},
+      {v:3,label:'Somewhat, I think so'},
+      {v:2,label:'Hard to tell'},
+      {v:1,label:'Feeling stuck or regressing'},
+    ]
+  },
+  {
+    id:'recovery',
+    q:'How is your mental freshness going into next week?',
+    sub:'Burnout kills more careers than laziness.',
+    opts:[
+      {v:4,label:'Fresh — ready to go harder'},
+      {v:3,label:'A bit tired but fine'},
+      {v:2,label:'Pretty drained'},
+      {v:1,label:'I need a real break'},
+    ]
+  },
+  {
+    id:'obstacle',
+    q:'Was there anything specific that made training harder this week?',
+    sub:'Be specific — we can address it.',
+    opts:[
+      {v:'none',  label:'Nothing — clean week'},
+      {v:'vol',   label:'Volume felt too high'},
+      {v:'bore',  label:'Content getting boring'},
+      {v:'sleep', label:'Bad sleep / physical fatigue'},
+      {v:'doubt', label:'Self-doubt or frustration'},
+      {v:'life',  label:'Life circumstances (not chess-related)'},
+    ]
+  },
+  {
+    id:'ceiling',
+    q:'When you hit your hardest habits — did they feel like growth or punishment?',
+    sub:'The line between the two is everything.',
+    opts:[
+      {v:4,label:'Growth — hard but meaningful'},
+      {v:3,label:'Mostly growth, sometimes grindy'},
+      {v:2,label:'More punishment than growth'},
+      {v:1,label:'Pure punishment — dread every time'},
+    ]
+  },
+];
+
 function showSaturdayReview(){
+  _satAnswers={};
+  document.getElementById('sat-overlay').classList.add('on');
+  _satRenderStep(0);
+}
+
+function _satRenderStep(idx){
+  if(idx >= SAT_STEPS.length){ _satRenderResults(); return; }
+  const step=SAT_STEPS[idx];
+  const progress=SAT_STEPS.map((_,i)=>`<div style="width:${100/SAT_STEPS.length-.5}%;height:3px;border-radius:2px;background:${i<idx?'var(--green2)':i===idx?'var(--gold2)':'var(--b2)'}"></div>`).join('');
+  const opts=step.opts.map(o=>`<button class="sat-opt-btn" onclick="_satAnswer(${idx},'${o.v}')">${o.label}</button>`).join('');
+  document.getElementById('sat-rows').innerHTML=`
+    <div style="display:flex;gap:3px;margin-bottom:20px">${progress}</div>
+    <div style="font-size:11px;color:var(--t3);letter-spacing:.08em;margin-bottom:8px">Q${idx+1} of ${SAT_STEPS.length}</div>
+    <div style="font-size:16px;font-weight:700;line-height:1.4;margin-bottom:6px">${step.q}</div>
+    <div style="font-size:11px;color:var(--t3);margin-bottom:18px">${step.sub}</div>
+    <div style="display:flex;flex-direction:column;gap:8px">${opts}</div>`;
+  document.getElementById('sat-close-btn').style.display='none';
+}
+
+function _satAnswer(idx, val){
+  _satAnswers[SAT_STEPS[idx].id]=isNaN(val)?val:Number(val);
+  _satRenderStep(idx+1);
+}
+
+function _satRenderResults(){
+  const a=_satAnswers;
   const habits=getHabits();
+  // Overall load score (1-5 composite)
+  const overallScore=(a.motivation + a.quality + a.progress + a.recovery + a.ceiling)/5;
+  const burnout = a.recovery<=1 || (a.motivation<=2 && a.quality<=2);
+  const peakForm = overallScore>=3.8 && a.recovery>=3;
+
+  const weekNote = burnout
+    ? '<div style="background:rgba(200,80,80,.12);border:1px solid var(--red);border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;line-height:1.6"><b style="color:var(--red)">⚠ Rest week signal.</b> Your numbers suggest you are pushing past recovery. Easing off now prevents a full crash. Chess improvement happens during rest, not just during training.</div>'
+    : peakForm
+    ? '<div style="background:rgba(80,200,120,.1);border:1px solid var(--green2);border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;line-height:1.6"><b style="color:var(--green2)">峰 Peak form.</b> You are fresh, focused, and improving. This is the window to push harder. Do not waste it.</div>'
+    : '';
+
+  const obstacleNote = {
+    vol:  'Volume fatigue detected — consider splitting sessions shorter rather than reducing total.',
+    bore: 'Boredom is a warning. Vary your content before it becomes aversion.',
+    sleep:'Physical fatigue limits chess cognition the most. Protect sleep before adding load.',
+    doubt:'Doubt at this stage is normal. It means you are pushing past your comfort zone — good.',
+    life: 'External noise this week. Do not judge the week by it. Reset and go.',
+    none: ''
+  }[a.obstacle]||'';
+
   const rows=habits.map(h=>{
     const last7=habitLast7(h);
     const hits=last7.filter(k=>h.history.includes(k)).length;
-    const pct=hits/7;
-    const signal=pct>=0.85?{cls:'up',label:'↑ LEVEL UP'}:pct>=0.5?{cls:'hold',label:'◆ HOLD'}:{cls:'down',label:'↓ EASE OFF'};
+    const compPct=hits/7;
+    // Cross-reference completion with mental state
+    let sig, reason;
+    if(burnout){
+      sig={cls:'down',label:'↓ EASE OFF'};
+      reason='Your recovery is critical. Scale back regardless of completion.';
+    } else if(compPct>=0.85 && peakForm){
+      sig={cls:'up',label:'↑ LEVEL UP'};
+      reason=`${hits}/7 days done and you are in peak form. Push harder.`;
+    } else if(compPct>=0.85 && overallScore>=3){
+      sig={cls:'up',label:'↑ LEVEL UP'};
+      reason=`${hits}/7 days — solid consistency. Raise the bar.`;
+    } else if(compPct>=0.57 && overallScore>=3){
+      sig={cls:'hold',label:'◆ HOLD'};
+      reason=`${hits}/7 days. Good effort in a decent week — maintain.`;
+    } else if(compPct>=0.57 && overallScore<3){
+      sig={cls:'hold',label:'◆ HOLD'};
+      reason=`${hits}/7 days but mental load was high. Hold — not the week to push.`;
+    } else if(compPct<0.57 && a.motivation>=3){
+      sig={cls:'hold',label:'◆ HOLD'};
+      reason=`Missed ${7-hits} days but motivation is there. Check if the habit is realistic.`;
+    } else {
+      sig={cls:'down',label:'↓ EASE OFF'};
+      reason=`${hits}/7 days with low motivation. Reduce friction — smaller version of this habit.`;
+    }
     const dots=last7.map(k=>`<div class="sat-dot${h.history.includes(k)?' hit':''}"></div>`).join('');
     return `<div class="sat-row">
       <span class="sat-emo">${h.emoji}</span>
-      <div class="sat-info"><div class="sat-hname">${h.name}</div><div class="sat-dots">${dots}</div></div>
-      <span class="sat-signal ${signal.cls}">${signal.label}</span>
+      <div class="sat-info"><div class="sat-hname">${h.name}</div><div class="sat-dots" style="margin-top:4px">${dots}</div><div style="font-size:10px;color:var(--t3);margin-top:4px">${reason}</div></div>
+      <span class="sat-signal ${sig.cls}">${sig.label}</span>
     </div>`;
   }).join('');
-  document.getElementById('sat-rows').innerHTML=rows||'<p style="color:var(--t3);font-size:13px">No habits yet.</p>';
-  document.getElementById('sat-overlay').classList.add('on');
+
+  document.getElementById('sat-rows').innerHTML=`
+    <div style="font-size:16px;font-weight:900;letter-spacing:.1em;margin-bottom:4px">土曜レビュー結果</div>
+    <div style="font-size:11px;color:var(--t3);margin-bottom:16px">Saturday Review — based on your answers + completion data</div>
+    ${weekNote}
+    ${obstacleNote?`<div style="font-size:11px;color:var(--t3);margin-bottom:16px;padding:10px;background:var(--s2);border-radius:6px">${obstacleNote}</div>`:''}
+    ${rows||'<p style="color:var(--t3);font-size:13px">No habits yet.</p>'}`;
+  document.getElementById('sat-close-btn').style.display='block';
 }
 
 function closeSaturdayReview(){
