@@ -841,7 +841,7 @@ const getGCred = () => ls.raw('sq_gcred');
 const setGCred = c  => ls.setRaw('sq_gcred', c);
 
 /* ── INIT ───────────────────────────────────────────── */
-(function init(){
+function init(){
   document.getElementById('loading').style.display = 'none';
   initTheme(); renderQuote(); rotateWatermark();
   // If we have a stored google user id, boot directly — no Google prompt needed
@@ -858,7 +858,7 @@ const setGCred = c  => ls.setRaw('sq_gcred', c);
       setTimeout(() => clearInterval(wait), 10000);
     }
   }
-})();
+}
 
 async function bootFromCloud(){
   const userId = getGUser();
@@ -2125,6 +2125,7 @@ function deleteBadgeFromForm() {
 </div>
 
 <script>
+init();
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
