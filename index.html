@@ -1485,7 +1485,20 @@ function closeRoundComplete(){
 }
 
 /* ── HABITS ─────────────────────────────────────────── */
-function getHabits(){ try{ const h=ls.get('sq_habits','[]'); return Array.isArray(h)?h:[]; }catch(e){ return []; } }
+const DEFAULT_HABITS = [
+  { id:'dh1', name:'No screens 45 min before sleep', emoji:'🔴', history:[] },
+  { id:'dh2', name:'Fixed wake time — same every day',  emoji:'🔴', history:[] },
+  { id:'dh3', name:'20-min morning buffer before chess', emoji:'🔴', history:[] },
+];
+function getHabits(){
+  try{
+    const h=ls.get('sq_habits','[]');
+    if(Array.isArray(h) && h.length>0) return h;
+    // First load — seed the foundation habits
+    saveHabits(DEFAULT_HABITS);
+    return DEFAULT_HABITS.map(h=>({...h}));
+  }catch(e){ return []; }
+}
 function saveHabits(h){ ls.set('sq_habits',h); }
 
 function todayKey(){ return new Date().toISOString().slice(0,10); }
