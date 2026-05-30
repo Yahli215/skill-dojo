@@ -934,8 +934,22 @@ async function bootFromCloud(){
       // Cloud has data — load it (cloud is source of truth)
       const d = rows[0].data;
       if(d.skillDefs && d.skillDefs.length) ls.set('sq_skill_defs', d.skillDefs);
-      if(d.skillData) ls.set('sq_skill_data', d.skillData);
-      if(d.sessions)  ls.set('sq_sessions',   d.sessions);
+      if(d.sessions){
+        // Merge: keep cloud sessions as base, add any local sessions not yet pushed
+        const local = ls.get('sq_sessions','[]');
+        const cloudIds = new Set(d.sessions.map(s=>s.id));
+        const extra = local.filter(s=>!cloudIds.has(s.id));
+        ls.set('sq_sessions', extra.length ? [...d.sessions,...extra] : d.sessions);
+      }
+      if(d.skillData){
+        // Merge skillData: take higher totalMins per skill (local wins if ahead of cloud)
+        const localData = ls.get('sq_skill_data','{}');
+        const merged = {...d.skillData};
+        Object.keys(localData).forEach(id=>{
+          if(!merged[id] || (localData[id].totalMins||0) > (merged[id].totalMins||0)) merged[id]=localData[id];
+        });
+        ls.set('sq_skill_data', merged);
+      }
       if(d.badges)    ls.set('sq_badges',      d.badges);
       if(d.goals)     ls.set('sq_goals',       d.goals);
       if(d.habits)    ls.set('sq_habits',      d.habits);
