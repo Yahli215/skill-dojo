@@ -60,17 +60,6 @@ body {
   font-size: 12px;
   line-height: 1.6;
 }
-body::before {
-  content: '';
-  position: fixed; inset: 0;
-  background-image: url('/Toji.jpg');
-  background-size: cover;
-  background-position: center top;
-  opacity: .2;
-  pointer-events: none;
-  z-index: 0;
-  filter: saturate(.15) sepia(.5);
-}
 body.light::before { opacity: .06; }
 .z { position: relative; z-index: 1; }
 
@@ -1673,8 +1662,8 @@ function signOut(){
   initGoogleAuth();
 }
 /* ── GOALS ──────────────────────────────────────────── */
-const getGoals  = () => { try { const g = ls.get('sq_goals','{}'); return (g && typeof g === 'object' && !Array.isArray(g)) ? g : {}; } catch(e){ return {}; } };
-const saveGoals = g  => ls.set('sq_goals', g);
+function getGoals(){ try { const g = ls.get('sq_goals','{}'); return (g && typeof g === 'object' && !Array.isArray(g)) ? g : {}; } catch(e){ return {}; } }
+function saveGoals(g){ ls.set('sq_goals', g); }
 
 // Returns "YYYY-MM" key for a date
 function monthKey(d){ return d.toISOString().slice(0,7); }
@@ -1898,8 +1887,8 @@ function saveGoal(){
 
 
 /* ── BADGES ─────────────────────────────────────────── */
-const getBadges = () => { try { const b = ls.get('sq_badges', '[]'); return Array.isArray(b) ? b : []; } catch(e){ return []; } };
-const saveBadges = b => ls.set('sq_badges', b);
+function getBadges(){ try { const b = ls.get('sq_badges', '[]'); return Array.isArray(b) ? b : []; } catch(e){ return []; } }
+function saveBadges(b){ ls.set('sq_badges', b); }
 
 function renderBadges() {
   const el = document.getElementById('badges-grid');
