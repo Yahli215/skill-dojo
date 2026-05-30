@@ -938,6 +938,7 @@ async function bootFromCloud(){
       if(d.sessions)  ls.set('sq_sessions',   d.sessions);
       if(d.badges)    ls.set('sq_badges',      d.badges);
       if(d.goals)     ls.set('sq_goals',       d.goals);
+      if(d.habits)    ls.set('sq_habits',      d.habits);
     } else {
       // Cloud is empty — push whatever is in localStorage up (migration from old sync system)
       const localDefs = getDefs();
