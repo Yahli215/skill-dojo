@@ -1177,6 +1177,7 @@ function stopTimer(){
   if(mins<1){ toast('稽古が短すぎます (< 1 min)'); cancelTimer(); return; }
   const session = {id:uid(),skillId:activeTimer.skillId,description:activeTimer.desc,startTime:activeTimer.startTime,endTime:Date.now(),duration:elapsed,mins,stop:new Date().toISOString(),start:new Date(activeTimer.startTime).toISOString()};
   const all = getSess(); all.push(session); ls.set('sq_sessions',all); sessions=all;
+  try{renderDaily();}catch(e){}
   const data=getData(), sid=activeTimer.skillId;
   if(!data[sid]) data[sid]={totalMins:0,rank:'Novice'};
   const prevRank=data[sid].rank;
@@ -1208,8 +1209,8 @@ function resetTabIndicator(){
   document.head.appendChild(link);
 }
 
-function updateTabIndicator(elapsedSec){
-  const TARGET=90*60;
+function updateTabIndicator(elapsedSec,targetSec){
+  const TARGET=targetSec||90*60;
   const pct=Math.min(elapsedSec/TARGET,1);
   const remMin=Math.max(0,Math.ceil((TARGET-elapsedSec)/60));
   document.title=pct>=1?'✓ Done | 道場':remMin+'min left | 道場';
@@ -1250,6 +1251,19 @@ function tickTimer(){
         eel.textContent=ml>0?'⏳ '+ml+' min left':'⚡ '+Math.abs(ml)+' min over';
       } else { eel.style.display='none'; }
     }
+    // Tab/badge indicator — before tEl guard so it always updates
+    if(activeTimer.isPomo){
+      const phTabEl=Math.floor((Date.now()-activeTimer.phaseStart)/1000);
+      if(activeTimer.phase==='work'){
+        updateTabIndicator(phTabEl,activeTimer.pw*60);
+      } else {
+        const rb=Math.max(0,Math.ceil((activeTimer.pb*60-phTabEl)/60));
+        document.title='☕ '+rb+'m break | 道場';
+        if('clearAppBadge' in navigator) navigator.clearAppBadge().catch(()=>{});
+      }
+    } else {
+      updateTabIndicator(elapsed);
+    }
     const tEl = document.getElementById('t-time');
     if(!tEl) return;
     if(activeTimer.isPomo){
@@ -1268,7 +1282,6 @@ function tickTimer(){
     } else {
       tEl.textContent = h>0?`${h}:${pad(m)}:${pad(s)}`:`${pad(m)}:${pad(s)}`;
     }
-    updateTabIndicator(elapsed);
   } catch(e) { console.error('tickTimer error:', e); }
 }
 
