@@ -1172,10 +1172,15 @@ function startTimer(){
 
 function stopTimer(){
   if(!activeTimer) return;
-  const elapsed = Math.floor((Date.now()-activeTimer.startTime)/1000);
+  // Pomodoro break: work was already auto-saved — just end the break cleanly
+  if(activeTimer.isPomo && activeTimer.phase==='break'){ cancelTimer(); return; }
+  // For Pomodoro work phase: measure from phaseStart (current round only)
+  const tStart = (activeTimer.isPomo && activeTimer.phase==='work') ? activeTimer.phaseStart : activeTimer.startTime;
+  const elapsed = Math.floor((Date.now()-tStart)/1000);
   const mins = Math.floor(elapsed/60);
   if(mins<1){ toast('稽古が短すぎます (< 1 min)'); cancelTimer(); return; }
-  const session = {id:uid(),skillId:activeTimer.skillId,description:activeTimer.desc,startTime:activeTimer.startTime,endTime:Date.now(),duration:elapsed,mins,stop:new Date().toISOString(),start:new Date(activeTimer.startTime).toISOString()};
+  const desc = activeTimer.isPomo ? activeTimer.desc+' · R'+activeTimer.round : activeTimer.desc;
+  const session = {id:uid(),skillId:activeTimer.skillId,description:desc,startTime:tStart,endTime:Date.now(),duration:elapsed,mins,stop:new Date().toISOString(),start:new Date(tStart).toISOString()};
   const all = getSess(); all.push(session); ls.set('sq_sessions',all); sessions=all;
   try{renderDaily();}catch(e){}
   const data=getData(), sid=activeTimer.skillId;
@@ -1271,7 +1276,26 @@ function tickTimer(){
       const phaseDur=(activeTimer.phase==='work'?activeTimer.pw:activeTimer.pb)*60;
       const rem=phaseDur-phEl;
       if(rem<=0){
-        if(activeTimer.phase==='work'){ activeTimer.phase='break'; activeTimer.phaseStart=Date.now(); document.getElementById('timer-bar').classList.add('break'); sendNotif('☕ Break','Round '+activeTimer.round+' done.'); }
+        if(activeTimer.phase==='work'){
+          // Auto-save completed work round as a session
+          const rEl=Math.floor((Date.now()-activeTimer.phaseStart)/1000);
+          const rMins=Math.floor(rEl/60);
+          if(rMins>=1){
+            const rSess={id:uid(),skillId:activeTimer.skillId,description:activeTimer.desc+' · R'+activeTimer.round,startTime:activeTimer.phaseStart,endTime:Date.now(),duration:rEl,mins:rMins,stop:new Date().toISOString(),start:new Date(activeTimer.phaseStart).toISOString()};
+            const rAll=getSess(); rAll.push(rSess); ls.set('sq_sessions',rAll); sessions=rAll;
+            const rData=getData(),rSid=activeTimer.skillId;
+            if(!rData[rSid]) rData[rSid]={totalMins:0,rank:'Novice'};
+            const rPrev=rData[rSid].rank;
+            rData[rSid].totalMins+=rMins; const rNR=getRank(rData[rSid].totalMins).name;
+            rData[rSid].rank=rNR; ls.set('sq_skill_data',rData);
+            const rSk=skills.find(s=>s.id===rSid);
+            if(rSk){rSk.totalMins=rData[rSid].totalMins;rSk.rank=rNR;if(rNR!==rPrev)luQueue.push({skill:rSk,newRank:rNR});}
+            try{renderDaily();}catch(e){}
+            showRoundComplete(rSk,rMins);
+            pushSync();
+          }
+          activeTimer.phase='break'; activeTimer.phaseStart=Date.now(); document.getElementById('timer-bar').classList.add('break'); sendNotif('☕ Break','Round '+activeTimer.round+' done.');
+        }
         else{ activeTimer.round++; activeTimer.phase='work'; activeTimer.phaseStart=Date.now(); document.getElementById('timer-bar').classList.remove('break'); sendNotif('💪 Work','Round '+activeTimer.round); }
         ls.set('sq_active_timer',activeTimer); playBeep();
       }
