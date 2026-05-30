@@ -8,8 +8,9 @@
 <meta name="theme-color" content="#0c0a08">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" type="image/png" href="icon-192.png">
 <meta name="apple-mobile-web-app-title" content="道場">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -1628,6 +1629,12 @@ function pushSync(){
   pushCloud();
 }
 
+function getSyncCode(){
+  let c = localStorage.getItem('sq_sync_code');
+  if(!c){ c = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)+Date.now().toString(36); localStorage.setItem('sq_sync_code',c); }
+  return c;
+}
+
 async function pushCloud(){
   const userId = getGUser(); if(!userId) return;
   const data = {
@@ -1638,7 +1645,7 @@ async function pushCloud(){
     const res = await fetch(`${SB_URL}/rest/v1/skillquest`, {
       method: 'POST',
       headers: { ...sbH(), 'Prefer': 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify({ google_user_id: userId, data, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ google_user_id: userId, sync_code: getSyncCode(), data, updated_at: new Date().toISOString() }),
     });
     if(!res.ok){
       const err = await res.text();
