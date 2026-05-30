@@ -508,6 +508,48 @@ body.light .page-watermark { opacity: .2; }
 .jg-legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
 .jg-legend-item{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--muted);}
 .jg-legend-dot{width:8px;height:8px;flex-shrink:0;}
+/* ── HABITS ─────────────────────────────────────────── */
+.habit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:28px;}
+.habit-card{background:var(--s1);border:1px solid var(--b1);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;transition:border-color .2s,box-shadow .2s;}
+.habit-card.done-today{border-color:var(--green2);box-shadow:0 0 14px rgba(80,200,120,.12);}
+.habit-card-top{display:flex;align-items:center;gap:8px;}
+.habit-emoji{font-size:20px;line-height:1;}
+.habit-name{flex:1;font-size:13px;font-weight:600;letter-spacing:.04em;}
+.habit-del{opacity:0;background:none;border:none;color:var(--t3);cursor:pointer;font-size:14px;padding:2px 4px;transition:opacity .15s;}
+.habit-card:hover .habit-del{opacity:.6;}
+.habit-del:hover{opacity:1 !important;color:var(--red);}
+.habit-check-row{display:flex;align-items:center;gap:10px;}
+.habit-check{width:36px;height:36px;border-radius:50%;border:2px solid var(--b2);background:var(--s2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;transition:all .25s cubic-bezier(.34,1.56,.64,1);flex-shrink:0;}
+.habit-check.checked{background:var(--green2);border-color:var(--green2);box-shadow:0 0 12px rgba(80,200,120,.35);}
+.habit-streak{font-size:11px;color:var(--t3);letter-spacing:.06em;}
+.habit-streak b{color:var(--gold2);font-size:13px;}
+.habit-dots{display:flex;gap:4px;}
+.habit-dot{width:7px;height:7px;border-radius:50%;background:var(--b2);}
+.habit-dot.hit{background:var(--green2);}
+.habit-dot.today-dot{outline:2px solid var(--gold2);outline-offset:1px;}
+.habit-add-btn{background:none;border:1px dashed var(--b2);border-radius:10px;padding:14px;color:var(--t3);cursor:pointer;font-size:12px;letter-spacing:.08em;transition:border-color .2s,color .2s;text-align:center;}
+.habit-add-btn:hover{border-color:var(--gold2);color:var(--gold2);}
+/* Saturday Review */
+.sat-review-btn{display:none;margin-bottom:16px;background:linear-gradient(135deg,var(--s2),var(--s1));border:1px solid var(--gold2);color:var(--gold2);padding:9px 18px;border-radius:8px;cursor:pointer;font-size:11px;letter-spacing:.1em;font-family:inherit;}
+.sat-review-btn.visible{display:block;}
+.sat-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:300;align-items:center;justify-content:center;}
+.sat-overlay.on{display:flex;}
+.sat-box{background:var(--bg);border:1px solid var(--b1);border-radius:14px;padding:28px;max-width:480px;width:92%;max-height:80vh;overflow-y:auto;}
+.sat-title{font-size:18px;font-weight:900;letter-spacing:.12em;margin-bottom:4px;}
+.sat-sub{font-size:11px;color:var(--t3);margin-bottom:20px;}
+.sat-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--b1);}
+.sat-row:last-child{border-bottom:none;}
+.sat-emo{font-size:20px;flex-shrink:0;}
+.sat-info{flex:1;}
+.sat-hname{font-size:13px;font-weight:600;}
+.sat-dots{display:flex;gap:3px;margin-top:4px;}
+.sat-dot{width:8px;height:8px;border-radius:50%;background:var(--b2);}
+.sat-dot.hit{background:var(--green2);}
+.sat-signal{font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 10px;border-radius:20px;flex-shrink:0;}
+.sat-signal.up{background:rgba(80,200,120,.15);color:var(--green2);}
+.sat-signal.hold{background:rgba(201,162,39,.15);color:var(--gold2);}
+.sat-signal.down{background:rgba(200,80,80,.15);color:var(--red);}
+.sat-close-btn{margin-top:20px;width:100%;padding:10px;background:var(--s2);border:1px solid var(--b1);border-radius:8px;color:var(--t1);cursor:pointer;font-family:inherit;font-size:12px;letter-spacing:.08em;}
 </style>
 </head>
 <body class="z">
@@ -702,6 +744,25 @@ body.light .page-watermark { opacity: .2; }
     <div class="journey-wrap">
       <div class="jg-grid" id="jg-grid"></div>
       <div class="jg-legend" id="jg-legend"></div>
+    </div>
+
+    <!-- Habits -->
+    <div class="sec-hdr">
+      <div class="sec-lbl">Habits</div>
+      <div class="sec-kj">習慣</div>
+      <div class="sec-line"></div>
+    </div>
+    <button class="sat-review-btn" id="sat-review-btn" onclick="showSaturdayReview()">⚖ 土曜日 SATURDAY REVIEW</button>
+    <div class="habit-grid" id="habit-grid"></div>
+
+    <!-- Saturday Review overlay -->
+    <div class="sat-overlay" id="sat-overlay">
+      <div class="sat-box">
+        <div class="sat-title">土曜レビュー</div>
+        <div class="sat-sub">Saturday Review — adjust difficulty based on last 7 days</div>
+        <div id="sat-rows"></div>
+        <button class="sat-close-btn" onclick="closeSaturdayReview()">閉じる — Close</button>
+      </div>
     </div>
 
     <!-- Sessions -->
@@ -925,6 +986,7 @@ function renderApp(){
   try { renderReport(); }   catch(e){ console.error('renderReport:', e); }
   try { checkGoalAutoComplete(); } catch(e){ console.error('checkGoals:', e); }
   try { renderJourneyGrid(); }    catch(e){ console.error('renderJourneyGrid:', e); }
+  try { renderHabits(); }         catch(e){ console.error('renderHabits:', e); }
 }
 
 function renderPills(){
@@ -1420,6 +1482,110 @@ function closeRoundComplete(){
   renderApp(); drainLU(); checkCalBadge(); rotateWatermark();
 }
 
+/* ── HABITS ─────────────────────────────────────────── */
+function getHabits(){ try{ const h=ls.get('sq_habits','[]'); return Array.isArray(h)?h:[]; }catch(e){ return []; } }
+function saveHabits(h){ ls.set('sq_habits',h); }
+
+function todayKey(){ return new Date().toISOString().slice(0,10); }
+
+function habitStreakCount(h){
+  let streak=0;
+  const today=new Date();
+  for(let i=0;i<=365;i++){
+    const d=new Date(today); d.setDate(today.getDate()-i);
+    const k=d.toISOString().slice(0,10);
+    if(h.history.includes(k)) streak++;
+    else if(i>0) break;
+  }
+  return streak;
+}
+
+function habitLast7(h){
+  const days=[];
+  for(let i=6;i>=0;i--){ const d=new Date(); d.setDate(d.getDate()-i); days.push(d.toISOString().slice(0,10)); }
+  return days;
+}
+
+function toggleHabit(id){
+  const habits=getHabits();
+  const h=habits.find(x=>x.id===id); if(!h) return;
+  const k=todayKey();
+  if(h.history.includes(k)) h.history=h.history.filter(d=>d!==k);
+  else h.history.push(k);
+  saveHabits(habits);
+  renderHabits();
+  pushSync();
+}
+
+function addHabitPrompt(){
+  const name=prompt('Habit name:'); if(!name||!name.trim()) return;
+  const emoji=prompt('Emoji (optional):', '⚡') || '⚡';
+  const habits=getHabits();
+  habits.push({ id:(crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2)), name:name.trim(), emoji:emoji.trim()||'⚡', history:[] });
+  saveHabits(habits);
+  renderHabits();
+  pushSync();
+}
+
+function deleteHabit(id){
+  if(!confirm('Delete this habit?')) return;
+  saveHabits(getHabits().filter(h=>h.id!==id));
+  renderHabits();
+  pushSync();
+}
+
+function renderHabits(){
+  const el=document.getElementById('habit-grid'); if(!el) return;
+  const habits=getHabits();
+  const today=todayKey();
+  const isSat=new Date().getDay()===6;
+  const btn=document.getElementById('sat-review-btn');
+  if(btn) btn.classList.toggle('visible', isSat && habits.length>0);
+  let html='';
+  habits.forEach(h=>{
+    const doneToday=h.history.includes(today);
+    const streak=habitStreakCount(h);
+    const last7=habitLast7(h);
+    const dots=last7.map((k,i)=>`<div class="habit-dot${h.history.includes(k)?' hit':''}${i===6?' today-dot':''}"></div>`).join('');
+    html+=`<div class="habit-card${doneToday?' done-today':''}">
+      <div class="habit-card-top">
+        <span class="habit-emoji">${h.emoji}</span>
+        <span class="habit-name">${h.name}</span>
+        <button class="habit-del" onclick="deleteHabit('${h.id}')" title="Delete">✕</button>
+      </div>
+      <div class="habit-check-row">
+        <button class="habit-check${doneToday?' checked':''}" onclick="toggleHabit('${h.id}')">${doneToday?'✓':''}</button>
+        <span class="habit-streak">${streak>0?'<b>'+streak+'</b> day streak':'No streak yet'}</span>
+      </div>
+      <div class="habit-dots">${dots}</div>
+    </div>`;
+  });
+  html+=`<button class="habit-add-btn" onclick="addHabitPrompt()">＋ ADD HABIT</button>`;
+  el.innerHTML=html;
+}
+
+function showSaturdayReview(){
+  const habits=getHabits();
+  const rows=habits.map(h=>{
+    const last7=habitLast7(h);
+    const hits=last7.filter(k=>h.history.includes(k)).length;
+    const pct=hits/7;
+    const signal=pct>=0.85?{cls:'up',label:'↑ LEVEL UP'}:pct>=0.5?{cls:'hold',label:'◆ HOLD'}:{cls:'down',label:'↓ EASE OFF'};
+    const dots=last7.map(k=>`<div class="sat-dot${h.history.includes(k)?' hit':''}"></div>`).join('');
+    return `<div class="sat-row">
+      <span class="sat-emo">${h.emoji}</span>
+      <div class="sat-info"><div class="sat-hname">${h.name}</div><div class="sat-dots">${dots}</div></div>
+      <span class="sat-signal ${signal.cls}">${signal.label}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('sat-rows').innerHTML=rows||'<p style="color:var(--t3);font-size:13px">No habits yet.</p>';
+  document.getElementById('sat-overlay').classList.add('on');
+}
+
+function closeSaturdayReview(){
+  document.getElementById('sat-overlay').classList.remove('on');
+}
+
 /* ── JOURNEY GRID ────────────────────────────────────── */
 function renderJourneyGrid(){
   const el=document.getElementById('jg-grid');
@@ -1639,7 +1805,7 @@ async function pushCloud(){
   const userId = getGUser(); if(!userId) return;
   const data = {
     skillDefs: getDefs(), skillData: getData(),
-    sessions:  getSess(), badges:    getBadges(), goals: getGoals(),
+    sessions:  getSess(), badges:    getBadges(), goals: getGoals(), habits: getHabits(),
   };
   try {
     const res = await fetch(`${SB_URL}/rest/v1/skillquest`, {
