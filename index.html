@@ -924,7 +924,19 @@ async function bootFromCloud(){
     if(rows.length && rows[0].data){
       // Cloud has data — load it (cloud is source of truth)
       const d = rows[0].data;
-      if(d.skillDefs && d.skillDefs.length) ls.set('sq_skill_defs', d.skillDefs);
+      if(d.skillDefs && d.skillDefs.length){
+        const localDefs = ls.get('sq_skill_defs','[]');
+        if(!localDefs.length){
+          // No local defs — use cloud (first-time login on this device)
+          ls.set('sq_skill_defs', d.skillDefs);
+        } else {
+          // Local has defs — merge: local takes priority, add any cloud defs with new IDs
+          const localIds = new Set(localDefs.map(x=>x.id));
+          const extras = d.skillDefs.filter(x=>!localIds.has(x.id));
+          if(extras.length) ls.set('sq_skill_defs', [...localDefs, ...extras]);
+          // (if cloud has ONLY IDs already in local, trust local names/emojis)
+        }
+      }
       if(d.sessions){
         // Merge: keep cloud sessions as base, add any local sessions not yet pushed
         const local = ls.get('sq_sessions','[]');
@@ -1014,7 +1026,19 @@ async function refreshFromCloud(){
     const rows = await res.json();
     if(rows.length && rows[0].data){
       const d = rows[0].data;
-      if(d.skillDefs && d.skillDefs.length) ls.set('sq_skill_defs', d.skillDefs);
+      if(d.skillDefs && d.skillDefs.length){
+        const localDefs = ls.get('sq_skill_defs','[]');
+        if(!localDefs.length){
+          // No local defs — use cloud (first-time login on this device)
+          ls.set('sq_skill_defs', d.skillDefs);
+        } else {
+          // Local has defs — merge: local takes priority, add any cloud defs with new IDs
+          const localIds = new Set(localDefs.map(x=>x.id));
+          const extras = d.skillDefs.filter(x=>!localIds.has(x.id));
+          if(extras.length) ls.set('sq_skill_defs', [...localDefs, ...extras]);
+          // (if cloud has ONLY IDs already in local, trust local names/emojis)
+        }
+      }
       if(d.sessions){
         const local = ls.get('sq_sessions','[]');
         const cloudIds = new Set(d.sessions.map(s=>s.id));
