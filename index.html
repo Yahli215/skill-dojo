@@ -382,38 +382,6 @@ body.light .login-card { background:rgba(245,240,232,.97); }
 }
 body.light .page-watermark { opacity: .2; }
 
-/* ── BADGES ─────────────────────────────────────────── */
-.badges-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 32px; }
-.badge-card { border: 1px solid var(--b2); padding: 16px 14px; position: relative; cursor: pointer; transition: border-color .2s; overflow: hidden; }
-.badge-card:hover { border-color: var(--gold); }
-.badge-card.earned { border-color: var(--gold); background: rgba(200,144,10,.04); }
-.badge-card.earned::after { content: '印'; position: absolute; bottom: -10px; right: -6px; font-family: var(--serif); font-size: 64px; font-weight: 900; color: var(--gold); opacity: .07; pointer-events: none; line-height: 1; }
-.badge-icon { font-size: 28px; margin-bottom: 8px; display: block; }
-.badge-name { font-family: var(--serif); font-size: 13px; font-weight: 700; margin-bottom: 4px; display: block; }
-.badge-req  { font-size: 9px; color: var(--muted2); line-height: 1.6; margin-bottom: 10px; display: block; letter-spacing: .3px; }
-.badge-progress { height: 2px; background: var(--b1); margin-bottom: 6px; }
-.badge-progress-fill { height: 100%; transition: width .8s cubic-bezier(.34,1.56,.64,1); }
-.badge-status { font-size: 9px; color: var(--muted); letter-spacing: 1px; }
-.badge-status.done { color: var(--gold); }
-.badge-checkin { width: 100%; margin-top: 10px; background: var(--s2); border: 1px solid var(--b2); padding: 6px; color: var(--text); font-family: var(--serif); font-size: 10px; font-weight: 700; cursor: pointer; letter-spacing: 2px; transition: all .2s; }
-.badge-checkin:hover { border-color: var(--green2); color: var(--green2); }
-.badge-checkin.checked-today { border-color: var(--green); color: var(--green); background: rgba(74,144,96,.07); cursor: default; }
-.badge-earned-date { font-size: 9px; color: var(--gold2); letter-spacing: 1px; margin-top: 6px; display: block; }
-.add-badge-btn { width: 100%; background: none; border: 1px dashed var(--b2); padding: 9px; color: var(--muted2); font-family: var(--mono); font-size: 10px; cursor: pointer; margin-bottom: 32px; transition: border-color .2s, color .2s; }
-.add-badge-btn:hover { border-color: var(--gold); color: var(--gold); }
-.badge-earn-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.9); z-index: 750; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .4s; }
-.badge-earn-overlay.on { opacity: 1; pointer-events: all; }
-.badge-earn-box { background: var(--s1); border: 1px solid var(--gold); padding: 52px 44px; text-align: center; max-width: 320px; width: 90%; transform: scale(.85); transition: transform .4s cubic-bezier(.34,1.56,.64,1); position: relative; overflow: hidden; }
-.badge-earn-overlay.on .badge-earn-box { transform: scale(1); }
-.badge-earn-box::before, .badge-earn-box::after { content: ''; position: absolute; width: 18px; height: 18px; border-color: var(--gold); border-style: solid; opacity: .4; }
-.badge-earn-box::before { top: 12px; left: 12px; border-width: 1px 0 0 1px; }
-.badge-earn-box::after  { bottom: 12px; right: 12px; border-width: 0 1px 1px 0; }
-.be-bg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--serif); font-size: 160px; font-weight: 900; opacity: .04; pointer-events: none; }
-.be-icon  { font-size: 56px; position: relative; margin-bottom: 10px; }
-.be-title { font-size: 8px; letter-spacing: 5px; color: var(--gold2); text-transform: uppercase; margin-bottom: 6px; }
-.be-name  { font-family: var(--serif); font-size: 22px; font-weight: 900; margin-bottom: 8px; }
-.be-req   { font-size: 10px; color: var(--muted2); line-height: 1.7; margin-bottom: 22px; font-style: italic; }
-.be-close { background: var(--verm); border: none; padding: 11px 24px; color: #fff; font-family: var(--serif); font-size: 11px; font-weight: 700; cursor: pointer; letter-spacing: 3px; }
 
 /* ── GOALS ──────────────────────────────────────────── */
 .goals-month-tabs { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:16px; }
@@ -648,8 +616,8 @@ body.light .page-watermark { opacity: .2; }
       <div class="skill-pills" id="skill-pills"></div>
       <button class="pomo-btn" id="pomo-btn" onclick="togglePomo()">🍅 Pomodoro</button>
       <div class="pomo-row" id="pomo-row">
-        <span>Work:</span><input class="pomo-inp" id="pomo-work" type="number" value="25" min="1" max="120">
-        <span>min &nbsp;Break:</span><input class="pomo-inp" id="pomo-break" type="number" value="5" min="1" max="60"><span>min</span>
+        <span>Work:</span><input class="pomo-inp" id="pomo-work" type="number" value="90" min="1" max="180">
+        <span>min &nbsp;Break:</span><input class="pomo-inp" id="pomo-break" type="number" value="15" min="1" max="60"><span>min</span>
       </div>
       <div class="desc-row">
         <input class="desc-inp" id="desc-inp" placeholder="What are you working on? (optional)" onkeydown="if(event.key==='Enter')startTimer()">
@@ -728,14 +696,6 @@ body.light .page-watermark { opacity: .2; }
     <div class="goal-list" id="goal-list"></div>
     <button class="add-goal-btn" onclick="openGoalCreate()">+ 新しい目的 — Add goal for this month</button>
 
-    <!-- Badges -->
-    <div class="sec-hdr" style="margin-top:8px">
-      <div class="sec-lbl">Life Badges</div>
-      <div class="sec-kj">徽章</div>
-      <div class="sec-line"></div>
-    </div>
-    <div class="badges-grid" id="badges-grid"></div>
-    <button class="add-badge-btn" onclick="openBadgeCreate()">+ 新しい徽章 (Add badge)</button>
 
     <div class="sec-hdr" style="margin-top:8px">
       <div class="sec-lbl">Skills</div>
@@ -889,7 +849,7 @@ const SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 let skills=[], sessions=[], activeTimer=null, timerTick=null,
     selSkillId=null, currentTab='today', luQueue=[], gcalNotifsent={},
     dismissedEvs=new Set(), trackedEvIds=new Set(),
-    _tc=null, _gcExp=false, _editingBadgeId=null,
+    _tc=null, _gcExp=false,
     _goalType='skill', _skillGoalKind='rank';
 
 /* ── STORAGE ────────────────────────────────────────── */
@@ -957,7 +917,6 @@ async function bootFromCloud(){
         });
         ls.set('sq_skill_data', merged);
       }
-      if(d.badges)    ls.set('sq_badges',      d.badges);
       if(d.goals)     ls.set('sq_goals',       d.goals);
       if(d.habits)    ls.set('sq_habits',      d.habits);
     } else {
@@ -1003,7 +962,6 @@ function renderApp(){
   try { renderPills(); }    catch(e){ console.error('renderPills:', e); }
   try { renderSkills(); }   catch(e){ console.error('renderSkills:', e); }
   try { renderGoals(); }    catch(e){ console.error('renderGoals:', e); }
-  try { renderBadges(); }   catch(e){ console.error('renderBadges:', e); }
   try { renderSessions(); } catch(e){ console.error('renderSessions:', e); }
   try { renderDaily(); }    catch(e){ console.error('renderDaily:', e); }
   try { renderWeekBars(); } catch(e){ console.error('renderWeekBars:', e); }
@@ -2036,7 +1994,7 @@ async function pushCloud(){
   const userId = getGUser(); if(!userId) return;
   const data = {
     skillDefs: getDefs(), skillData: getData(),
-    sessions:  getSess(), badges:    getBadges(), goals: getGoals(), habits: getHabits(),
+    sessions:  getSess(), goals: getGoals(), habits: getHabits(),
   };
   try {
     const res = await fetch(`${SB_URL}/rest/v1/skillquest`, {
@@ -2290,189 +2248,24 @@ function saveGoal(){
 }
 
 
-/* ── BADGES ─────────────────────────────────────────── */
-function getBadges(){ try { const b = ls.get('sq_badges', '[]'); return Array.isArray(b) ? b : []; } catch(e){ return []; } }
-function saveBadges(b){ ls.set('sq_badges', b); }
+/* ── BADGES (removed) ── */
+function getBadges(){ return []; }
+function saveBadges(){}
 
-function renderBadges() {
-  const el = document.getElementById('badges-grid');
-  const badges = getBadges();
-  if (!badges.length) {
-    el.innerHTML = '<div style="color:var(--muted);font-size:10px;grid-column:1/-1;padding:8px 0;letter-spacing:1px">No badges yet.</div>';
-    return;
-  }
-  el.innerHTML = '';
-  badges.forEach(b => {
-    const todayKey = dayKey(new Date());
-    const checkedToday = (b.checks || []).includes(todayKey);
-    const streak = calcBadgeStreak(b.checks || []);
-    const needed = b.days || 10;
-    const pct = Math.min(100, Math.round(streak / needed * 100));
-    const earned = !!b.earnedAt;
-    const card = document.createElement('div');
-    card.className = 'badge-card' + (earned ? ' earned' : '');
-    card.innerHTML =
-      '<span class="badge-icon">' + b.emoji + '</span>' +
-      '<span class="badge-name">' + esc(b.name) + '</span>' +
-      '<span class="badge-req">' + esc(b.requirement) + '</span>' +
-      (earned
-        ? '<div class="badge-status done">★ 達成 — Earned</div><span class="badge-earned-date">Earned ' + new Date(b.earnedAt).toLocaleDateString([],{year:"numeric",month:"short",day:"numeric"}) + '</span>'
-        : '<div class="badge-progress"><div class="badge-progress-fill" style="width:0%;background:var(--gold)"></div></div>' +
-          '<div class="badge-status">' + streak + ' / ' + needed + ' days</div>' +
-          '<button class="badge-checkin' + (checkedToday ? ' checked-today' : '') + '" onclick="event.stopPropagation();badgeCheckin(\'' + b.id + '\')" ' + (checkedToday ? 'disabled' : '') + '>' +
-          (checkedToday ? '✓ 完了 Done today' : '✓ Mark today') + '</button>' +
-          '<div style="font-size:9px;color:var(--muted);margin-top:6px">' + (needed - streak > 0 ? (needed-streak) + ' days to go' : '') + '</div>'
-      );
-    if (!earned) {
-      setTimeout(() => { const f = card.querySelector('.badge-progress-fill'); if(f) f.style.width = pct+'%'; }, 80);
-    }
-    card.addEventListener('click', () => openBadgeEdit(b.id));
-    el.appendChild(card);
-  });
-}
-
-function calcBadgeStreak(checks) {
-  if (!checks.length) return 0;
-  const sorted = [...new Set(checks)].sort().reverse();
-  const todayK = dayKey(new Date());
-  const yestK  = dayKey(new Date(Date.now() - 86400000));
-  if (sorted[0] !== todayK && sorted[0] !== yestK) return 0;
-  let streak = 0, cursor = new Date(sorted[0]);
-  for (const k of sorted) {
-    if (k === dayKey(cursor)) { streak++; cursor.setDate(cursor.getDate() - 1); }
-    else break;
-  }
-  return streak;
-}
-
-function badgeCheckin(id) {
-  const badges = getBadges();
-  const b = badges.find(x => x.id === id);
-  if (!b || b.earnedAt) return;
-  const todayK = dayKey(new Date());
-  if ((b.checks || []).includes(todayK)) return;
-  b.checks = [...(b.checks || []), todayK];
-  const streak = calcBadgeStreak(b.checks);
-  if (streak >= b.days) {
-    b.earnedAt = new Date().toISOString();
-    saveBadges(badges); renderBadges();
-    showBadgeEarn(b); playBeep();
-  } else {
-    saveBadges(badges); renderBadges();
-    toast(b.emoji + ' ' + streak + '/' + b.days + ' days — 頑張れ！');
-  }
-  pushSync();
-}
-
-function showBadgeEarn(b) {
-  document.getElementById('be-bg').textContent   = b.emoji;
-  document.getElementById('be-icon').textContent = b.emoji;
-  document.getElementById('be-name').textContent = b.name;
-  document.getElementById('be-req').textContent  = b.requirement;
-  document.getElementById('be-overlay').classList.add('on');
-}
-function closeBadgeEarn() { document.getElementById('be-overlay').classList.remove('on'); }
-
-function openBadgeCreate() {
-  _editingBadgeId = null;
-  document.getElementById('badge-name-inp').value = '';
-  document.getElementById('badge-req-inp').value  = '';
-  document.getElementById('badge-days-inp').value = '10';
-  document.getElementById('badge-emoji-btn').textContent = '🏅';
-  document.getElementById('badge-form-title').textContent = '新しい徽章 — New Badge';
-  document.getElementById('badge-delete-btn').style.display = 'none';
-  document.getElementById('badge-save-btn').textContent = 'Create';
-  document.getElementById('badge-create-ov').style.display = 'flex';
-}
-
-function openBadgeEdit(id) {
-  const b = getBadges().find(x => x.id === id);
-  if (!b) return;
-  _editingBadgeId = id;
-  document.getElementById('badge-name-inp').value = b.name;
-  document.getElementById('badge-req-inp').value  = b.requirement;
-  document.getElementById('badge-days-inp').value = b.days;
-  document.getElementById('badge-emoji-btn').textContent = b.emoji;
-  document.getElementById('badge-form-title').textContent = '徽章を編集 — Edit Badge';
-  document.getElementById('badge-delete-btn').style.display = 'block';
-  document.getElementById('badge-save-btn').textContent = 'Save';
-  document.getElementById('badge-create-ov').style.display = 'flex';
-}
-
-function closeBadgeCreate() { document.getElementById('badge-create-ov').style.display = 'none'; _editingBadgeId = null; }
-
-function saveBadge() {
-  const name  = document.getElementById('badge-name-inp').value.trim();
-  const req   = document.getElementById('badge-req-inp').value.trim();
-  const days  = parseInt(document.getElementById('badge-days-inp').value) || 10;
-  const emoji = document.getElementById('badge-emoji-btn').textContent.trim();
-  if (!name) { toast('Add a badge name.'); return; }
-  if (!req)  { toast('Describe the requirement.'); return; }
-  const badges = getBadges();
-  if (_editingBadgeId) {
-    const b = badges.find(x => x.id === _editingBadgeId);
-    if (b) { b.name = name; b.requirement = req; b.days = days; b.emoji = emoji; }
-  } else {
-    badges.push({ id: uid(), name, requirement: req, days, emoji, checks: [], earnedAt: null });
-  }
-  saveBadges(badges); closeBadgeCreate(); renderBadges(); pushSync();
-}
-
-function deleteBadgeFromForm() {
-  if (!_editingBadgeId) return;
-  if (!confirm('Delete this badge and all its check-in history?')) return;
-  saveBadges(getBadges().filter(x => x.id !== _editingBadgeId));
-  closeBadgeCreate(); renderBadges(); pushSync();
-}
+function renderBadges(){}
+function calcBadgeStreak(){ return 0; }
+function badgeCheckin(){}
+function showBadgeEarn(){}
+function closeBadgeEarn(){}
+function openBadgeCreate(){}
+function openBadgeEdit(){}
+function closeBadgeCreate(){}
+function saveBadge(){}
+function deleteBadgeFromForm(){}
 
 
 </script>
 
-<!-- Badge earned overlay -->
-<div class="badge-earn-overlay" id="be-overlay">
-  <div class="badge-earn-box">
-    <div class="be-bg" id="be-bg">印</div>
-    <div class="be-icon" id="be-icon">🏅</div>
-    <div class="be-title">徽章獲得 — Badge Earned</div>
-    <div class="be-name" id="be-name">—</div>
-    <div class="be-req"  id="be-req">—</div>
-    <button class="be-close" onclick="closeBadgeEarn()">刻まれた — Earned</button>
-  </div>
-</div>
-
-<!-- Badge create / edit overlay -->
-<div id="badge-create-ov" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:900;align-items:center;justify-content:center;padding:24px;">
-  <div style="background:var(--s1);border:1px solid var(--b2);padding:28px 24px;width:100%;max-width:380px;position:relative;">
-    <div id="badge-form-title" style="font-family:var(--serif);font-size:16px;font-weight:900;margin-bottom:18px;">新しい徽章 — New Badge</div>
-    <div style="margin-bottom:12px">
-      <div style="font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px">Icon</div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button class="emoji-btn" id="badge-emoji-btn" onclick="openEmoji('badge',this)">🏅</button>
-        <span style="font-size:10px;color:var(--muted)">tap to change</span>
-      </div>
-    </div>
-    <div style="margin-bottom:12px">
-      <div style="font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px">Badge name</div>
-      <input class="inp" id="badge-name-inp" placeholder="e.g. Sleep Discipline">
-    </div>
-    <div style="margin-bottom:12px">
-      <div style="font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px">Requirement</div>
-      <input class="inp" id="badge-req-inp" placeholder="e.g. Fall asleep before midnight for 10 days straight">
-    </div>
-    <div style="margin-bottom:20px">
-      <div style="font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px">Days needed</div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <input class="inp" id="badge-days-inp" type="number" min="1" max="365" value="10" style="width:70px">
-        <span style="font-size:10px;color:var(--muted)">consecutive check-ins to earn</span>
-      </div>
-    </div>
-    <div style="display:flex;gap:8px">
-      <button id="badge-save-btn" onclick="saveBadge()" style="flex:1;background:var(--verm);border:none;padding:11px;color:#fff;font-family:var(--serif);font-size:12px;font-weight:700;cursor:pointer;letter-spacing:2px;">Create</button>
-      <button onclick="closeBadgeCreate()" style="flex:1;background:none;border:1px solid var(--b2);padding:11px;color:var(--muted2);font-family:var(--mono);font-size:10px;cursor:pointer;">Cancel</button>
-    </div>
-    <button id="badge-delete-btn" onclick="deleteBadgeFromForm()" style="display:none;width:100%;margin-top:8px;background:none;border:1px solid var(--verm);padding:9px;color:var(--verm);font-family:var(--mono);font-size:10px;cursor:pointer;letter-spacing:1px;">Delete badge</button>
-  </div>
-</div>
 
 
 <!-- Goal create overlay -->
