@@ -527,6 +527,30 @@ body.light .page-watermark { opacity: .2; }
 .sat-close-btn{margin-top:20px;width:100%;padding:10px;background:var(--s2);border:1px solid var(--b1);border-radius:8px;color:var(--t1);cursor:pointer;font-family:inherit;font-size:12px;letter-spacing:.08em;}
 .sat-opt-btn{width:100%;text-align:left;padding:11px 14px;background:var(--s2);border:1px solid var(--b1);border-radius:8px;color:var(--t1);cursor:pointer;font-family:inherit;font-size:13px;transition:border-color .15s,background .15s;}
 .sat-opt-btn:hover{border-color:var(--gold2);background:var(--s1);}
+
+/* ── VIEW NAV ───────────────────────────────────────── */
+.view-nav{display:flex;gap:0;margin-bottom:28px;border-bottom:1px solid var(--b1);}
+.view-nav-btn{padding:9px 20px;font-size:9px;font-family:var(--mono);cursor:pointer;border:none;border-bottom:2px solid transparent;background:none;color:var(--muted);transition:all .2s;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:-1px;}
+.view-nav-btn.on{color:var(--text);border-bottom-color:var(--verm);}
+.view-nav-btn:hover:not(.on){color:var(--text);}
+
+/* ── CONCLUSIONS / INSIGHTS ──────────────────────────── */
+.concl-input-row{display:flex;flex-direction:column;gap:8px;margin-bottom:24px;}
+.concl-textarea{background:var(--s1);border:1px solid var(--b2);padding:12px 14px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;resize:vertical;min-height:80px;line-height:1.7;border-radius:6px;width:100%;box-sizing:border-box;}
+.concl-textarea:focus{border-color:var(--gold);}
+.concl-textarea::placeholder{color:var(--muted);}
+.concl-add-btn{align-self:flex-end;background:var(--verm);border:none;padding:9px 22px;color:#fff;font-family:var(--mono);font-size:10px;cursor:pointer;letter-spacing:1px;border-radius:4px;transition:filter .2s;}
+.concl-add-btn:hover:not(:disabled){filter:brightness(1.12);}
+.concl-add-btn:disabled{opacity:.35;cursor:default;}
+.concl-list{display:flex;flex-direction:column;gap:10px;}
+.concl-card{background:var(--s1);border:1px solid var(--b1);border-radius:8px;padding:16px 18px;border-left:3px solid var(--b2);transition:border-left-color .2s;}
+.concl-card:hover{border-left-color:var(--gold2);}
+.concl-card-date{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}
+.concl-card-text{font-size:13px;line-height:1.8;white-space:pre-wrap;word-break:break-word;}
+.concl-card-foot{display:flex;justify-content:flex-end;margin-top:10px;}
+.concl-del-btn{background:none;border:none;color:var(--muted);font-size:10px;cursor:pointer;padding:2px 6px;letter-spacing:.5px;font-family:var(--mono);transition:color .2s;}
+.concl-del-btn:hover{color:var(--verm);}
+.concl-empty{text-align:center;color:var(--muted);font-size:11px;padding:48px 0;letter-spacing:1px;line-height:2;}
 </style>
 </head>
 <body class="z">
@@ -587,6 +611,14 @@ body.light .page-watermark { opacity: .2; }
         <button class="sm-btn" onclick="signOut()">sign out</button>
       </div>
     </div>
+
+    <!-- View Nav -->
+    <div class="view-nav">
+      <button class="view-nav-btn on" id="vnav-training" onclick="switchView('training')">稽古 Training</button>
+      <button class="view-nav-btn"    id="vnav-insights" onclick="switchView('insights')">洞察 Insights</button>
+    </div>
+
+    <div id="training-view">
 
     <!-- Quote -->
     <div class="quote-block" id="quote-block">
@@ -746,6 +778,23 @@ body.light .page-watermark { opacity: .2; }
       <button class="tab"    onclick="switchTab('all',this)">全て All</button>
     </div>
     <div class="sess-list" id="sess-list"></div>
+
+    </div><!-- /training-view -->
+
+    <!-- Insights / Conclusions -->
+    <div id="insights-view" style="display:none">
+      <div class="sec-hdr">
+        <div class="sec-lbl">Insights</div>
+        <div class="sec-kj">洞察</div>
+        <div class="sec-line"></div>
+      </div>
+      <div class="concl-input-row">
+        <textarea class="concl-textarea" id="concl-inp" placeholder="Write a conclusion or insight…" oninput="document.getElementById('concl-add-btn').disabled=!this.value.trim()"></textarea>
+        <button class="concl-add-btn" id="concl-add-btn" disabled onclick="addConclusion()">+ Add Insight</button>
+      </div>
+      <div class="concl-list" id="concl-list"></div>
+    </div>
+
   </div>
 </div>
 
@@ -917,8 +966,9 @@ async function bootFromCloud(){
         });
         ls.set('sq_skill_data', merged);
       }
-      if(d.goals)     ls.set('sq_goals',       d.goals);
-      if(d.habits)    ls.set('sq_habits',      d.habits);
+      if(d.goals)       ls.set('sq_goals',       d.goals);
+      if(d.habits)      ls.set('sq_habits',      d.habits);
+      if(d.conclusions) ls.set('sq_conclusions', d.conclusions);
     } else {
       // Cloud is empty — push whatever is in localStorage up (migration from old sync system)
       const localDefs = getDefs();
@@ -1979,6 +2029,59 @@ function handleGoogleCredential(response){
   }
 }
 
+/* ── CONCLUSIONS / INSIGHTS ─────────────────────────── */
+function getConclusions(){ try { return ls.get('sq_conclusions','[]'); } catch(e){ return []; } }
+function saveConclusions(arr){ ls.set('sq_conclusions', arr); }
+
+function switchView(view){
+  const isTraining = view === 'training';
+  document.getElementById('training-view').style.display = isTraining ? '' : 'none';
+  document.getElementById('insights-view').style.display = isTraining ? 'none' : '';
+  document.getElementById('vnav-training').classList.toggle('on', isTraining);
+  document.getElementById('vnav-insights').classList.toggle('on', !isTraining);
+  if(!isTraining) renderConclusions();
+}
+
+function addConclusion(){
+  const inp = document.getElementById('concl-inp');
+  const text = inp.value.trim();
+  if(!text) return;
+  const all = getConclusions();
+  all.unshift({ id: uid(), text, date: new Date().toISOString() });
+  saveConclusions(all);
+  inp.value = '';
+  document.getElementById('concl-add-btn').disabled = true;
+  renderConclusions();
+  pushSync();
+}
+
+function deleteConclusion(id){
+  if(!confirm('Delete this insight?')) return;
+  const all = getConclusions().filter(c => c.id !== id);
+  saveConclusions(all);
+  renderConclusions();
+  pushSync();
+}
+
+function renderConclusions(){
+  const all = getConclusions();
+  const el = document.getElementById('concl-list');
+  if(!el) return;
+  if(!all.length){
+    el.innerHTML = '<div class="concl-empty">洞察なし<br>No insights yet.<br>Add your first one above.</div>';
+    return;
+  }
+  el.innerHTML = all.map(c => {
+    const d = new Date(c.date);
+    const dStr = d.toLocaleDateString([], {weekday:'short',year:'numeric',month:'short',day:'numeric'});
+    return `<div class="concl-card">
+      <div class="concl-card-date">${dStr}</div>
+      <div class="concl-card-text">${esc(c.text)}</div>
+      <div class="concl-card-foot"><button class="concl-del-btn" onclick="deleteConclusion('${c.id}')">✕ delete</button></div>
+    </div>`;
+  }).join('');
+}
+
 function pushSync(){
   // alias kept so all call sites work
   pushCloud();
@@ -1995,6 +2098,7 @@ async function pushCloud(){
   const data = {
     skillDefs: getDefs(), skillData: getData(),
     sessions:  getSess(), goals: getGoals(), habits: getHabits(),
+    conclusions: getConclusions(),
   };
   try {
     const res = await fetch(`${SB_URL}/rest/v1/skillquest`, {
