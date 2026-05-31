@@ -509,26 +509,30 @@ body.light .page-watermark { opacity: .2; }
 .jg-legend-item{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--muted);}
 .jg-legend-dot{width:8px;height:8px;flex-shrink:0;}
 /* ── HABITS ─────────────────────────────────────────── */
-.habit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:28px;}
-.habit-card{background:var(--s1);border:1px solid var(--b1);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;transition:border-color .2s,box-shadow .2s;}
-.habit-card.done-today{border-color:var(--green2);box-shadow:0 0 14px rgba(80,200,120,.12);}
-.habit-card-top{display:flex;align-items:center;gap:8px;}
-.habit-emoji{font-size:20px;line-height:1;}
-.habit-name{flex:1;font-size:13px;font-weight:600;letter-spacing:.04em;}
-.habit-del{opacity:0;background:none;border:none;color:var(--t3);cursor:pointer;font-size:14px;padding:2px 4px;transition:opacity .15s;}
-.habit-card:hover .habit-del{opacity:.6;}
-.habit-del:hover{opacity:1 !important;color:var(--red);}
-.habit-check-row{display:flex;align-items:center;gap:10px;}
-.habit-check{width:36px;height:36px;border-radius:50%;border:2px solid var(--b2);background:var(--s2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;transition:all .25s cubic-bezier(.34,1.56,.64,1);flex-shrink:0;}
-.habit-check.checked{background:var(--green2);border-color:var(--green2);box-shadow:0 0 12px rgba(80,200,120,.35);}
-.habit-streak{font-size:11px;color:var(--t3);letter-spacing:.06em;}
-.habit-streak b{color:var(--gold2);font-size:13px;}
-.habit-dots{display:flex;gap:4px;}
-.habit-dot{width:7px;height:7px;border-radius:50%;background:var(--b2);}
+.habit-grid{display:flex;flex-direction:column;gap:0;margin-bottom:28px;border:1px solid var(--b1);border-radius:10px;overflow:hidden;}
+.habit-card{background:var(--s1);border-bottom:1px solid var(--b1);padding:14px 16px;display:flex;align-items:center;gap:14px;border-left:3px solid transparent;transition:background .15s,border-left-color .2s;}
+.habit-card:last-child{border-bottom:none;}
+.habit-card.done-today{border-left-color:var(--green2);background:rgba(80,200,120,.03);}
+.habit-left{flex:1;min-width:0;}
+.habit-name-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.habit-emoji{font-size:17px;line-height:1;flex-shrink:0;}
+.habit-name{font-size:13px;font-weight:600;letter-spacing:.03em;transition:opacity .2s;}
+.habit-card.done-today .habit-name{opacity:.35;}
+.habit-del{opacity:0;background:none;border:none;color:var(--t3);cursor:pointer;font-size:12px;padding:2px 5px;transition:opacity .15s;margin-left:auto;flex-shrink:0;}
+.habit-card:hover .habit-del{opacity:.45;}
+.habit-del:hover{opacity:1 !important;color:var(--verm);}
+.habit-meta{display:flex;align-items:center;gap:10px;}
+.habit-dots{display:flex;gap:3px;align-items:center;}
+.habit-dot{width:9px;height:9px;border-radius:2px;background:var(--b2);transition:background .2s;}
 .habit-dot.hit{background:var(--green2);}
-.habit-dot.today-dot{outline:2px solid var(--gold2);outline-offset:1px;}
-.habit-add-btn{background:none;border:1px dashed var(--b2);border-radius:10px;padding:14px;color:var(--t3);cursor:pointer;font-size:12px;letter-spacing:.08em;transition:border-color .2s,color .2s;text-align:center;}
-.habit-add-btn:hover{border-color:var(--gold2);color:var(--gold2);}
+.habit-dot.today-dot{box-shadow:0 0 0 1.5px var(--gold2);}
+.habit-streak{font-size:10px;color:var(--t3);letter-spacing:.05em;white-space:nowrap;}
+.habit-streak b{color:var(--gold2);font-size:11px;}
+.habit-check{width:46px;height:46px;border-radius:50%;border:2px solid var(--b2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;transition:all .22s cubic-bezier(.34,1.56,.64,1);color:transparent;-webkit-tap-highlight-color:transparent;}
+.habit-check:active{transform:scale(.9);}
+.habit-check.checked{background:var(--green2);border-color:var(--green2);box-shadow:0 0 18px rgba(80,200,120,.3);color:#fff;}
+.habit-add-btn{background:none;border:none;padding:11px;color:var(--b2);cursor:pointer;font-size:10px;letter-spacing:.12em;transition:color .2s;text-align:center;width:100%;border-top:1px dashed var(--b1);}
+.habit-add-btn:hover{color:var(--t3);}
 /* Saturday Review */
 .sat-review-btn{display:none;margin-bottom:16px;background:linear-gradient(135deg,var(--s2),var(--s1));border:1px solid var(--gold2);color:var(--gold2);padding:9px 18px;border-radius:8px;cursor:pointer;font-size:11px;letter-spacing:.1em;font-family:inherit;}
 .sat-review-btn.visible{display:block;}
@@ -1615,16 +1619,18 @@ function renderHabits(){
     const last7=habitLast7(h);
     const dots=last7.map((k,i)=>`<div class="habit-dot${h.history.includes(k)?' hit':''}${i===6?' today-dot':''}"></div>`).join('');
     html+=`<div class="habit-card${doneToday?' done-today':''}">
-      <div class="habit-card-top">
-        <span class="habit-emoji">${h.emoji}</span>
-        <span class="habit-name">${h.name}</span>
-        <button class="habit-del" onclick="deleteHabit('${h.id}')" title="Delete">✕</button>
+      <div class="habit-left">
+        <div class="habit-name-row">
+          <span class="habit-emoji">${h.emoji}</span>
+          <span class="habit-name">${h.name}</span>
+          <button class="habit-del" onclick="deleteHabit('${h.id}')" title="Remove">✕</button>
+        </div>
+        <div class="habit-meta">
+          <div class="habit-dots">${dots}</div>
+          <span class="habit-streak">${streak>0?'<b>'+streak+'</b> day streak':'—'}</span>
+        </div>
       </div>
-      <div class="habit-check-row">
-        <button class="habit-check${doneToday?' checked':''}" onclick="toggleHabit('${h.id}')">${doneToday?'✓':''}</button>
-        <span class="habit-streak">${streak>0?'<b>'+streak+'</b> day streak':'No streak yet'}</span>
-      </div>
-      <div class="habit-dots">${dots}</div>
+      <button class="habit-check${doneToday?' checked':''}" onclick="toggleHabit('${h.id}')">${doneToday?'✓':''}</button>
     </div>`;
   });
   html+=`<button class="habit-add-btn" onclick="addHabitPrompt()">＋ ADD HABIT</button>`;
