@@ -499,9 +499,12 @@ body.light .page-watermark { opacity: .2; }
 .habit-dot-col.today .habit-day-lbl{color:var(--gold2);}
 .habit-streak{font-size:10px;color:var(--t3);letter-spacing:.05em;white-space:nowrap;}
 .habit-streak b{color:var(--gold2);font-size:11px;}
-.habit-check{width:46px;height:46px;border-radius:50%;border:2px solid var(--b2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;transition:all .22s cubic-bezier(.34,1.56,.64,1);color:transparent;-webkit-tap-highlight-color:transparent;}
+.habit-check{width:46px;height:46px;border-radius:50%;border:2px solid var(--b2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;transition:all .22s cubic-bezier(.34,1.56,.64,1);color:transparent;-webkit-tap-highlight-color:transparent;position:relative;}
 .habit-check:active{transform:scale(.9);}
 .habit-check.checked{background:var(--green2);border-color:var(--green2);box-shadow:0 0 18px rgba(80,200,120,.3);color:#fff;}
+@keyframes habit-pop{0%{transform:scale(1)}35%{transform:scale(1.32)}65%{transform:scale(.92)}100%{transform:scale(1)}}
+@keyframes habit-ring{0%{box-shadow:0 0 0 0px rgba(80,200,120,.7),0 0 22px rgba(80,200,120,.4)}100%{box-shadow:0 0 0 22px rgba(80,200,120,0),0 0 0 rgba(80,200,120,0)}}
+.habit-check.just-checked{animation:habit-pop .45s cubic-bezier(.34,1.56,.64,1) forwards,habit-ring .6s ease-out forwards;}
 .habit-add-btn{background:none;border:none;padding:11px;color:var(--b2);cursor:pointer;font-size:10px;letter-spacing:.12em;transition:color .2s;text-align:center;width:100%;border-top:1px dashed var(--b1);}
 .habit-add-btn:hover{color:var(--t3);}
 /* Saturday Review */
@@ -858,21 +861,55 @@ const RANKS = [
 const WATERMARKS = ['鍛','道','技','練','力','心','勝','気'];
 
 const QUOTES = [
-  {jp:'継続は力なり。',              en:'"Continuance is power."',                          attr:'日本の諺 · Japanese Proverb'},
-  {jp:'No cursed energy. Just work.', en:'',                                                 attr:'Toji Fushiguro'},
-  {jp:'千里の道も一歩から。',          en:'"Even a thousand-ri journey begins with one step."',attr:'老子 · Laozi'},
-  {jp:'一日一善、一日一強。',          en:'"One good deed, one strength — every single day."', attr:'武道訓 · Budo Proverb'},
-  {jp:'才能は訓練によって開花する。',    en:'"Talent blossoms through training."',              attr:'孔子 · Confucius'},
-  {jp:'剣を磨くより、心を磨け。',       en:'"Polish the mind more than the sword."',           attr:'柳生宗矩 · Yagyu Munenori'},
-  {jp:'日々是好日。',                en:'"Every day is a good day to train."',               attr:'雲門 · Yunmen'},
-  {jp:'勝負は積み重ねた稽古の数だ。',   en:'"Victory is the number of practices accumulated."',attr:'道場の教え · Dojo Teaching'},
-  {jp:'不動心を持て。',              en:'"Have an immovable mind."',                         attr:'武道訓 · Budo Teaching'},
-  {jp:'Pain is the body logging work. Keep logging.',en:'',                                  attr:'Toji Fushiguro'},
-  {jp:'水善利萬物而不爭。',            en:'"Water benefits all things without striving."',     attr:'老子 · Laozi'},
-  {jp:'The gap between you and the top? Accumulated sessions.',en:'',                         attr:'Toji Fushiguro'},
-  {jp:'六時間。毎日。それが使命だ。',    en:'"Six hours. Every day. That is the mission."',    attr:'Toji Fushiguro'},
-  {jp:'知之者不如好之者。',            en:'"Knowing is not as good as loving it."',           attr:'孔子 · Confucius'},
-  {jp:'吾日三省吾身。',               en:'"I daily examine myself on three points."',         attr:'孔子 · Confucius'},
+  /* ── Chess ── */
+  {jp:'Chess is life.',                                                      en:'',                                                                         attr:'Bobby Fischer'},
+  {jp:'Chess is mental torture.',                                            en:'',                                                                         attr:'Garry Kasparov'},
+  {jp:'You have to have the fighting spirit. Force moves and take chances.',  en:'',                                                                         attr:'Bobby Fischer'},
+  {jp:'I am not afraid of anyone. When I sit across the board I see a problem to solve.', en:'',                                                            attr:'Magnus Carlsen'},
+  {jp:'No great skill can be acquired without a great deal of practice.',    en:'',                                                                         attr:'Anatoly Karpov'},
+  {jp:'Chess mastery essentially consists of analysing positions accurately.',en:'',                                                                        attr:'Mikhail Botvinnik'},
+  {jp:'Play the opening like a book, the middlegame like a magician, the endgame like a machine.', en:'',                                                   attr:'Rudolph Spielmann'},
+  {jp:'To improve at chess you should in the first instance study the endgame.', en:'',                                                                     attr:'José Capablanca'},
+  {jp:'The blunders are all there on the board, waiting to be made.',        en:'',                                                                         attr:'Savielly Tartakower'},
+  {jp:'Chess, like love, like music, has the power to make men happy.',      en:'',                                                                         attr:'Siegbert Tarrasch'},
+  {jp:'In chess, as in life, opportunity strikes but once.',                 en:'',                                                                         attr:'David Bronstein'},
+  {jp:'The most important thing is to be able to choose which way to lose.', en:'',                                                                         attr:'Savielly Tartakower'},
+  {jp:'Every chess master was once a beginner.',                             en:'',                                                                         attr:'Irving Chernev'},
+  {jp:'Chess is the art of analysis.',                                       en:'',                                                                         attr:'Mikhail Botvinnik'},
+  {jp:'When you see a good move — look for a better one.',                   en:'',                                                                         attr:'Emanuel Lasker'},
+  {jp:'The tactician knows what to do when there is something to do; the strategist knows what to do when there is nothing to do.', en:'',                  attr:'Gerald Abrahams'},
+  /* ── Japanese / Eastern ── */
+  {jp:'継続は力なり。',                                                        en:'"Continuance is power."',                                                 attr:'日本の諺 · Japanese Proverb'},
+  {jp:'千里の道も一歩から。',                                                   en:'"A thousand-ri journey begins with one step."',                          attr:'老子 · Laozi'},
+  {jp:'一日一善、一日一強。',                                                   en:'"One good deed, one strength — every day."',                             attr:'武道訓 · Budo Proverb'},
+  {jp:'剣を磨くより、心を磨け。',                                               en:'"Polish the mind more than the sword."',                                 attr:'柳生宗矩 · Yagyu Munenori'},
+  {jp:'日々是好日。',                                                          en:'"Every day is a good day to train."',                                    attr:'雲門 · Yunmen'},
+  {jp:'不動心を持て。',                                                        en:'"Have an immovable mind."',                                              attr:'武道訓 · Budo Teaching'},
+  {jp:'水善利萬物而不爭。',                                                     en:'"Water benefits all things without striving."',                          attr:'老子 · Laozi'},
+  {jp:'知之者不如好之者。',                                                     en:'"Knowing is not as good as loving it."',                                 attr:'孔子 · Confucius'},
+  {jp:'吾日三省吾身。',                                                        en:'"I examine myself on three points every day."',                          attr:'孔子 · Confucius'},
+  /* ── Miyamoto Musashi ── */
+  {jp:'今日の自分に勝ることを思え。',                                           en:'"Think only of surpassing the self of yesterday."',                      attr:'宮本武蔵 · Miyamoto Musashi'},
+  {jp:'千日の稽古を鍛とし、万日の稽古を練とする。',                              en:'"1,000 days to forge; 10,000 days to refine."',                         attr:'宮本武蔵 · Miyamoto Musashi'},
+  {jp:'よく吟味せよ。',                                                        en:'"Examine deeply."',                                                      attr:'宮本武蔵 · Miyamoto Musashi'},
+  /* ── Sun Tzu ── */
+  {jp:'勝者は戦う前に勝ち、敗者は戦い始めてから勝とうとする。',                    en:'"Victorious warriors win first, then go to war."',                       attr:'孫子 · Sun Tzu'},
+  {jp:'自己を知り敵を知れ — 百戦危うからず。',                                   en:'"Know yourself, know your enemy — a hundred battles, no defeat."',       attr:'孫子 · Sun Tzu'},
+  /* ── Anime / Manga ── */
+  {jp:'No cursed energy. Just work.',                                        en:'',                                                                         attr:'Toji Fushiguro'},
+  {jp:'Pain is the body logging work. Keep logging.',                        en:'',                                                                         attr:'Toji Fushiguro'},
+  {jp:'The gap between you and the top? Accumulated sessions.',              en:'',                                                                         attr:'Toji Fushiguro'},
+  {jp:'六時間。毎日。それが使命だ。',                                           en:'"Six hours. Every day. That is the mission."',                           attr:'Toji Fushiguro'},
+  {jp:'Hard work is absolute. Genius can be surpassed by it.',               en:'',                                                                         attr:'Rock Lee · Naruto'},
+  {jp:'If you don\'t like your destiny, don\'t accept it. Create a new one.', en:'',                                                                        attr:'Naruto Uzumaki'},
+  {jp:'Become so strong that no one can predict your next move.',            en:'',                                                                         attr:'Gojo Satoru'},
+  /* ── Athletes ── */
+  {jp:'Champions aren\'t made in gyms. They are made from something deep inside.', en:'',                                                                   attr:'Muhammad Ali'},
+  {jp:'I fear not the man who has practised 10,000 kicks once, but the man who has practised one kick 10,000 times.', en:'',                               attr:'Bruce Lee'},
+  {jp:'The more I practise, the luckier I get.',                            en:'',                                                                          attr:'Gary Player'},
+  {jp:'We are what we repeatedly do. Excellence is not an act, but a habit.', en:'',                                                                        attr:'Aristotle'},
+  {jp:'Hard work beats talent when talent fails to work hard.',              en:'',                                                                          attr:'Kevin Durant'},
+  {jp:'Impossible is just a word thrown around by small men who find it easier to live in the world they\'ve been given.', en:'',                           attr:'Muhammad Ali'},
 ];
 
 const EMOJI_OPTIONS = ['♟','💻','📚','✍','🎯','💪','🧘','🎵','🌍','🔬','🎨','🤝','🗣','⚡','🏃','🎸','📊','🧠','🌱','🔧','📸','🎮','💡','🎭','📝','🔭','🚀','⚽','🏊','🥋'];
@@ -967,7 +1004,25 @@ async function bootFromCloud(){
         ls.set('sq_skill_data', merged);
       }
       if(d.goals)       ls.set('sq_goals',       d.goals);
-      if(d.habits)      ls.set('sq_habits',      d.habits);
+      if(d.habits){
+        // Merge habit histories: union of cloud + local so a mark made just before refresh survives
+        const localH = ls.get('sq_habits', '[]');
+        if(Array.isArray(localH) && localH.length > 0 && Array.isArray(d.habits) && d.habits.length > 0){
+          const merged = d.habits.map(ch => {
+            const lh = localH.find(lx => lx.id === ch.id);
+            if(lh && Array.isArray(lh.history) && lh.history.length > 0){
+              const union = [...new Set([...(ch.history||[]), ...lh.history])].sort();
+              return {...ch, history: union};
+            }
+            return ch;
+          });
+          // Keep any local habits not yet synced to cloud
+          localH.forEach(lh => { if(!merged.find(mh => mh.id === lh.id)) merged.push(lh); });
+          ls.set('sq_habits', merged);
+        } else {
+          ls.set('sq_habits', d.habits);
+        }
+      }
       if(d.conclusions) ls.set('sq_conclusions', d.conclusions);
     } else {
       // Cloud is empty — push whatever is in localStorage up (migration from old sync system)
@@ -1592,10 +1647,15 @@ function toggleHabit(id){
   const habits=getHabits();
   const h=habits.find(x=>x.id===id); if(!h) return;
   const k=todayKey();
-  if(h.history.includes(k)) h.history=h.history.filter(d=>d!==k);
-  else h.history.push(k);
+  const isChecking=!h.history.includes(k);
+  if(isChecking) h.history.push(k);
+  else h.history=h.history.filter(d=>d!==k);
   saveHabits(habits);
   renderHabits();
+  if(isChecking){
+    const btn=document.querySelector(`.habit-card[data-hid="${id}"] .habit-check`);
+    if(btn){ btn.classList.add('just-checked'); btn.addEventListener('animationend',()=>btn.classList.remove('just-checked'),{once:true}); }
+  }
   pushSync();
 }
 
@@ -1634,7 +1694,7 @@ function renderHabits(){
       const lbl=DAY_LBL[new Date(k+'T12:00:00').getDay()];
       return `<div class="habit-dot-col${isToday?' today':''}"><div class="habit-dot${hit?' hit':''}${isToday?' today-dot':''}"></div><div class="habit-day-lbl">${lbl}</div></div>`;
     }).join('');
-    html+=`<div class="habit-card${doneToday?' done-today':''}">
+    html+=`<div class="habit-card${doneToday?' done-today':''}" data-hid="${h.id}">
       <div class="habit-left">
         <div class="habit-name-row">
           <span class="habit-emoji">${h.emoji}</span>
