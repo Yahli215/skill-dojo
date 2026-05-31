@@ -996,6 +996,10 @@ function boot(){
   setInterval(()=>{ const d=getGCal(); if(!d?.token)return; if(window.google?.accounts) doGCalAuth(false); }, 45*60*1000);
   // Auto-push to cloud every 60s
   setInterval(pushCloud, 60000);
+  // Re-sync from cloud when app comes back to foreground (fixes stale data on phone)
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState==='visible' && getGUser()) bootFromCloud();
+  });
 }
 
 /* ── RENDER ─────────────────────────────────────────── */
