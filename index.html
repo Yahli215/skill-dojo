@@ -1065,22 +1065,29 @@ async function refreshFromCloud(){
 async function manualSync(){
   const btn = document.getElementById('sync-btn');
   if(btn){ btn.textContent = '…'; btn.disabled = true; }
-  // First push local data so nothing is lost
-  await pushCloud();
-  // Then pull fresh data from cloud
-  const result = await refreshFromCloud();
+  // Push local data first, then pull
+  const push = await pushCloud();
+  const pull = await refreshFromCloud();
   if(btn){ btn.textContent = '⟳ sync'; btn.disabled = false; }
-  if(!result.ok){
-    toast('Sync failed: ' + result.error);
-  } else if(result.empty){
-    toast('Sync OK — no cloud data found');
-  } else {
-    const d = new Date(result.updated);
-    const timeStr = isNaN(d) ? result.updated : d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+
+  // Build push line
+  let pushLine;
+  if(!push){ pushLine = 'Push: skipped (no push result)'; }
+  else if(!push.ok){ pushLine = `Push: ✗ ${push.reason}`; }
+  else { pushLine = `Push: ✓ ${push.sessCount} sessions`; }
+
+  // Build pull line
+  let pullLine;
+  if(!pull || !pull.ok){ pullLine = `Pull: ✗ ${pull?.error||'unknown'}`; }
+  else if(pull.empty){ pullLine = 'Pull: cloud empty'; }
+  else {
+    const d = new Date(pull.updated);
+    const timeStr = isNaN(d) ? pull.updated : d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
     const todayM = todayMins();
     const h = Math.floor(todayM/60), m = todayM%60;
-    toast(`Synced ✓  Today: ${h}h ${m}m · ${result.sessCount} sessions total · cloud updated ${timeStr}`);
+    pullLine = `Pull: ✓ ${pull.sessCount} sess · today ${h}h ${m}m · cloud @ ${timeStr}`;
   }
+  toast(`${pushLine}<br>${pullLine}`, 7000);
 }
 
 /* ── RENDER ─────────────────────────────────────────── */
@@ -2131,10 +2138,11 @@ function getSyncCode(){
 }
 
 async function pushCloud(){
-  const userId = getGUser(); if(!userId) return;
+  const userId = getGUser(); if(!userId) return { ok: false, reason: 'not logged in' };
+  const sess = getSess();
   const data = {
     skillDefs: getDefs(), skillData: getData(),
-    sessions:  getSess(), habits: getHabits(),
+    sessions: sess, habits: getHabits(),
     conclusions: getConclusions(),
   };
   try {
@@ -2146,8 +2154,13 @@ async function pushCloud(){
     if(!res.ok){
       const err = await res.text();
       console.warn('Cloud push error:', res.status, err);
+      return { ok: false, reason: res.status + ' ' + err.slice(0,80) };
     }
-  } catch(e){ console.warn('Cloud push failed:', e); }
+    return { ok: true, sessCount: sess.length };
+  } catch(e){
+    console.warn('Cloud push failed:', e);
+    return { ok: false, reason: String(e) };
+  }
 }
 
 function signOut(){
