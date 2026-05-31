@@ -2146,10 +2146,10 @@ async function pushCloud(){
     conclusions: getConclusions(),
   };
   try {
-    const res = await fetch(`${SB_URL}/rest/v1/skillquest`, {
+    const res = await fetch(`${SB_URL}/rest/v1/skillquest?on_conflict=google_user_id`, {
       method: 'POST',
       headers: { ...sbH(), 'Prefer': 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify({ google_user_id: userId, sync_code: getSyncCode(), data, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ google_user_id: userId, data, updated_at: new Date().toISOString() }),
     });
     if(!res.ok){
       const err = await res.text();
