@@ -522,10 +522,13 @@ body.light .page-watermark { opacity: .2; }
 .habit-card:hover .habit-del{opacity:.45;}
 .habit-del:hover{opacity:1 !important;color:var(--verm);}
 .habit-meta{display:flex;align-items:center;gap:10px;}
-.habit-dots{display:flex;gap:3px;align-items:center;}
-.habit-dot{width:9px;height:9px;border-radius:2px;background:var(--b2);transition:background .2s;}
+.habit-dots{display:flex;gap:4px;align-items:flex-start;}
+.habit-dot-col{display:flex;flex-direction:column;align-items:center;gap:3px;}
+.habit-dot{width:9px;height:9px;border-radius:2px;background:var(--b2);transition:background .2s;flex-shrink:0;}
 .habit-dot.hit{background:var(--green2);}
 .habit-dot.today-dot{box-shadow:0 0 0 1.5px var(--gold2);}
+.habit-day-lbl{font-size:7px;color:var(--muted);letter-spacing:.02em;line-height:1;text-transform:uppercase;}
+.habit-dot-col.today .habit-day-lbl{color:var(--gold2);}
 .habit-streak{font-size:10px;color:var(--t3);letter-spacing:.05em;white-space:nowrap;}
 .habit-streak b{color:var(--gold2);font-size:11px;}
 .habit-check{width:46px;height:46px;border-radius:50%;border:2px solid var(--b2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;transition:all .22s cubic-bezier(.34,1.56,.64,1);color:transparent;-webkit-tap-highlight-color:transparent;}
@@ -1617,7 +1620,12 @@ function renderHabits(){
     const doneToday=h.history.includes(today);
     const streak=habitStreakCount(h);
     const last7=habitLast7(h);
-    const dots=last7.map((k,i)=>`<div class="habit-dot${h.history.includes(k)?' hit':''}${i===6?' today-dot':''}"></div>`).join('');
+    const DAY_LBL=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const dots=last7.map((k,i)=>{
+      const hit=h.history.includes(k),isToday=i===6;
+      const lbl=DAY_LBL[new Date(k+'T12:00:00').getDay()];
+      return `<div class="habit-dot-col${isToday?' today':''}"><div class="habit-dot${hit?' hit':''}${isToday?' today-dot':''}"></div><div class="habit-day-lbl">${lbl}</div></div>`;
+    }).join('');
     html+=`<div class="habit-card${doneToday?' done-today':''}">
       <div class="habit-left">
         <div class="habit-name-row">
