@@ -918,7 +918,7 @@ async function bootFromCloud(){
   const userId = getGUser();
   if(!userId){ show('screen-login'); return; }
   try {
-    const res = await fetch(`${SB_URL}/rest/v1/skillquest?google_user_id=eq.${encodeURIComponent(userId)}&select=data`, { headers: sbH() });
+    const res = await fetch(`${SB_URL}/rest/v1/skillquest?google_user_id=eq.${encodeURIComponent(userId)}&select=data`, { headers: sbH(), cache: 'no-store' });
     const rows = await res.json();
     if(rows.length && rows[0].data){
       // Cloud has data — load it (cloud is source of truth)
@@ -998,8 +998,62 @@ function boot(){
   setInterval(pushCloud, 60000);
   // Re-sync from cloud when app comes back to foreground (fixes stale data on phone)
   document.addEventListener('visibilitychange', ()=>{
-    if(document.visibilityState==='visible' && getGUser()) bootFromCloud();
+    if(document.visibilityState==='visible' && getGUser()) refreshFromCloud();
   });
+}
+
+// Lightweight foreground refresh — same merge logic as bootFromCloud but only re-renders, no new intervals
+async function refreshFromCloud(){
+  const userId = getGUser();
+  if(!userId) return;
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/skillquest?google_user_id=eq.${encodeURIComponent(userId)}&select=data`, { headers: sbH(), cache: 'no-store' });
+    const rows = await res.json();
+    if(rows.length && rows[0].data){
+      const d = rows[0].data;
+      if(d.skillDefs && d.skillDefs.length) ls.set('sq_skill_defs', d.skillDefs);
+      if(d.sessions){
+        const local = ls.get('sq_sessions','[]');
+        const cloudIds = new Set(d.sessions.map(s=>s.id));
+        const extra = local.filter(s=>!cloudIds.has(s.id));
+        ls.set('sq_sessions', extra.length ? [...d.sessions,...extra] : d.sessions);
+      }
+      if(d.skillData){
+        const localData = ls.get('sq_skill_data','{}');
+        const merged = {...d.skillData};
+        Object.keys(localData).forEach(id=>{
+          if(!merged[id] || (localData[id].totalMins||0) > (merged[id].totalMins||0)) merged[id]=localData[id];
+        });
+        ls.set('sq_skill_data', merged);
+      }
+      if(d.habits){
+        const localH = ls.get('sq_habits', '[]');
+        if(Array.isArray(localH) && localH.length > 0 && Array.isArray(d.habits) && d.habits.length > 0){
+          const merged = d.habits.map(ch => {
+            const lh = localH.find(lx => lx.id === ch.id);
+            if(lh && Array.isArray(lh.history) && lh.history.length > 0){
+              const union = [...new Set([...(ch.history||[]), ...lh.history])].sort();
+              return {...ch, history: union};
+            }
+            return ch;
+          });
+          localH.forEach(lh => { if(!merged.find(mh => mh.id === lh.id)) merged.push(lh); });
+          ls.set('sq_habits', merged);
+        } else {
+          ls.set('sq_habits', d.habits);
+        }
+      }
+      if(d.conclusions) ls.set('sq_conclusions', d.conclusions);
+      // Reload the in-memory skill array and re-render without touching intervals
+      const defs = getDefs(), data = getData();
+      skills = defs.map(d => ({...d, keywords:d.keywords||[], dailyGoalMins:d.dailyGoalMins||0,
+        totalMins: data[d.id]?.totalMins||0, rank: data[d.id]?.rank||'Novice'}));
+      sessions = getSess();
+      renderApp();
+    }
+  } catch(e){
+    console.warn('Foreground refresh failed:', e);
+  }
 }
 
 /* ── RENDER ─────────────────────────────────────────── */
