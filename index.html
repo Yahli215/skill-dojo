@@ -383,39 +383,6 @@ body.light .login-card { background:rgba(245,240,232,.97); }
 body.light .page-watermark { opacity: .2; }
 
 
-/* ── GOALS ──────────────────────────────────────────── */
-.goals-month-tabs { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:16px; }
-.gm-tab { padding:5px 14px; font-size:9px; letter-spacing:2px; border:1px solid var(--b1); background:none; color:var(--muted); cursor:pointer; font-family:var(--mono); transition:all .2s; }
-.gm-tab:hover { border-color:var(--gold); color:var(--gold); }
-.gm-tab.on { border-color:var(--gold); color:var(--gold); background:rgba(200,144,10,.05); }
-.gm-tab.new-tab { border-style:dashed; }
-.goals-summary { background:var(--s1); border:1px solid var(--b1); padding:12px 16px; margin-bottom:16px; display:flex; gap:0; }
-.gs-item { flex:1; text-align:center; padding:0 8px; border-right:1px solid var(--b1); }
-.gs-item:last-child { border-right:none; }
-.gs-num { font-family:var(--serif); font-size:22px; font-weight:900; color:var(--gold); display:block; line-height:1; }
-.gs-lbl { font-size:8px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; margin-top:3px; display:block; }
-.goal-list { display:flex; flex-direction:column; margin-bottom:12px; }
-.goal-item { padding:14px 0; border-bottom:1px solid var(--b1); display:flex; align-items:flex-start; gap:14px; }
-.goal-item:first-child { border-top:1px solid var(--b1); }
-.goal-check { width:18px; height:18px; border:1px solid var(--b2); flex-shrink:0; margin-top:2px; display:flex; align-items:center; justify-content:center; font-size:10px; cursor:pointer; transition:all .2s; }
-.goal-check:hover { border-color:var(--green2); }
-.goal-check.done { border-color:var(--green); color:var(--green); cursor:default; }
-.goal-check.auto { border-color:var(--gold); color:var(--gold); cursor:default; }
-.goal-info { flex:1; min-width:0; }
-.goal-type { font-size:8px; letter-spacing:3px; color:var(--muted); text-transform:uppercase; margin-bottom:4px; font-family:var(--mono); }
-.goal-text { font-family:var(--serif); font-size:13px; font-weight:400; color:var(--text); margin-bottom:5px; line-height:1.6; }
-.goal-link { font-size:9px; color:var(--indigo); letter-spacing:1px; }
-.goal-link.gold { color:var(--gold); }
-.goal-prog { height:1px; background:var(--b1); margin-top:7px; margin-bottom:4px; }
-.goal-prog-fill { height:100%; background:var(--gold); transition:width .8s cubic-bezier(.34,1.56,.64,1); }
-.goal-note { font-size:9px; color:var(--muted); letter-spacing:.5px; }
-.goal-del { background:none; border:none; color:var(--muted); font-size:12px; cursor:pointer; flex-shrink:0; padding:2px 4px; opacity:0; transition:opacity .2s, color .2s; }
-.goal-item:hover .goal-del { opacity:1; }
-.goal-del:hover { color:var(--verm); }
-.add-goal-btn { width:100%; background:none; border:1px dashed var(--b2); padding:9px; color:var(--muted2); font-family:var(--mono); font-size:10px; cursor:pointer; margin-bottom:32px; transition:border-color .2s,color .2s; letter-spacing:1px; }
-.add-goal-btn:hover { border-color:var(--gold); color:var(--gold); }
-.goal-earn-glow { animation:goalEarn .6s ease-out; }
-@keyframes goalEarn { 0%{background:rgba(200,144,10,.15)} 100%{background:transparent} }
 
 /* ── RESPONSIVE ─────────────────────────────────────── */
 @media(min-width: 640px) {
@@ -720,18 +687,6 @@ body.light .page-watermark { opacity: .2; }
     </div>
 
     <!-- Skills -->
-    <!-- Goals -->
-    <div class="sec-hdr" style="margin-top:8px">
-      <div class="sec-lbl">Monthly Goals</div>
-      <div class="sec-kj">目的</div>
-      <div class="sec-line"></div>
-    </div>
-    <div class="goals-month-tabs" id="goals-month-tabs"></div>
-    <div class="goals-summary" id="goals-summary"></div>
-    <div class="goal-list" id="goal-list"></div>
-    <button class="add-goal-btn" onclick="openGoalCreate()">+ 新しい目的 — Add goal for this month</button>
-
-
     <div class="sec-hdr" style="margin-top:8px">
       <div class="sec-lbl">Skills</div>
       <div class="sec-kj">技術</div>
@@ -935,8 +890,7 @@ const SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 let skills=[], sessions=[], activeTimer=null, timerTick=null,
     selSkillId=null, currentTab='today', luQueue=[], gcalNotifsent={},
     dismissedEvs=new Set(), trackedEvIds=new Set(),
-    _tc=null, _gcExp=false,
-    _goalType='skill', _skillGoalKind='rank';
+    _tc=null, _gcExp=false;
 
 /* ── STORAGE ────────────────────────────────────────── */
 const ls = {
@@ -1003,7 +957,6 @@ async function bootFromCloud(){
         });
         ls.set('sq_skill_data', merged);
       }
-      if(d.goals)       ls.set('sq_goals',       d.goals);
       if(d.habits){
         // Merge habit histories: union of cloud + local so a mark made just before refresh survives
         const localH = ls.get('sq_habits', '[]');
@@ -1066,12 +1019,10 @@ function boot(){
 function renderApp(){
   try { renderPills(); }    catch(e){ console.error('renderPills:', e); }
   try { renderSkills(); }   catch(e){ console.error('renderSkills:', e); }
-  try { renderGoals(); }    catch(e){ console.error('renderGoals:', e); }
   try { renderSessions(); } catch(e){ console.error('renderSessions:', e); }
   try { renderDaily(); }    catch(e){ console.error('renderDaily:', e); }
   try { renderWeekBars(); } catch(e){ console.error('renderWeekBars:', e); }
   try { renderReport(); }   catch(e){ console.error('renderReport:', e); }
-  try { checkGoalAutoComplete(); } catch(e){ console.error('checkGoals:', e); }
   try { renderJourneyGrid(); }    catch(e){ console.error('renderJourneyGrid:', e); }
   try { renderHabits(); }         catch(e){ console.error('renderHabits:', e); }
 }
@@ -2002,7 +1953,7 @@ function weekMins(ago){ const now=new Date(),wS=new Date(now); wS.setDate(now.ge
 
 /* ── BACKUP ─────────────────────────────────────────── */
 function exportData(){
-  const data={version:1,exportedAt:new Date().toISOString(),skillDefs:getDefs(),skillData:getData(),sessions:getSess(),badges:getBadges(),goals:getGoals(),theme:localStorage.getItem('sq_theme')||'dark'};
+  const data={version:1,exportedAt:new Date().toISOString(),skillDefs:getDefs(),skillData:getData(),sessions:getSess(),theme:localStorage.getItem('sq_theme')||'dark'};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='dojo-backup-'+new Date().toISOString().split('T')[0]+'.json';a.click();URL.revokeObjectURL(url);toast('Backup downloaded.');
 }
@@ -2015,8 +1966,6 @@ function importData(input){
       if(!data.skillDefs||!data.sessions)throw new Error();
       if(!confirm('Restore backup from ' + (data.exportedAt?.split('T')[0]||'unknown') + '?\n\nThis replaces your current data.'))return;
       ls.set('sq_skill_defs',data.skillDefs);ls.set('sq_skill_data',data.skillData||{});ls.set('sq_sessions',data.sessions);
-      if(data.badges)ls.set('sq_badges',data.badges);
-      if(data.goals)ls.set('sq_goals',data.goals);
       if(data.theme)localStorage.setItem('sq_theme',data.theme);toast('Restored. Reloading…');setTimeout(()=>location.reload(),1000);
     }catch{toast('❌ Invalid backup file.');}
   };
@@ -2157,7 +2106,7 @@ async function pushCloud(){
   const userId = getGUser(); if(!userId) return;
   const data = {
     skillDefs: getDefs(), skillData: getData(),
-    sessions:  getSess(), goals: getGoals(), habits: getHabits(),
+    sessions:  getSess(), habits: getHabits(),
     conclusions: getConclusions(),
   };
   try {
@@ -2187,235 +2136,10 @@ function signOut(){
   show('screen-login');
   initGoogleAuth();
 }
-/* ── GOALS ──────────────────────────────────────────── */
-function getGoals(){ try { const g = ls.get('sq_goals','{}'); return (g && typeof g === 'object' && !Array.isArray(g)) ? g : {}; } catch(e){ return {}; } }
-function saveGoals(g){ ls.set('sq_goals', g); }
-
-// Returns "YYYY-MM" key for a date
-function monthKey(d){ return d.toISOString().slice(0,7); }
-// Display label e.g. "Apr 2026"
-function monthLabel(key){ const [y,m]=key.split('-'); return new Date(y,m-1,1).toLocaleDateString([],{month:'short',year:'numeric'}); }
-
-let _activeGoalMonth = monthKey(new Date());
-
-function getMonthGoals(mk){ const all=getGoals(); return all[mk]||[]; }
-function saveMonthGoals(mk, arr){ const all=getGoals(); all[mk]=arr; saveGoals(all); }
-
-/* Check auto-completion for skill/badge goals */
-function checkGoalAutoComplete(){
-  const mk = monthKey(new Date());
-  const goals = getMonthGoals(mk);
-  let changed = false;
-  goals.forEach(g => {
-    if(g.done) return;
-    if(g.type==='skill-rank'){
-      const sk = skills.find(s=>s.id===g.skillId);
-      if(!sk) return;
-      const rank = getRank(sk.totalMins);
-      const rankOrder = RANKS.map(r=>r.kanji);
-      if(rankOrder.indexOf(rank.kanji) >= rankOrder.indexOf(g.targetRank)){
-        g.done=true; g.doneAt=new Date().toISOString(); changed=true;
-        showGoalEarn(g);
-      }
-    } else if(g.type==='skill-hours'){
-      const monthMins = getSkillMonthMins(g.skillId, mk);
-      if(monthMins >= g.targetHours*60){
-        g.done=true; g.doneAt=new Date().toISOString(); changed=true;
-        showGoalEarn(g);
-      }
-    } else if(g.type==='badge'){
-      const badge = getBadges().find(b=>b.id===g.badgeId);
-      if(badge?.earnedAt){
-        g.done=true; g.doneAt=badge.earnedAt; changed=true;
-        showGoalEarn(g);
-      }
-    }
-  });
-  if(changed){ saveMonthGoals(mk, goals); renderGoals(); }
-}
-
-function getSkillMonthMins(skillId, mk){
-  return sessions
-    .filter(s => s.skillId===skillId && s.stop && s.stop.slice(0,7)===mk)
-    .reduce((a,s)=>a+(s.mins||0), 0);
-}
-
-function renderGoals(){
-  renderGoalTabs();
-  renderGoalList();
-}
-
-function renderGoalTabs(){
-  const el = document.getElementById('goals-month-tabs');
-  const all = getGoals();
-  // Collect all months that have goals + current month
-  const cur = monthKey(new Date());
-  const months = [...new Set([...Object.keys(all), cur])].sort();
-  el.innerHTML = months.map(mk =>
-    `<button class="gm-tab${mk===_activeGoalMonth?' on':''}" onclick="switchGoalMonth('${mk}')">${monthLabel(mk)}</button>`
-  ).join('') +
-  `<button class="gm-tab new-tab" onclick="newGoalMonth()">+ Month</button>`;
-}
-
-function switchGoalMonth(mk){ _activeGoalMonth=mk; renderGoals(); }
-
-function newGoalMonth(){
-  // Find next month after latest
-  const all = getGoals();
-  const months = Object.keys(all).sort();
-  const last = months.length ? months[months.length-1] : monthKey(new Date());
-  const [y,m] = last.split('-').map(Number);
-  const next = m===12 ? `${y+1}-01` : `${y}-${String(m+1).padStart(2,'0')}`;
-  if(!getGoals()[next]) saveMonthGoals(next, []);
-  _activeGoalMonth = next;
-  renderGoals();
-}
-
-function renderGoalList(){
-  const mk = _activeGoalMonth;
-  const goals = getMonthGoals(mk);
-  const sumEl = document.getElementById('goals-summary');
-  const listEl = document.getElementById('goal-list');
-  const done = goals.filter(g=>g.done).length;
-  const total = goals.length;
-  const rem = total - done;
-  sumEl.innerHTML = `
-    <div class="gs-item"><span class="gs-num">${done}</span><span class="gs-lbl">Done</span></div>
-    <div class="gs-item"><span class="gs-num">${rem}</span><span class="gs-lbl">Remaining</span></div>
-    <div class="gs-item"><span class="gs-num">${total}</span><span class="gs-lbl">Total</span></div>`;
-  if(!goals.length){
-    listEl.innerHTML=`<div style="color:var(--muted);font-size:10px;padding:16px 0;letter-spacing:1px">No goals for ${monthLabel(mk)} — add one below.</div>`;
-    return;
-  }
-  listEl.innerHTML='';
-  goals.forEach((g,i) => {
-    const row = document.createElement('div');
-    row.className = 'goal-item' + (g.done?' goal-earn-glow':'');
-    const checkClass = g.done ? (g.type==='custom'?'done':'auto') : '';
-    let typeLabel='', linkHtml='', progHtml='', noteHtml='';
-    if(g.type==='skill-rank'){
-      const sk=skills.find(s=>s.id===g.skillId);
-      typeLabel='Skill goal';
-      linkHtml=`<div class="goal-link${g.done?' gold':''}">${sk?.emoji||'?'} ${sk?.name||'Unknown'} · ${g.done?'Reached '+g.targetRank+' ✓':getRank(sk?.totalMins||0).kanji+' → '+g.targetRank}</div>`;
-    } else if(g.type==='skill-hours'){
-      const sk=skills.find(s=>s.id===g.skillId);
-      const mins=getSkillMonthMins(g.skillId,mk);
-      const hrs=(mins/60).toFixed(1);
-      const pct=Math.min(100,Math.round(mins/(g.targetHours*60)*100));
-      typeLabel='Skill goal';
-      if(!g.done){
-        progHtml=`<div class="goal-prog"><div class="goal-prog-fill" id="gpf-${i}" style="width:0%"></div></div>`;
-        noteHtml=`<div class="goal-note">${hrs}h logged · ${Math.max(0,(g.targetHours-hrs)).toFixed(1)}h to go</div>`;
-      }
-      linkHtml=`<div class="goal-link${g.done?' gold':''}">${sk?.emoji||'?'} ${sk?.name||'Unknown'}${g.done?' · Done ✓':''}</div>`;
-    } else if(g.type==='badge'){
-      const b=getBadges().find(x=>x.id===g.badgeId);
-      typeLabel='Badge goal';
-      linkHtml=`<div class="goal-link${g.done?' gold':''}">${b?.emoji||'🏅'} ${b?.name||'Unknown'}${g.done?' · Earned ✓':''}</div>`;
-    } else {
-      typeLabel='Custom goal';
-      noteHtml=g.done?`<div class="goal-note" style="color:var(--green)">✓ Completed</div>`:'';
-    }
-    row.innerHTML=`
-      <div class="goal-check ${checkClass}" onclick="${g.type==='custom'&&!g.done?`toggleCustomGoal('${mk}',${i})`:''}">${g.done?'✓':''}</div>
-      <div class="goal-info">
-        <div class="goal-type">${typeLabel}</div>
-        <div class="goal-text">${esc(g.text)}</div>
-        ${progHtml}${noteHtml}${linkHtml}
-      </div>
-      <button class="goal-del" onclick="deleteGoal('${mk}',${i})">✕</button>`;
-    listEl.appendChild(row);
-    if(g.type==='skill-hours'&&!g.done){
-      const mins=getSkillMonthMins(g.skillId,mk);
-      const pct=Math.min(100,Math.round(mins/(g.targetHours*60)*100));
-      setTimeout(()=>{ const f=document.getElementById('gpf-'+i); if(f)f.style.width=pct+'%'; },80);
-    }
-  });
-}
-
-function toggleCustomGoal(mk,i){
-  const goals=getMonthGoals(mk);
-  if(!goals[i]||goals[i].done) return;
-  goals[i].done=true; goals[i].doneAt=new Date().toISOString();
-  saveMonthGoals(mk,goals); renderGoals(); showGoalEarn(goals[i]); playBeep();
-  pushSync();
-}
-
-function deleteGoal(mk,i){
-  const goals=getMonthGoals(mk); goals.splice(i,1);
-  saveMonthGoals(mk,goals); renderGoals();
-}
-
-function showGoalEarn(g){
-  toast(`🎯 Goal complete — ${g.text}`);
-}
-
-/* Goal create form */
-
-function openGoalCreate(){
-  _goalType='skill'; _skillGoalKind='rank';
-  // Populate skill select
-  const sSel=document.getElementById('goal-skill-sel');
-  sSel.innerHTML=skills.map(s=>`<option value="${s.id}">${s.emoji} ${esc(s.name)}</option>`).join('');
-  // Populate badge select
-  const bSel=document.getElementById('goal-badge-sel');
-  const badges=getBadges().filter(b=>!b.earnedAt);
-  bSel.innerHTML=badges.length
-    ? badges.map(b=>`<option value="${b.id}">${b.emoji} ${esc(b.name)}</option>`).join('')
-    : '<option value="">No active badges</option>';
-  setGoalType('skill');
-  document.getElementById('goal-create-ov').style.display='flex';
-}
-function closeGoalCreate(){ document.getElementById('goal-create-ov').style.display='none'; }
-
-function setGoalType(t){
-  _goalType=t;
-  ['skill','badge','custom'].forEach(x=>{
-    document.getElementById('gtype-'+x).classList.toggle('on',x===t);
-    document.getElementById('goal-'+x+'-fields').style.display=x===t?'block':'none';
-  });
-}
-function setSkillGoalKind(k){
-  _skillGoalKind=k;
-  document.getElementById('gskill-rank-btn').classList.toggle('on',k==='rank');
-  document.getElementById('gskill-hrs-btn').classList.toggle('on',k==='hours');
-  document.getElementById('gskill-rank-row').style.display=k==='rank'?'block':'none';
-  document.getElementById('gskill-hrs-row').style.display=k==='hours'?'flex':'none';
-}
-
-function saveGoal(){
-  const mk=_activeGoalMonth;
-  let goal={done:false,doneAt:null};
-  if(_goalType==='skill'){
-    const skId=document.getElementById('goal-skill-sel').value;
-    const sk=skills.find(s=>s.id===skId);
-    if(!sk){toast('Pick a skill.');return;}
-    if(_skillGoalKind==='rank'){
-      const targetRank=document.getElementById('goal-rank-sel').value;
-      goal={...goal,type:'skill-rank',skillId:skId,targetRank,text:`Reach ${targetRank} in ${sk.name}`};
-    } else {
-      const hrs=parseFloat(document.getElementById('goal-hrs-inp').value)||20;
-      goal={...goal,type:'skill-hours',skillId:skId,targetHours:hrs,text:`Log ${hrs}h of ${sk.name} this month`};
-    }
-  } else if(_goalType==='badge'){
-    const bId=document.getElementById('goal-badge-sel').value;
-    const b=getBadges().find(x=>x.id===bId);
-    if(!b){toast('Pick a badge.');return;}
-    goal={...goal,type:'badge',badgeId:bId,text:`Earn the ${b.name} badge`};
-  } else {
-    const txt=document.getElementById('goal-custom-inp').value.trim();
-    if(!txt){toast('Describe your goal.');return;}
-    goal={...goal,type:'custom',text:txt};
-  }
-  const goals=getMonthGoals(mk); goals.push(goal);
-  saveMonthGoals(mk,goals); closeGoalCreate(); renderGoals(); pushSync();
-}
-
 
 /* ── BADGES (removed) ── */
 function getBadges(){ return []; }
 function saveBadges(){}
-
 function renderBadges(){}
 function calcBadgeStreak(){ return 0; }
 function badgeCheckin(){}
@@ -2428,62 +2152,11 @@ function saveBadge(){}
 function deleteBadgeFromForm(){}
 
 
+
 </script>
 
 
 
-<!-- Goal create overlay -->
-<div id="goal-create-ov" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:900;align-items:center;justify-content:center;padding:24px;">
-  <div style="background:var(--s1);border:1px solid var(--b2);padding:28px 24px;width:100%;max-width:400px;position:relative;">
-    <div style="font-family:var(--serif);font-size:16px;font-weight:900;margin-bottom:18px;">新しい目的 — New Goal</div>
-    <div style="margin-bottom:14px">
-      <div style="font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Goal type</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="gm-tab on" id="gtype-skill"    onclick="setGoalType('skill')">Skill</button>
-        <button class="gm-tab"    id="gtype-badge"    onclick="setGoalType('badge')">Badge</button>
-        <button class="gm-tab"    id="gtype-custom"   onclick="setGoalType('custom')">Custom</button>
-      </div>
-    </div>
-    <div id="goal-skill-fields">
-      <div style="margin-bottom:12px">
-        <div style="font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px">Skill</div>
-        <select class="inp" id="goal-skill-sel" style="cursor:pointer"></select>
-      </div>
-      <div style="margin-bottom:14px">
-        <div style="font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">What's the goal?</div>
-        <div style="display:flex;gap:6px;margin-bottom:8px">
-          <button class="gm-tab on" id="gskill-rank-btn" onclick="setSkillGoalKind('rank')">Reach a rank</button>
-          <button class="gm-tab"    id="gskill-hrs-btn"  onclick="setSkillGoalKind('hours')">Log N hours</button>
-        </div>
-        <div id="gskill-rank-row">
-          <select class="inp" id="goal-rank-sel" style="cursor:pointer">
-            <option value="初段">初段 Apprentice</option>
-            <option value="二段">二段 Skilled</option>
-            <option value="三段">三段 Expert</option>
-            <option value="四段">四段 Master</option>
-            <option value="皆伝">皆伝 Toji</option>
-          </select>
-        </div>
-        <div id="gskill-hrs-row" style="display:none;align-items:center;gap:8px">
-          <input class="inp" id="goal-hrs-inp" type="number" min="1" max="999" value="20" style="width:70px">
-          <span style="font-size:10px;color:var(--muted)">hours this month</span>
-        </div>
-      </div>
-    </div>
-    <div id="goal-badge-fields" style="display:none;margin-bottom:14px">
-      <div style="font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px">Badge</div>
-      <select class="inp" id="goal-badge-sel" style="cursor:pointer"></select>
-    </div>
-    <div id="goal-custom-fields" style="display:none;margin-bottom:14px">
-      <div style="font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px">Goal description</div>
-      <input class="inp" id="goal-custom-inp" placeholder="e.g. Read one book this month">
-    </div>
-    <div style="display:flex;gap:8px">
-      <button onclick="saveGoal()" style="flex:1;background:var(--verm);border:none;padding:11px;color:#fff;font-family:var(--serif);font-size:12px;font-weight:700;cursor:pointer;letter-spacing:2px;">Add Goal</button>
-      <button onclick="closeGoalCreate()" style="flex:1;background:none;border:1px solid var(--b2);padding:11px;color:var(--muted2);font-family:var(--mono);font-size:10px;cursor:pointer;">Cancel</button>
-    </div>
-  </div>
-</div>
 
 <script>
 init();
