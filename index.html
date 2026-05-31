@@ -562,6 +562,7 @@ body.light .page-watermark { opacity: .2; }
       <div class="hdr-right">
         <button class="sm-btn" id="theme-btn" onclick="toggleTheme()">☀ light</button>
         <button class="sm-btn" id="user-btn" onclick="signOut()" style="display:none">sign out</button>
+        <button class="sm-btn" id="sync-btn" onclick="manualSync()" style="display:none">⟳ sync</button>
         <button class="sm-btn" onclick="exportData()">↓ backup</button>
         <button class="sm-btn" onclick="document.getElementById('import-inp').click()">↑ restore</button>
         <input type="file" id="import-inp" accept=".json" style="display:none" onchange="importData(this)">
@@ -918,7 +919,7 @@ async function bootFromCloud(){
   const userId = getGUser();
   if(!userId){ show('screen-login'); return; }
   try {
-    const res = await fetch(`${SB_URL}/rest/v1/skillquest?google_user_id=eq.${encodeURIComponent(userId)}&select=data`, { headers: sbH(), cache: 'no-store' });
+    const res = await fetch(`${SB_URL}/rest/v1/skillquest?google_user_id=eq.${encodeURIComponent(userId)}&select=data,updated_at`, { headers: sbH(), cache: 'no-store' });
     const rows = await res.json();
     if(rows.length && rows[0].data){
       // Cloud has data — load it (cloud is source of truth)
@@ -989,6 +990,8 @@ function boot(){
   // Show user email in header
   const userBtn = document.getElementById('user-btn');
   if(userBtn){ userBtn.style.display='inline-block'; userBtn.textContent = ls.raw('sq_guser_name') || 'sign out'; }
+  const syncBtn = document.getElementById('sync-btn');
+  if(syncBtn) syncBtn.style.display='inline-block';
   show('app'); renderApp();
   timerTick = setInterval(tickTimer, 1000);
   initGCal();
@@ -1007,7 +1010,7 @@ async function refreshFromCloud(){
   const userId = getGUser();
   if(!userId) return;
   try {
-    const res = await fetch(`${SB_URL}/rest/v1/skillquest?google_user_id=eq.${encodeURIComponent(userId)}&select=data`, { headers: sbH(), cache: 'no-store' });
+    const res = await fetch(`${SB_URL}/rest/v1/skillquest?google_user_id=eq.${encodeURIComponent(userId)}&select=data,updated_at`, { headers: sbH(), cache: 'no-store' });
     const rows = await res.json();
     if(rows.length && rows[0].data){
       const d = rows[0].data;
@@ -1045,14 +1048,38 @@ async function refreshFromCloud(){
       }
       if(d.conclusions) ls.set('sq_conclusions', d.conclusions);
       // Reload the in-memory skill array and re-render without touching intervals
-      const defs = getDefs(), data = getData();
-      skills = defs.map(d => ({...d, keywords:d.keywords||[], dailyGoalMins:d.dailyGoalMins||0,
-        totalMins: data[d.id]?.totalMins||0, rank: data[d.id]?.rank||'Novice'}));
+      const defs2 = getDefs(), data2 = getData();
+      skills = defs2.map(def => ({...def, keywords:def.keywords||[], dailyGoalMins:def.dailyGoalMins||0,
+        totalMins: data2[def.id]?.totalMins||0, rank: data2[def.id]?.rank||'Novice'}));
       sessions = getSess();
       renderApp();
+      return { ok: true, sessCount: sessions.length, updated: rows[0].updated_at || '?' };
     }
+    return { ok: true, empty: true };
   } catch(e){
     console.warn('Foreground refresh failed:', e);
+    return { ok: false, error: String(e) };
+  }
+}
+
+async function manualSync(){
+  const btn = document.getElementById('sync-btn');
+  if(btn){ btn.textContent = '…'; btn.disabled = true; }
+  // First push local data so nothing is lost
+  await pushCloud();
+  // Then pull fresh data from cloud
+  const result = await refreshFromCloud();
+  if(btn){ btn.textContent = '⟳ sync'; btn.disabled = false; }
+  if(!result.ok){
+    toast('Sync failed: ' + result.error);
+  } else if(result.empty){
+    toast('Sync OK — no cloud data found');
+  } else {
+    const d = new Date(result.updated);
+    const timeStr = isNaN(d) ? result.updated : d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    const todayM = todayMins();
+    const h = Math.floor(todayM/60), m = todayM%60;
+    toast(`Synced ✓  Today: ${h}h ${m}m · ${result.sessCount} sessions total · cloud updated ${timeStr}`);
   }
 }
 
