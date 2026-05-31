@@ -346,8 +346,6 @@ body.light .login-card { background:rgba(245,240,232,.97); }
 .login-kanji { font-family:var(--serif); font-size:52px; font-weight:900; color:var(--gold); line-height:1; margin-bottom:6px; }
 .login-title { font-size:9px; letter-spacing:5px; color:var(--muted); text-transform:uppercase; margin-bottom:32px; }
 .login-quote { font-family:var(--serif); font-size:12px; color:var(--muted2); font-style:italic; line-height:1.8; margin-bottom:28px; padding:0 12px; }
-.google-btn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; background:none; border:1px solid var(--b2); padding:13px 20px; color:var(--text); font-family:var(--serif); font-size:13px; font-weight:700; cursor:pointer; letter-spacing:2px; transition:all .2s; margin-bottom:10px; }
-.google-btn:hover { border-color:var(--gold); color:var(--gold); }
 .login-sub { font-size:9px; color:var(--muted); letter-spacing:1px; line-height:1.8; }
 .login-loading { font-size:10px; color:var(--muted); letter-spacing:2px; margin-top:16px; display:none; }
 
@@ -522,13 +520,9 @@ body.light .page-watermark { opacity: .2; }
     <div class="login-kanji">道場</div>
     <div class="login-title">Skill Dojo</div>
     <div class="login-quote">"千里の道も一歩から。"<br><span style="font-size:10px;opacity:.6">A journey of a thousand ri begins with one step.</span></div>
-    <button class="google-btn" onclick="signInWithGoogle()">
-      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-      Sign in with Google
-    </button>
-    <div class="login-sub">Your progress is stored securely in the cloud.<br>Works on all your devices automatically.</div>
-    <div id="google-btn-target" style="margin-top:8px"></div>
+    <div id="google-btn-target" style="display:flex;justify-content:center;margin-bottom:16px;min-height:44px;"></div>
     <div class="login-loading" id="login-loading">Signing in…</div>
+    <div class="login-sub">Your progress is stored securely in the cloud.<br>Works on all your devices automatically.</div>
   </div>
 </div>
 
@@ -1918,45 +1912,21 @@ const sbH=()=>({'Content-Type':'application/json','apikey':SB_KEY,'Authorization
 const GOOGLE_CLIENT_ID = '1082921204169-qh4jv5kneshu3eaergf008l2fg7ntfk1.apps.googleusercontent.com';
 
 function initGoogleAuth(){
-  // Initialize GSI but NEVER auto-prompt — we handle all prompting manually
   if(!window.google?.accounts?.id) return;
   google.accounts.id.initialize({
     client_id: GOOGLE_CLIENT_ID,
     callback: handleGoogleCredential,
-    auto_select: false,  // never auto-prompt
+    auto_select: false,
     cancel_on_tap_outside: true,
   });
-  // Disable One Tap entirely — we use our own button only
   google.accounts.id.disableAutoSelect();
-}
-
-function signInWithGoogle(){
-  document.getElementById('login-loading').style.display = 'block';
-  if(!window.google?.accounts?.id){
-    // GSI not loaded yet, wait for it
-    const wait = setInterval(() => {
-      if(window.google?.accounts?.id){
-        clearInterval(wait);
-        initGoogleAuth();
-        _doGoogleSignIn();
-      }
-    }, 100);
-    setTimeout(() => { clearInterval(wait); toast('Google sign-in unavailable. Check your connection.'); document.getElementById('login-loading').style.display='none'; }, 8000);
-    return;
-  }
-  initGoogleAuth();
-  _doGoogleSignIn();
-}
-
-function _doGoogleSignIn(){
-  // Use renderButton which opens popup — most reliable cross-browser
+  // Render the real Google button — user taps it directly (works on mobile/desktop)
   const target = document.getElementById('google-btn-target');
-  target.innerHTML = '';
-  google.accounts.id.renderButton(target, {
-    theme: 'outline', size: 'large', text: 'signin_with', width: 280,
-  });
-  // Auto-click it
-  setTimeout(() => { const btn = target.querySelector('div[role=button]'); if(btn) btn.click(); }, 100);
+  if(target && !target.querySelector('iframe')){
+    google.accounts.id.renderButton(target, {
+      theme: 'outline', size: 'large', text: 'signin_with', width: 280,
+    });
+  }
 }
 
 function handleGoogleCredential(response){
