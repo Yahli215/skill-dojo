@@ -816,55 +816,44 @@ const RANKS = [
 const WATERMARKS = ['鍛','道','技','練','力','心','勝','気'];
 
 const QUOTES = [
-  /* ── Chess ── */
-  {jp:'Chess is life.',                                                      en:'',                                                                         attr:'Bobby Fischer'},
-  {jp:'Chess is mental torture.',                                            en:'',                                                                         attr:'Garry Kasparov'},
-  {jp:'You have to have the fighting spirit. Force moves and take chances.',  en:'',                                                                         attr:'Bobby Fischer'},
-  {jp:'I am not afraid of anyone. When I sit across the board I see a problem to solve.', en:'',                                                            attr:'Magnus Carlsen'},
-  {jp:'No great skill can be acquired without a great deal of practice.',    en:'',                                                                         attr:'Anatoly Karpov'},
-  {jp:'Chess mastery essentially consists of analysing positions accurately.',en:'',                                                                        attr:'Mikhail Botvinnik'},
-  {jp:'Play the opening like a book, the middlegame like a magician, the endgame like a machine.', en:'',                                                   attr:'Rudolph Spielmann'},
-  {jp:'To improve at chess you should in the first instance study the endgame.', en:'',                                                                     attr:'José Capablanca'},
-  {jp:'The blunders are all there on the board, waiting to be made.',        en:'',                                                                         attr:'Savielly Tartakower'},
-  {jp:'Chess, like love, like music, has the power to make men happy.',      en:'',                                                                         attr:'Siegbert Tarrasch'},
-  {jp:'In chess, as in life, opportunity strikes but once.',                 en:'',                                                                         attr:'David Bronstein'},
-  {jp:'The most important thing is to be able to choose which way to lose.', en:'',                                                                         attr:'Savielly Tartakower'},
-  {jp:'Every chess master was once a beginner.',                             en:'',                                                                         attr:'Irving Chernev'},
-  {jp:'Chess is the art of analysis.',                                       en:'',                                                                         attr:'Mikhail Botvinnik'},
-  {jp:'When you see a good move — look for a better one.',                   en:'',                                                                         attr:'Emanuel Lasker'},
-  {jp:'The tactician knows what to do when there is something to do; the strategist knows what to do when there is nothing to do.', en:'',                  attr:'Gerald Abrahams'},
-  /* ── Japanese / Eastern ── */
-  {jp:'継続は力なり。',                                                        en:'"Continuance is power."',                                                 attr:'日本の諺 · Japanese Proverb'},
-  {jp:'千里の道も一歩から。',                                                   en:'"A thousand-ri journey begins with one step."',                          attr:'老子 · Laozi'},
-  {jp:'一日一善、一日一強。',                                                   en:'"One good deed, one strength — every day."',                             attr:'武道訓 · Budo Proverb'},
-  {jp:'剣を磨くより、心を磨け。',                                               en:'"Polish the mind more than the sword."',                                 attr:'柳生宗矩 · Yagyu Munenori'},
-  {jp:'日々是好日。',                                                          en:'"Every day is a good day to train."',                                    attr:'雲門 · Yunmen'},
-  {jp:'不動心を持て。',                                                        en:'"Have an immovable mind."',                                              attr:'武道訓 · Budo Teaching'},
-  {jp:'水善利萬物而不爭。',                                                     en:'"Water benefits all things without striving."',                          attr:'老子 · Laozi'},
-  {jp:'知之者不如好之者。',                                                     en:'"Knowing is not as good as loving it."',                                 attr:'孔子 · Confucius'},
-  {jp:'吾日三省吾身。',                                                        en:'"I examine myself on three points every day."',                          attr:'孔子 · Confucius'},
+  /* ── Japanese Proverbs ── */
+  {jp:'継続は力なり。',              en:'"Continuance is power."',                                  attr:'日本の諺 · Japanese Proverb'},
+  {jp:'七転び八起き。',              en:'"Fall seven times, rise eight."',                          attr:'日本の諺 · Japanese Proverb'},
+  {jp:'初心忘るべからず。',           en:'"Never forget the beginner\'s mind."',                    attr:'世阿弥 · Zeami Motokiyo'},
+  {jp:'塵も積もれば山となる。',        en:'"Even dust, when piled up, becomes a mountain."',         attr:'日本の諺 · Japanese Proverb'},
+  {jp:'一日一善、一日一強。',         en:'"One good deed, one strength — every day."',              attr:'武道訓 · Budo Proverb'},
+  {jp:'習うより慣れろ。',             en:'"Become skilled through practice, not just study."',      attr:'日本の諺 · Japanese Proverb'},
+  {jp:'鉄は熱いうちに打て。',         en:'"Strike the iron while it is hot."',                      attr:'日本の諺 · Japanese Proverb'},
   /* ── Miyamoto Musashi ── */
-  {jp:'今日の自分に勝ることを思え。',                                           en:'"Think only of surpassing the self of yesterday."',                      attr:'宮本武蔵 · Miyamoto Musashi'},
-  {jp:'千日の稽古を鍛とし、万日の稽古を練とする。',                              en:'"1,000 days to forge; 10,000 days to refine."',                         attr:'宮本武蔵 · Miyamoto Musashi'},
-  {jp:'よく吟味せよ。',                                                        en:'"Examine deeply."',                                                      attr:'宮本武蔵 · Miyamoto Musashi'},
+  {jp:'今日の自分に勝ることを思え。',  en:'"Think only of surpassing the self of yesterday."',      attr:'宮本武蔵 · Miyamoto Musashi'},
+  {jp:'千日の稽古を鍛とし、万日の稽古を練とする。', en:'"1,000 days to forge; 10,000 days to refine."', attr:'宮本武蔵 · Miyamoto Musashi'},
+  {jp:'よく吟味せよ。',              en:'"Examine deeply."',                                        attr:'宮本武蔵 · Miyamoto Musashi'},
+  {jp:'何事も稽古と思え。',           en:'"Think of everything as training."',                      attr:'宮本武蔵 · Miyamoto Musashi'},
+  {jp:'我、事において後悔せず。',      en:'"I do not regret what I have done."',                     attr:'宮本武蔵 · Miyamoto Musashi'},
+  {jp:'己を知り、敵を知れば百戦危うからず。', en:'"Know yourself, and you need not fear the result of a hundred battles."', attr:'宮本武蔵 · Miyamoto Musashi'},
   /* ── Sun Tzu ── */
-  {jp:'勝者は戦う前に勝ち、敗者は戦い始めてから勝とうとする。',                    en:'"Victorious warriors win first, then go to war."',                       attr:'孫子 · Sun Tzu'},
-  {jp:'自己を知り敵を知れ — 百戦危うからず。',                                   en:'"Know yourself, know your enemy — a hundred battles, no defeat."',       attr:'孫子 · Sun Tzu'},
-  /* ── Anime / Manga ── */
-  {jp:'No cursed energy. Just work.',                                        en:'',                                                                         attr:'Toji Fushiguro'},
-  {jp:'Pain is the body logging work. Keep logging.',                        en:'',                                                                         attr:'Toji Fushiguro'},
-  {jp:'The gap between you and the top? Accumulated sessions.',              en:'',                                                                         attr:'Toji Fushiguro'},
-  {jp:'六時間。毎日。それが使命だ。',                                           en:'"Six hours. Every day. That is the mission."',                           attr:'Toji Fushiguro'},
-  {jp:'Hard work is absolute. Genius can be surpassed by it.',               en:'',                                                                         attr:'Rock Lee · Naruto'},
-  {jp:'If you don\'t like your destiny, don\'t accept it. Create a new one.', en:'',                                                                        attr:'Naruto Uzumaki'},
-  {jp:'Become so strong that no one can predict your next move.',            en:'',                                                                         attr:'Gojo Satoru'},
-  /* ── Athletes ── */
-  {jp:'Champions aren\'t made in gyms. They are made from something deep inside.', en:'',                                                                   attr:'Muhammad Ali'},
-  {jp:'I fear not the man who has practised 10,000 kicks once, but the man who has practised one kick 10,000 times.', en:'',                               attr:'Bruce Lee'},
-  {jp:'The more I practise, the luckier I get.',                            en:'',                                                                          attr:'Gary Player'},
-  {jp:'We are what we repeatedly do. Excellence is not an act, but a habit.', en:'',                                                                        attr:'Aristotle'},
-  {jp:'Hard work beats talent when talent fails to work hard.',              en:'',                                                                          attr:'Kevin Durant'},
-  {jp:'Impossible is just a word thrown around by small men who find it easier to live in the world they\'ve been given.', en:'',                           attr:'Muhammad Ali'},
+  {jp:'勝者は戦う前に勝ち、敗者は戦い始めてから勝とうとする。', en:'"Victorious warriors win first, then go to war."', attr:'孫子 · Sun Tzu'},
+  {jp:'自己を知り敵を知れ — 百戦危うからず。', en:'"Know yourself, know your enemy — a hundred battles, no defeat."', attr:'孫子 · Sun Tzu'},
+  {jp:'兵は拙速を聞くも、いまだ巧久を睹ざるなり。', en:'"Speed may be clumsy, but cleverness that takes too long defeats itself."', attr:'孫子 · Sun Tzu'},
+  /* ── Laozi / Confucius ── */
+  {jp:'千里の道も一歩から。',         en:'"A thousand-ri journey begins with one step."',           attr:'老子 · Laozi'},
+  {jp:'水善利萬物而不爭。',           en:'"Water benefits all things without striving."',           attr:'老子 · Laozi'},
+  {jp:'知之者不如好之者。',           en:'"Knowing is not as good as loving it."',                  attr:'孔子 · Confucius'},
+  {jp:'吾日三省吾身。',              en:'"I examine myself on three points every day."',            attr:'孔子 · Confucius'},
+  {jp:'学びて思わざれば則ち罔し。',   en:'"Learning without thought is labor lost."',               attr:'孔子 · Confucius'},
+  /* ── Zen ── */
+  {jp:'日々是好日。',                en:'"Every day is a good day."',                               attr:'雲門 · Yunmen'},
+  {jp:'只管打坐。',                  en:'"Just sit. Just train."',                                  attr:'道元 · Dogen'},
+  {jp:'而今山水は、古仏の道現成なり。', en:'"The mountains and rivers of this moment are the way of ancient buddhas made real."', attr:'道元 · Dogen'},
+  /* ── Budo / Yagyu ── */
+  {jp:'剣を磨くより、心を磨け。',     en:'"Polish the mind more than the sword."',                  attr:'柳生宗矩 · Yagyu Munenori'},
+  {jp:'不動心を持て。',              en:'"Have an immovable mind."',                                attr:'武道訓 · Budo Teaching'},
+  {jp:'勝負は積み重ねた稽古の数だ。', en:'"Victory is the number of practices accumulated."',       attr:'道場の教え · Dojo Teaching'},
+  /* ── Toji ── */
+  {jp:'No cursed energy. Just work.',           en:'',  attr:'Toji Fushiguro'},
+  {jp:'Pain is the body logging work. Keep logging.', en:'', attr:'Toji Fushiguro'},
+  {jp:'The gap between you and the top? Accumulated sessions.', en:'', attr:'Toji Fushiguro'},
+  {jp:'六時間。毎日。それが使命だ。', en:'"Six hours. Every day. That is the mission."',              attr:'Toji Fushiguro'},
 ];
 
 const EMOJI_OPTIONS = ['♟','💻','📚','✍','🎯','💪','🧘','🎵','🌍','🔬','🎨','🤝','🗣','⚡','🏃','🎸','📊','🧠','🌱','🔧','📸','🎮','💡','🎭','📝','🔭','🚀','⚽','🏊','🥋'];
