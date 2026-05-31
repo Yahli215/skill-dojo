@@ -286,10 +286,6 @@ body.light::before { opacity: .06; }
 .sk-today   { font-size: 9px; color: var(--muted); margin-top: 5px; }
 
 /* ── SESSIONS ───────────────────────────────────────── */
-.tabs { display: flex; gap: 4px; margin-bottom: 12px; }
-.tab  { padding: 5px 12px; font-size: 9px; font-family: var(--mono); cursor: pointer; border: 1px solid var(--b2); background: none; color: var(--muted2); transition: all .2s; letter-spacing: 1px; }
-.tab.on { background: var(--verm); border-color: var(--verm); color: #fff; }
-.sess-list { display: flex; flex-direction: column; gap: 3px; margin-bottom: 40px; }
 .sess-row {
   background: var(--s1); border: 1px solid var(--b1);
   padding: 10px 14px;
@@ -300,14 +296,6 @@ body.light::before { opacity: .06; }
 @keyframes fadeUp { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
 .sess-del { position: absolute; right: -7px; top: -7px; width: 22px; height: 22px; background: var(--verm); border: none; border-radius: 50%; color: #fff; font-size: 10px; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 5; }
 .sess-row:hover .sess-del { display: flex; }
-.sess-icon { font-size: 16px; flex-shrink: 0; width: 24px; text-align: center; }
-.sess-info { flex: 1; min-width: 0; }
-.sess-desc { font-size: 11px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sess-sk   { font-size: 9px; color: var(--muted2); margin-top: 2px; letter-spacing: 1px; font-family: var(--serif); }
-.sess-right{ text-align: right; flex-shrink: 0; font-size: 9px; color: var(--muted2); }
-.sess-dur  { font-family: var(--serif); font-size: 13px; font-weight: 700; color: var(--text); }
-.empty     { padding: 40px 20px; text-align: center; color: var(--muted); font-size: 11px; line-height: 2; }
-.empty-kj  { font-family: var(--serif); font-size: 36px; color: var(--b2); display: block; margin-bottom: 8px; }
 
 /* ── SKILL DETAIL SHEET ─────────────────────────────── */
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.8); z-index: 600; display: flex; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity .3s; }
@@ -724,18 +712,6 @@ body.light .page-watermark { opacity: .2; }
       </div>
     </div>
 
-    <!-- Sessions -->
-    <div class="sec-hdr">
-      <div class="sec-lbl">Sessions</div>
-      <div class="sec-kj">稽古</div>
-      <div class="sec-line"></div>
-    </div>
-    <div class="tabs">
-      <button class="tab on" onclick="switchTab('today',this)">今日 Today</button>
-      <button class="tab"    onclick="switchTab('week',this)">今週 Week</button>
-      <button class="tab"    onclick="switchTab('all',this)">全て All</button>
-    </div>
-    <div class="sess-list" id="sess-list"></div>
 
     </div><!-- /training-view -->
 
@@ -877,7 +853,7 @@ const SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 
 /* ── STATE ──────────────────────────────────────────── */
 let skills=[], sessions=[], activeTimer=null, timerTick=null,
-    selSkillId=null, currentTab='today', luQueue=[], gcalNotifsent={},
+    selSkillId=null, luQueue=[], gcalNotifsent={},
     dismissedEvs=new Set(), trackedEvIds=new Set(),
     _tc=null, _gcExp=false;
 
@@ -1008,7 +984,6 @@ function boot(){
 function renderApp(){
   try { renderPills(); }    catch(e){ console.error('renderPills:', e); }
   try { renderSkills(); }   catch(e){ console.error('renderSkills:', e); }
-  try { renderSessions(); } catch(e){ console.error('renderSessions:', e); }
   try { renderDaily(); }    catch(e){ console.error('renderDaily:', e); }
   try { renderWeekBars(); } catch(e){ console.error('renderWeekBars:', e); }
   try { renderReport(); }   catch(e){ console.error('renderReport:', e); }
@@ -1057,29 +1032,6 @@ function getTodaySkillSub(sk){
   return `<div class="sk-today" style="color:${c}">Today ${today}/${sk.dailyGoalMins}m</div>`;
 }
 
-function renderSessions(){
-  const el = document.getElementById('sess-list');
-  const now = new Date(), tod = new Date(now), wk = new Date(now);
-  tod.setHours(0,0,0,0); wk.setDate(now.getDate()-7);
-  let f = [...sessions].sort((a,b)=>b.endTime-a.endTime);
-  if(currentTab==='today') f = f.filter(s=>new Date(s.startTime)>=tod);
-  else if(currentTab==='week') f = f.filter(s=>new Date(s.startTime)>=wk);
-  f = f.slice(0,50);
-  if(!f.length){ el.innerHTML=`<div class="empty"><span class="empty-kj">無</span>稽古なし — No sessions yet.<br>Pick a skill and hit 開始.</div>`; return; }
-  el.innerHTML='';
-  f.forEach((s,i) => {
-    const sk = skills.find(x=>x.id===s.skillId), rank = sk?getRank(sk.totalMins):RANKS[0];
-    const row = document.createElement('div'); row.className='sess-row'; row.style.animationDelay=(i*15)+'ms';
-    row.innerHTML = `<button class="sess-del" onclick="event.stopPropagation();delSess('${s.id}')">✕</button>
-      <div class="sess-icon">${sk?.emoji||'?'}</div>
-      <div class="sess-info">
-        <div class="sess-desc">${esc(s.description||'(no description)')}</div>
-        <div class="sess-sk" style="color:${rank.color}">${sk?.name||'Unknown'} · ${rank.kanji}</div>
-      </div>
-      <div class="sess-right"><div class="sess-dur">${fmtDur(s.duration)}</div><div>${fmtTime(s.start)}</div></div>`;
-    el.appendChild(row);
-  });
-}
 
 function renderDaily(){
   const m = todayMins(), pct = Math.min(100, m/DAILY_GOAL*100);
@@ -1923,7 +1875,6 @@ function toggleTheme(){ const l=document.body.classList.toggle('light'); localSt
 function initTheme(){ if(localStorage.getItem('sq_theme')==='light'){document.body.classList.add('light');const b=document.getElementById('theme-btn');if(b)b.textContent='☾ dark';} }
 
 /* ── UI UTILS ───────────────────────────────────────── */
-function switchTab(tab,btn){ currentTab=tab; document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on')); btn.classList.add('on'); renderSessions(); }
 // signOut defined in cloud auth section
 function show(id){ document.getElementById(id).style.display='flex'; }
 function hide(id){ document.getElementById(id).style.display='none'; }
