@@ -431,8 +431,8 @@ body.light .page-watermark { opacity: .2; }
 }
 
 /* ── ROUND COMPLETE ─────────────────────────────────── */
-.round-overlay{position:fixed;inset:0;z-index:850;background:rgba(8,6,4,0);display:flex;align-items:center;justify-content:center;pointer-events:none;transition:background .4s;}
-.round-overlay.on{background:rgba(8,6,4,.97);pointer-events:all;}
+.round-overlay{position:fixed;inset:0;z-index:850;display:none;align-items:center;justify-content:center;}
+.round-overlay.on{display:flex;background:rgba(8,6,4,.97);}
 .round-flash{position:absolute;inset:0;opacity:0;pointer-events:none;}
 @keyframes doFlash{0%{opacity:.6;transform:scale(.5)}40%{opacity:.9;transform:scale(1.8)}100%{opacity:0;transform:scale(3)}}
 .round-flash.flash{animation:doFlash .9s ease-out forwards;}
@@ -682,7 +682,7 @@ body.light .page-watermark { opacity: .2; }
         </div>
         <div class="daily-grid">
           <div class="daily-left">
-            <div class="daily-label"><span>今日 Today</span><span id="daily-goal-label">Goal: 7 sessions</span></div>
+            <div class="daily-label"><span>今日 Today</span><span id="daily-goal-label">Goal: 6 sessions</span></div>
             <div class="sess-slots-row" id="sess-slots-daily"></div>
             <div class="daily-bar-bg"><div class="daily-bar-fill" id="daily-bar" style="width:0%"></div></div>
             <div class="daily-time" id="daily-time">0h 0m</div>
@@ -877,8 +877,8 @@ const QUOTES = [
 
 const EMOJI_OPTIONS = ['♟','💻','📚','✍','🎯','💪','🧘','🎵','🌍','🔬','🎨','🤝','🗣','⚡','🏃','🎸','📊','🧠','🌱','🔧','📸','🎮','💡','🎭','📝','🔭','🚀','⚽','🏊','🥋'];
 
-const DAILY_GOAL = 660; // 11 hours
-const SESSIONS_PER_DAY = 7;
+const DAILY_GOAL = 540; // 9 hours
+const SESSIONS_PER_DAY = 6;
 const KANJI_NUMS = ['一','二','三','四','五','六','七','八','九','十'];
 const ORDINALS = ['1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th'];
 const ROUND_QUOTES = [
