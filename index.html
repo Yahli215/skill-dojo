@@ -465,6 +465,10 @@ body.light .page-watermark { opacity: .2; }
 .habit-check.just-checked{animation:habit-pop .45s cubic-bezier(.34,1.56,.64,1) forwards,habit-ring .6s ease-out forwards;}
 .habit-add-btn{background:none;border:none;padding:11px;color:var(--b2);cursor:pointer;font-size:10px;letter-spacing:.12em;transition:color .2s;text-align:center;width:100%;border-top:1px dashed var(--b1);}
 .habit-add-btn:hover{color:var(--t3);}
+.habit-day-toggle{display:flex;gap:4px;margin-left:auto;}
+.hday-btn{background:none;border:1px solid var(--b1);color:var(--t3);padding:3px 10px;border-radius:20px;font-size:10px;letter-spacing:.06em;cursor:pointer;transition:all .15s;font-family:inherit;}
+.hday-btn.on{background:var(--gold2);border-color:var(--gold2);color:#000;font-weight:700;}
+.hday-btn:not(.on):hover{border-color:var(--t3);}
 /* Saturday Review */
 .sat-review-btn{display:none;margin-bottom:16px;background:linear-gradient(135deg,var(--s2),var(--s1));border:1px solid var(--gold2);color:var(--gold2);padding:9px 18px;border-radius:8px;cursor:pointer;font-size:11px;letter-spacing:.1em;font-family:inherit;}
 .sat-review-btn.visible{display:block;}
@@ -713,6 +717,10 @@ body.light .page-watermark { opacity: .2; }
       <div class="sec-lbl">Habits</div>
       <div class="sec-kj">習慣</div>
       <div class="sec-line"></div>
+      <div class="habit-day-toggle">
+        <button class="hday-btn on" id="hday-today"    onclick="switchHabitDay('today')">Today</button>
+        <button class="hday-btn"    id="hday-yest"     onclick="switchHabitDay('yesterday')">Yesterday</button>
+      </div>
     </div>
     <button class="sat-review-btn" id="sat-review-btn" onclick="showSaturdayReview()">⚖ 土曜日 SATURDAY REVIEW</button>
     <div class="habit-grid" id="habit-grid"></div>
@@ -1710,6 +1718,19 @@ function saveHabits(h){ ls.set('sq_habits',h); }
 
 function todayKey(){ return new Date().toISOString().slice(0,10); }
 
+let habitViewDay = 'today'; // 'today' | 'yesterday'
+function habitKey(){
+  const d = new Date();
+  if(habitViewDay === 'yesterday') d.setDate(d.getDate()-1);
+  return d.toISOString().slice(0,10);
+}
+function switchHabitDay(day){
+  habitViewDay = day;
+  document.getElementById('hday-today').classList.toggle('on', day==='today');
+  document.getElementById('hday-yest').classList.toggle('on',  day==='yesterday');
+  renderHabits();
+}
+
 function habitStreakCount(h){
   let streak=0;
   const today=new Date();
@@ -1731,7 +1752,7 @@ function habitLast7(h){
 function toggleHabit(id){
   const habits=getHabits();
   const h=habits.find(x=>x.id===id); if(!h) return;
-  const k=todayKey();
+  const k=habitKey();
   const isChecking=!h.history.includes(k);
   if(isChecking) h.history.push(k);
   else h.history=h.history.filter(d=>d!==k);
@@ -1764,7 +1785,7 @@ function deleteHabit(id){
 function renderHabits(){
   const el=document.getElementById('habit-grid'); if(!el) return;
   const habits=getHabits();
-  const today=todayKey();
+  const today=habitKey();
   const isSat=new Date().getDay()===6;
   const btn=document.getElementById('sat-review-btn');
   if(btn) btn.classList.toggle('visible', isSat && habits.length>0);
