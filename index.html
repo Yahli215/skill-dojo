@@ -2168,6 +2168,7 @@ async function pushCloud(){
     skillDefs: getDefs(), skillData: getData(),
     sessions: sess, habits: getHabits(),
     conclusions: getConclusions(),
+    activeTimer: activeTimer || null,
   };
   try {
     const res = await fetch(`${SB_URL}/rest/v1/skillquest?on_conflict=google_user_id`, {
