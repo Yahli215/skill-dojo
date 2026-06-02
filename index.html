@@ -171,6 +171,9 @@ body.light::before { opacity: .06; }
 .timer-bar.on { display: flex; }
 .timer-bar.break { border-color: rgba(200,144,10,.3); background: rgba(200,144,10,.05); }
 .timer-bar.break .t-time { color: var(--gold2); }
+.remote-timer-bar { border-color: rgba(91,200,212,.25); background: rgba(91,200,212,.04); }
+.remote-timer-bar .t-time { color: #5bc8d4; }
+.remote-timer-bar .t-desc { color: #5bc8d4; opacity: .7; font-size: 11px; }
 .t-icon  { font-size: 26px; flex-shrink: 0; }
 .t-info  { flex: 1; min-width: 0; }
 .t-skill { font-family: var(--serif); font-size: 15px; font-weight: 700; }
@@ -601,6 +604,17 @@ body.light .page-watermark { opacity: .2; }
       </div>
     </div>
 
+    <!-- Remote timer (running on another device) -->
+    <div class="timer-bar remote-timer-bar" id="remote-timer-bar">
+      <div class="t-icon" id="rt-icon">🖥️</div>
+      <div class="t-info">
+        <div class="t-skill" id="rt-skill">—</div>
+        <div class="t-desc"  id="rt-desc">Running on another device</div>
+        <div class="t-pomo"  id="rt-pomo"></div>
+        <div class="t-time"  id="rt-time">--:--</div>
+      </div>
+    </div>
+
     <!-- Session starter -->
     <div class="starter" id="quick-timer">
       <div class="starter-label">始める — Start a Session</div>
@@ -854,6 +868,7 @@ const SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 
 /* ── STATE ──────────────────────────────────────────── */
 let skills=[], sessions=[], activeTimer=null, timerTick=null,
+    remoteTimer=null, remoteTimerTick=null, remoteTimerPoll=null,
     selSkillId=null, luQueue=[], gcalNotifsent={},
     dismissedEvs=new Set(), trackedEvIds=new Set(),
     _tc=null, _gcExp=false;
@@ -1077,6 +1092,9 @@ async function refreshFromCloud(){
         totalMins: data2[def.id]?.totalMins||0, rank: data2[def.id]?.rank||'Novice'}));
       sessions = getSess();
       renderApp();
+      // Show remote timer if computer has one running and we don't have a local timer
+      if(d.activeTimer && !activeTimer) startRemoteTimer(d.activeTimer);
+      else if(!d.activeTimer){ remoteTimer=null; renderRemoteTimer(); }
       return { ok: true, sessCount: sessions.length, updated: rows[0].updated_at || '?' };
     }
     return { ok: true, empty: true };
@@ -1084,6 +1102,46 @@ async function refreshFromCloud(){
     console.warn('Foreground refresh failed:', e);
     return { ok: false, error: String(e) };
   }
+}
+
+function renderRemoteTimer(){
+  const bar = document.getElementById('remote-timer-bar');
+  if(!bar) return;
+  if(!remoteTimer || activeTimer){
+    bar.classList.remove('on');
+    if(remoteTimerTick){ clearInterval(remoteTimerTick); remoteTimerTick=null; }
+    return;
+  }
+  const sk = skills.find(s=>s.id===remoteTimer.skillId);
+  const isWork = (remoteTimer.phase||'work')==='work';
+  const phaseMins = isWork ? (remoteTimer.pw||90) : (remoteTimer.pb||10);
+  const elapsed = Math.floor((Date.now() - remoteTimer.phaseStart)/1000);
+  const remaining = Math.max(0, phaseMins*60 - elapsed);
+  const m = Math.floor(remaining/60), s = remaining%60;
+  document.getElementById('rt-icon').textContent = isWork ? (sk?.emoji||'⚡') : '☕';
+  document.getElementById('rt-skill').textContent = sk ? `${sk.emoji} ${sk.name}` : '⚡ Training';
+  document.getElementById('rt-desc').textContent  = `🖥 Running on computer`;
+  document.getElementById('rt-pomo').textContent  = `${isWork?'Work':'Break'}  ·  Round ${remoteTimer.round||1}`;
+  document.getElementById('rt-time').textContent  = remaining===0 ? 'Phase complete' : `${m}:${String(s).padStart(2,'0')}`;
+  bar.classList.toggle('break', !isWork);
+  bar.classList.add('on');
+  if(!remoteTimerTick) remoteTimerTick = setInterval(renderRemoteTimer, 1000);
+}
+
+function startRemoteTimer(timer){
+  remoteTimer = timer;
+  renderRemoteTimer();
+  // Poll cloud every 30s to catch phase changes or when timer stops
+  if(!remoteTimerPoll) remoteTimerPoll = setInterval(async ()=>{
+    if(!getGUser()) return;
+    try {
+      const res = await fetch(`${SB_URL}/rest/v1/skillquest?google_user_id=eq.${encodeURIComponent(getGUser())}&select=data`, { headers: sbH(), cache:'no-store' });
+      const rows = await res.json();
+      const t = rows[0]?.data?.activeTimer || null;
+      if(!t){ remoteTimer=null; clearInterval(remoteTimerPoll); remoteTimerPoll=null; renderRemoteTimer(); }
+      else { remoteTimer=t; }
+    } catch(e){}
+  }, 30000);
 }
 
 async function manualSync(){
