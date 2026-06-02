@@ -469,6 +469,25 @@ body.light .page-watermark { opacity: .2; }
 .hday-btn{background:none;border:1px solid var(--b1);color:var(--t3);padding:3px 10px;border-radius:20px;font-size:10px;letter-spacing:.06em;cursor:pointer;transition:all .15s;font-family:inherit;}
 .hday-btn.on{background:var(--gold2);border-color:var(--gold2);color:#000;font-weight:700;}
 .hday-btn:not(.on):hover{border-color:var(--t3);}
+/* Tasks */
+.task-input-row{display:flex;gap:8px;margin-bottom:14px;}
+.task-inp{flex:1;background:var(--b1);border:1px solid var(--b2);color:var(--text);border-radius:8px;padding:9px 13px;font-size:13px;font-family:inherit;transition:border-color .2s;}
+.task-inp:focus{outline:none;border-color:var(--gold2);}
+.task-add-btn{background:var(--gold2);color:#000;border:none;border-radius:8px;padding:9px 18px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.06em;white-space:nowrap;}
+.task-add-btn:hover{filter:brightness(1.1);}
+.task-list{border:1px solid var(--b1);border-radius:10px;overflow:hidden;margin-bottom:8px;}
+.task-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--b1);background:var(--s1);transition:background .15s;}
+.task-item:last-child{border-bottom:none;}
+.task-item:hover{background:var(--b1);}
+.task-cb{width:15px;height:15px;cursor:pointer;accent-color:var(--green);flex-shrink:0;}
+.task-text{flex:1;font-size:13px;color:var(--text);line-height:1.4;}
+.task-text.done{text-decoration:line-through;color:var(--muted);opacity:.6;}
+.task-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;opacity:0;padding:0 2px;transition:opacity .15s,color .15s;flex-shrink:0;}
+.task-item:hover .task-del{opacity:.5;}
+.task-del:hover{opacity:1!important;color:var(--verm);}
+.task-done-toggle{background:none;border:none;color:var(--t3);font-size:11px;cursor:pointer;padding:6px 0 4px;font-family:inherit;letter-spacing:.06em;display:block;}
+.task-done-toggle:hover{color:var(--text);}
+.task-empty{color:var(--muted);font-size:13px;font-style:italic;padding:18px 0;text-align:center;}
 /* Saturday Review */
 .sat-review-btn{display:none;margin-bottom:16px;background:linear-gradient(135deg,var(--s2),var(--s1));border:1px solid var(--gold2);color:var(--gold2);padding:9px 18px;border-radius:8px;cursor:pointer;font-size:11px;letter-spacing:.1em;font-family:inherit;}
 .sat-review-btn.visible{display:block;}
@@ -581,6 +600,7 @@ body.light .page-watermark { opacity: .2; }
     <!-- View Nav -->
     <div class="view-nav">
       <button class="view-nav-btn on" id="vnav-training" onclick="switchView('training')">稽古 Training</button>
+      <button class="view-nav-btn"    id="vnav-tasks"    onclick="switchView('tasks')">課題 Tasks</button>
       <button class="view-nav-btn"    id="vnav-insights" onclick="switchView('insights')">洞察 Insights</button>
     </div>
 
@@ -750,7 +770,23 @@ body.light .page-watermark { opacity: .2; }
         <button class="concl-add-btn" id="concl-add-btn" disabled onclick="addConclusion()">+ Add Insight</button>
       </div>
       <div class="concl-list" id="concl-list"></div>
-    </div>
+    </div><!-- /insights-view -->
+
+    <!-- Tasks view -->
+    <div id="tasks-view" style="display:none">
+      <div class="sec-hdr">
+        <div class="sec-lbl">Tasks</div>
+        <div class="sec-kj">課題</div>
+        <div class="sec-line"></div>
+      </div>
+      <div class="task-input-row">
+        <input class="task-inp" id="task-inp" placeholder="Add a task…" onkeydown="if(event.key==='Enter')addTask()">
+        <button class="task-add-btn" onclick="addTask()">+ 追加</button>
+      </div>
+      <div id="task-active-list"></div>
+      <button class="task-done-toggle" id="task-done-toggle" onclick="toggleDoneTasks()" style="display:none"></button>
+      <div id="task-done-list" style="display:none"></div>
+    </div><!-- /tasks-view -->
 
   </div>
 </div>
@@ -1004,6 +1040,17 @@ async function bootFromCloud(){
         }
       }
       if(d.conclusions) ls.set('sq_conclusions', d.conclusions);
+      if(d.tasks){
+        const localT = ls.get('sq_tasks','[]');
+        if(Array.isArray(localT) && localT.length > 0 && Array.isArray(d.tasks) && d.tasks.length > 0){
+          const cloudMap = Object.fromEntries(d.tasks.map(t=>[t.id,t]));
+          const allIds = new Set([...d.tasks.map(t=>t.id), ...localT.map(t=>t.id)]);
+          const merged = [...allIds].map(id => cloudMap[id] || localT.find(t=>t.id===id));
+          ls.set('sq_tasks', merged.filter(Boolean));
+        } else {
+          ls.set('sq_tasks', d.tasks);
+        }
+      }
       if(d.activeTimer && !activeTimer) { boot(); startRemoteTimer(d.activeTimer); return; }
     } else {
       // Cloud is empty — push whatever is in localStorage up (migration from old sync system)
@@ -1103,6 +1150,17 @@ async function refreshFromCloud(){
         }
       }
       if(d.conclusions) ls.set('sq_conclusions', d.conclusions);
+      if(d.tasks){
+        const localT = ls.get('sq_tasks','[]');
+        if(Array.isArray(localT) && localT.length > 0 && Array.isArray(d.tasks) && d.tasks.length > 0){
+          const cloudMap = Object.fromEntries(d.tasks.map(t=>[t.id,t]));
+          const allIds = new Set([...d.tasks.map(t=>t.id), ...localT.map(t=>t.id)]);
+          const merged = [...allIds].map(id => cloudMap[id] || localT.find(t=>t.id===id));
+          ls.set('sq_tasks', merged.filter(Boolean));
+        } else {
+          ls.set('sq_tasks', d.tasks);
+        }
+      }
       // Reload the in-memory skill array and re-render without touching intervals
       const defs2 = getDefs(), data2 = getData();
       skills = defs2.map(def => ({...def, keywords:def.keywords||[], dailyGoalMins:def.dailyGoalMins||0,
@@ -1724,6 +1782,80 @@ function getHabits(){
 }
 function saveHabits(h){ ls.set('sq_habits',h); }
 
+// ── Tasks ─────────────────────────────────────────────
+function getTasks(){ return ls.get('sq_tasks','[]'); }
+function saveTasks(t){ ls.set('sq_tasks', t); }
+
+let showDoneTasks = false;
+function toggleDoneTasks(){ showDoneTasks = !showDoneTasks; renderTasks(); }
+
+function addTask(){
+  const inp = document.getElementById('task-inp');
+  const text = inp.value.trim();
+  if(!text) return;
+  const all = getTasks();
+  all.unshift({ id: uid(), text, done: false, doneDate: null, createdAt: new Date().toISOString() });
+  saveTasks(all);
+  inp.value = '';
+  renderTasks();
+  pushSync();
+}
+
+function toggleTask(id){
+  const all = getTasks().map(t => t.id === id
+    ? {...t, done: !t.done, doneDate: !t.done ? new Date().toISOString() : null}
+    : t);
+  saveTasks(all);
+  renderTasks();
+  pushSync();
+}
+
+function deleteTask(id){
+  saveTasks(getTasks().filter(t => t.id !== id));
+  renderTasks();
+  pushSync();
+}
+
+function renderTasks(){
+  const activeEl = document.getElementById('task-active-list');
+  const doneEl   = document.getElementById('task-done-list');
+  const toggleBtn = document.getElementById('task-done-toggle');
+  if(!activeEl) return;
+
+  const all    = getTasks();
+  const active = all.filter(t => !t.done);
+  const done   = all.filter(t => t.done);
+
+  function taskRow(t){
+    return `<div class="task-item">
+      <input type="checkbox" class="task-cb" ${t.done ? 'checked' : ''} onchange="toggleTask('${t.id}')">
+      <span class="task-text ${t.done ? 'done' : ''}">${t.text.replace(/</g,'&lt;')}</span>
+      <button class="task-del" onclick="deleteTask('${t.id}')">✕</button>
+    </div>`;
+  }
+
+  if(active.length === 0){
+    activeEl.innerHTML = `<div class="task-empty">No active tasks — 全部完了！</div>`;
+  } else {
+    activeEl.innerHTML = `<div class="task-list">${active.map(taskRow).join('')}</div>`;
+  }
+
+  if(done.length > 0){
+    toggleBtn.style.display = '';
+    toggleBtn.textContent = showDoneTasks
+      ? `▾ Hide completed (${done.length})`
+      : `▸ Show completed (${done.length})`;
+    doneEl.style.display = showDoneTasks ? '' : 'none';
+    if(showDoneTasks){
+      doneEl.innerHTML = `<div class="task-list">${done.map(taskRow).join('')}</div>`;
+    }
+  } else {
+    toggleBtn.style.display = 'none';
+    doneEl.style.display = 'none';
+  }
+}
+// ── End Tasks ──────────────────────────────────────────
+
 function todayKey(){ return new Date().toISOString().slice(0,10); }
 
 let habitViewDay = 'today'; // 'today' | 'yesterday'
@@ -2190,12 +2322,12 @@ function getConclusions(){ try { return ls.get('sq_conclusions','[]'); } catch(e
 function saveConclusions(arr){ ls.set('sq_conclusions', arr); }
 
 function switchView(view){
-  const isTraining = view === 'training';
-  document.getElementById('training-view').style.display = isTraining ? '' : 'none';
-  document.getElementById('insights-view').style.display = isTraining ? 'none' : '';
-  document.getElementById('vnav-training').classList.toggle('on', isTraining);
-  document.getElementById('vnav-insights').classList.toggle('on', !isTraining);
-  if(!isTraining) renderConclusions();
+  ['training','tasks','insights'].forEach(v => {
+    document.getElementById(`${v}-view`).style.display = v === view ? '' : 'none';
+    document.getElementById(`vnav-${v}`).classList.toggle('on', v === view);
+  });
+  if(view === 'insights') renderConclusions();
+  if(view === 'tasks') renderTasks();
 }
 
 function addConclusion(){
@@ -2254,7 +2386,7 @@ async function pushCloud(){
   const sess = getSess();
   const data = {
     skillDefs: getDefs(), skillData: getData(),
-    sessions: sess, habits: getHabits(),
+    sessions: sess, habits: getHabits(), tasks: getTasks(),
     conclusions: getConclusions(),
     activeTimer: activeTimer || null,
   };
