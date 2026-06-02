@@ -988,6 +988,7 @@ async function bootFromCloud(){
         }
       }
       if(d.conclusions) ls.set('sq_conclusions', d.conclusions);
+      if(d.activeTimer && !activeTimer) { boot(); startRemoteTimer(d.activeTimer); return; }
     } else {
       // Cloud is empty — push whatever is in localStorage up (migration from old sync system)
       const localDefs = getDefs();
