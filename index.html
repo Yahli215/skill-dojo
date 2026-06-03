@@ -1912,26 +1912,41 @@ async function triageTasks(){
 
   const taskList = unclassified.map(t => `- id:"${t.id}" → "${t.text}"`).join('\n');
 
-  const prompt = `You are the personal triage agent for a dedicated chess player in intensive daily training.
+  const prompt = `You are the personal triage agent for Yahli, a dedicated chess player in intensive daily self-improvement training.
 
-USER PROFILE:
-- Daily training goal: 9+ hours of focused chess/fitness work
-- Skills trained: Opening repertoire, Tactics, Game analysis, Training games, Opening revision, Fitness
-- Work style: Deep focus sessions (~90 min), Pomodoro blocks. Each interruption costs ~20 min of focus recovery.
-- Values: Protecting flow state is the top priority. Interrupting a session is a last resort.
-- Context: Tasks appear during training. Decide: stop now, or handle later?
+WHO YAHLI IS:
+- Serious chess improver doing full-time intensive training — this is his main focus in life right now
+- Daily training goal: 9 hours of focused work (7 sessions of ~90 min each)
+- Skills he trains: 📖 Opening repertoire, 🎯 Tactics, 🔍 Game analysis, ♟ Training games, 🔄 Opening revision, 🏃 Fitness
+- Uses 90-minute Pomodoro work blocks with 15-minute breaks
+- One key personal struggle: letting 15-minute breaks drag on too long — he is actively working on this
+- Morning routine: fixed wake time, 20-min buffer before starting chess, head in bed by midnight
+- Tracks streaks and habits daily — consistency is core to his identity
 
-URGENCY FRAMEWORK:
-- "now": Must stop training immediately. Getting worse by the hour OR blocks all training today. Should be RARE. Examples: critical tool broken and needed right now, health issue, time-sensitive external deadline in hours.
-- "today": Real but not an emergency. Handle after the training session ends. Examples: admin task due today, someone waiting on a reply, bug that doesn't block current work.
-- "week": No real urgency. Plan it any day this week. Examples: improvements, research, low-stakes prep, chess study ideas.
+HOW HIS DAY WORKS:
+- He trains in deep focus blocks. Each interruption breaks flow and costs ~20 minutes of recovery.
+- Tasks he writes down are things that pop into his head DURING training.
+- His #1 question for each task: "Do I stop my session for this, or does it wait?"
+- He already knows everything on the list matters — the question is WHEN.
 
-Lean toward "today" and "week". Reserve "now" only for genuine emergencies that truly cannot wait a few hours.
+URGENCY FRAMEWORK — be decisive, not wishy-washy:
+- "now": Stop the session immediately. The problem is actively compounding, blocks ALL training today, or involves health/safety. Should be genuinely rare — maybe 1 in 10 tasks at most. Examples: the chess platform he's using is broken mid-game, a real health issue, a message from someone that will cause serious real-world consequences if not replied to in the next hour.
+- "today": Handle it at the end of today's training, not mid-session. It matters but won't get significantly worse in 3-4 hours. Examples: an admin thing due today, a reply someone is waiting on, a tool issue that's annoying but doesn't block current work, anything with a same-day soft deadline.
+- "week": No real time pressure. Schedule it for any day this week. Examples: ideas, improvements, chess prep that isn't today's focus, research, things that would be nice to do but won't hurt if delayed 3-5 days.
 
-Classify these tasks and respond with ONLY valid JSON — no explanation, no markdown, no code fences:
+KEY JUDGEMENT RULES:
+- Chess study tasks (opening prep, tactic ideas, game analysis plans) → almost always "week" unless they're blocking today's planned session
+- Fitness/health tasks → "today" if skipping would break his streak or routine, "week" if it's optional
+- Technical issues → "now" only if the tool is completely broken and needed RIGHT NOW, "today" if it's annoying but workable
+- Social/communication → "today" if someone is actively waiting, "week" if it can wait 24h+
+- App/website improvements (like Skill Dojo itself) → "week" almost always
+- Anything about his breaks running long → "now" (core habit he's building)
+- Vague or low-detail tasks → "week" by default
+
+Respond with ONLY valid JSON — no explanation, no markdown, no code fences:
 [{"id":"...","urgency":"now|today|week"}]
 
-Tasks:
+Tasks to classify:
 ${taskList}`;
 
   try {
