@@ -808,7 +808,7 @@ body.light .page-watermark { opacity: .2; }
         <span>🔴 Fix now</span>
         <span>🟡 Today</span>
         <span>🟢 This week</span>
-        <button class="triage-btn" id="triage-btn" onclick="triageTasks()">⚡ AI Triage</button>
+        <button class="triage-btn" id="triage-btn" onclick="triageTasks()" title="Hold 2s to reset API key">⚡ AI Triage</button>
       </div>
       <div class="task-input-row">
         <input class="task-inp" id="task-inp" placeholder="Add a task…" onkeydown="if(event.key==='Enter')addTask()">
@@ -856,17 +856,17 @@ body.light .page-watermark { opacity: .2; }
     <div class="gkey-title">⚡ AI Triage — one-time setup</div>
     <div class="gkey-sub">
       Paste your free Gemini API key below.<br>
-      Get one in ~60 seconds at
-      <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a>
-      → <strong>Create API key</strong>.<br>
-      No billing or credit card needed. Stored only on this device.
+      Get one at <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a>
+      → <strong>Create API key</strong> → <strong>Create API key in new project</strong>.<br>
+      ⚠️ Must be from <strong>AI Studio</strong>, not Google Cloud Console.<br>
+      No billing needed. Stored only on this device.
     </div>
     <input class="gkey-inp" id="gkey-inp" type="password" placeholder="AIza…"
       oninput="document.getElementById('gkey-save').disabled=!this.value.trim()"
       onkeydown="if(event.key==='Enter'&&this.value.trim())saveGeminiKey()">
     <div class="gkey-row">
       <button class="gkey-cancel" onclick="closeGkeyModal()">Cancel</button>
-      <button class="gkey-save" id="gkey-save" disabled onclick="saveGeminiKey()">Save & Triage</button>
+      <button class="gkey-save" id="gkey-save" disabled onclick="saveGeminiKey()">Save & Triage →</button>
     </div>
   </div>
 </div>
@@ -1927,6 +1927,13 @@ function renderTasks(){
   }
 }
 function closeGkeyModal(){ document.getElementById('gkey-overlay').classList.remove('on'); }
+function resetGeminiKey(){
+  ls.setRaw('sq_gemini_key','');
+  document.getElementById('gkey-inp').value = '';
+  document.getElementById('gkey-save').disabled = true;
+  document.getElementById('gkey-overlay').classList.add('on');
+  setTimeout(()=>document.getElementById('gkey-inp').focus(), 100);
+}
 function saveGeminiKey(){
   const key = document.getElementById('gkey-inp').value.trim();
   if(!key) return;
@@ -1997,36 +2004,55 @@ Respond with ONLY valid JSON — no explanation, no markdown, no code fences:
 Tasks to classify:
 ${taskList}`;
 
-  // Try models in order until one responds — different API keys have different access
-  const MODELS = [
-    'gemini-1.5-flash-latest',
-    'gemini-1.5-flash',
-    'gemini-1.5-flash-8b',
-    'gemini-pro',
-    'gemini-1.0-pro',
-  ];
-  const BASE = 'https://generativelanguage.googleapis.com/v1beta/models/';
-  const body = JSON.stringify({
+  const BASE = 'https://generativelanguage.googleapis.com/v1beta/';
+  const reqBody = JSON.stringify({
     contents: [{ parts: [{ text: prompt }] }],
     generationConfig: { temperature: 0.1, maxOutputTokens: 512 },
   });
 
-  let res = null;
-  for(const model of MODELS){
-    res = await fetch(`${BASE}${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
-      { method:'POST', headers:{'Content-Type':'application/json'}, body });
-    if(res.status !== 404) break; // found a working model
+  // Step 1: discover which models this key can actually use
+  let model = null;
+  try {
+    const listRes = await fetch(`${BASE}models?key=${encodeURIComponent(apiKey)}`);
+    if(listRes.status === 401 || listRes.status === 403){
+      ls.setRaw('sq_gemini_key','');
+      throw new Error('Invalid API key — cleared. Please enter it again.');
+    }
+    if(listRes.ok){
+      const listData = await listRes.json();
+      const available = (listData.models || []).map(m => m.name.replace('models/',''));
+      // Prefer flash models (fast + free), fall back to anything generative
+      const preferred = ['gemini-1.5-flash','gemini-1.5-flash-latest','gemini-1.5-flash-8b','gemini-1.0-pro','gemini-pro'];
+      model = preferred.find(m => available.includes(m))
+           || available.find(m => m.includes('flash'))
+           || available.find(m => m.includes('gemini'))
+           || null;
+    }
+  } catch(e) {
+    if(e.message.includes('Invalid API key')) throw e;
+    // network error on list — fall through to try hardcoded names
   }
+
+  // Step 2: if discovery failed, try hardcoded names as fallback
+  if(!model){
+    for(const m of ['gemini-1.5-flash','gemini-1.0-pro','gemini-pro']){
+      const probe = await fetch(`${BASE}models/${m}:generateContent?key=${encodeURIComponent(apiKey)}`,
+        { method:'POST', headers:{'Content-Type':'application/json'}, body: reqBody });
+      if(probe.status !== 404){ model = m; break; }
+    }
+  }
+
+  if(!model) throw new Error('No usable Gemini model found on this key.\n\nFix: go to aistudio.google.com → sign in → Get API key → Create API key in new project. Then tap ⚡ AI Triage and enter the new key.');
+
+  // Step 3: run the actual triage call
+  const res = await fetch(`${BASE}models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
+    { method:'POST', headers:{'Content-Type':'application/json'}, body: reqBody });
 
   try {
     if(!res.ok){
       const err = await res.text();
       if(res.status === 401 || res.status === 403){ ls.setRaw('sq_gemini_key',''); }
-      throw new Error(res.status === 401 || res.status === 403
-        ? 'Invalid API key — cleared, try again.'
-        : res.status === 404
-          ? 'No Gemini model available on this key. Make sure you created the key at aistudio.google.com.'
-          : `API error ${res.status}: ${err.slice(0,80)}`);
+      throw new Error(`API error ${res.status}: ${err.slice(0,100)}`);
     }
 
     const data = await res.json();
@@ -2053,7 +2079,15 @@ ${taskList}`;
     pushSync();
     toast(`⚡ Triaged ${updated} task${updated!==1?'s':''}`, 3500);
   } catch(e) {
-    toast(`Triage failed: ${e.message}`, 5000);
+    const msg = e.message || '';
+    if(msg.includes('No usable Gemini') || msg.includes('Invalid API key')){
+      // Key problem — open the modal so user can fix it immediately
+      ls.setRaw('sq_gemini_key','');
+      toast(msg.split('\n')[0], 4000);
+      setTimeout(resetGeminiKey, 600);
+    } else {
+      toast(`Triage failed: ${msg}`, 5000);
+    }
   } finally {
     btn.textContent = '⚡ AI Triage'; btn.disabled = false; btn.classList.remove('running');
   }
