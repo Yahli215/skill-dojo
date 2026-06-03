@@ -1104,8 +1104,11 @@ async function bootFromCloud(){
           ls.set('sq_tasks', d.tasks);
         }
       }
+      _cloudTimerCache = d.activeTimer || null;
+      _cloudSyncDone = true;
       if(d.activeTimer && !activeTimer) { boot(); startRemoteTimer(d.activeTimer); return; }
     } else {
+      _cloudSyncDone = true;
       // Cloud is empty — push whatever is in localStorage up (migration from old sync system)
       const localDefs = getDefs();
       if(localDefs.length){
@@ -1220,9 +1223,12 @@ async function refreshFromCloud(){
         totalMins: data2[def.id]?.totalMins||0, rank: data2[def.id]?.rank||'Novice'}));
       sessions = getSess();
       renderApp();
+      // Cache cloud timer so pushCloud can preserve it
+      _cloudTimerCache = d.activeTimer || null;
+      _cloudSyncDone = true;
       // Show remote timer if computer has one running and we don't have a local timer
       if(d.activeTimer && !activeTimer) startRemoteTimer(d.activeTimer);
-      else if(!d.activeTimer){ remoteTimer=null; renderRemoteTimer(); }
+      else if(!d.activeTimer && !activeTimer){ remoteTimer=null; renderRemoteTimer(); }
       return { ok: true, sessCount: sessions.length, updated: rows[0].updated_at || '?' };
     }
     return { ok: true, empty: true };
@@ -1266,6 +1272,7 @@ function startRemoteTimer(timer){
       const res = await fetch(`${SB_URL}/rest/v1/skillquest?google_user_id=eq.${encodeURIComponent(getGUser())}&select=data`, { headers: sbH(), cache:'no-store' });
       const rows = await res.json();
       const t = rows[0]?.data?.activeTimer || null;
+      _cloudTimerCache = t; // keep cache fresh
       if(!t){ remoteTimer=null; clearInterval(remoteTimerPoll); remoteTimerPoll=null; renderRemoteTimer(); }
       else { remoteTimer=t; }
     } catch(e){}
@@ -2653,19 +2660,27 @@ function getSyncCode(){
   return c;
 }
 
-let _timerOwner = false; // true on the device that started the current/last timer
+// Last activeTimer value seen from cloud. Used by non-owning devices to preserve it in their push.
+let _cloudTimerCache = null;
+// Whether this device has completed at least one bootFromCloud/refreshFromCloud.
+// Before the first sync we don't yet know what the cloud holds, so we skip writing activeTimer.
+let _cloudSyncDone = false;
+
 async function pushCloud(){
   const userId = getGUser(); if(!userId) return { ok: false, reason: 'not logged in' };
   const sess = getSess();
+  // Which timer value should this push write?
+  //   - Local timer running → write it (this device owns it)
+  //   - Local timer null, but we've synced before → write the last cloud timer we saw (preserve it)
+  //   - Never synced yet → omit activeTimer entirely (don't touch what's in cloud)
+  const timerToWrite = activeTimer
+    ?? (_cloudSyncDone ? _cloudTimerCache : undefined);
   const data = {
     skillDefs: getDefs(), skillData: getData(),
     sessions: sess, habits: getHabits(), tasks: getTasks(),
     conclusions: getConclusions(),
-    // Only write activeTimer if THIS device owns it (running or just stopped).
-    // Devices with no timer must NOT push null — that would wipe another device's running timer.
-    ...(_timerOwner || activeTimer ? { activeTimer: activeTimer || null } : {}),
+    ...(timerToWrite !== undefined ? { activeTimer: timerToWrite } : {}),
   };
-  if(!activeTimer) _timerOwner = false; // clear flag after pushing the stop
   try {
     const res = await fetch(`${SB_URL}/rest/v1/skillquest?on_conflict=google_user_id`, {
       method: 'POST',
