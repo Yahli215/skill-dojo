@@ -476,18 +476,26 @@ body.light .page-watermark { opacity: .2; }
 .task-add-btn{background:var(--gold2);color:#000;border:none;border-radius:8px;padding:9px 18px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.06em;white-space:nowrap;}
 .task-add-btn:hover{filter:brightness(1.1);}
 .task-list{border:1px solid var(--b1);border-radius:10px;overflow:hidden;margin-bottom:8px;}
-.task-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--b1);background:var(--s1);transition:background .15s;}
+.task-item{display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid var(--b1);background:var(--s1);transition:background .15s;border-left:3px solid transparent;}
 .task-item:last-child{border-bottom:none;}
 .task-item:hover{background:var(--b1);}
+.task-item[data-u="now"]{border-left-color:#e05c5c;}
+.task-item[data-u="today"]{border-left-color:#c8a95e;}
+.task-item[data-u="week"]{border-left-color:#50c878;}
 .task-cb{width:15px;height:15px;cursor:pointer;accent-color:var(--green);flex-shrink:0;}
 .task-text{flex:1;font-size:13px;color:var(--text);line-height:1.4;}
 .task-text.done{text-decoration:line-through;color:var(--muted);opacity:.6;}
+.task-urgency-btn{border:none;cursor:pointer;font-size:14px;background:none;padding:0;flex-shrink:0;opacity:.85;transition:opacity .15s,transform .1s;line-height:1;}
+.task-urgency-btn:hover{opacity:1;transform:scale(1.2);}
+.task-urgency-btn[data-u="null"]{opacity:.25;}
 .task-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;opacity:0;padding:0 2px;transition:opacity .15s,color .15s;flex-shrink:0;}
 .task-item:hover .task-del{opacity:.5;}
 .task-del:hover{opacity:1!important;color:var(--verm);}
 .task-done-toggle{background:none;border:none;color:var(--t3);font-size:11px;cursor:pointer;padding:6px 0 4px;font-family:inherit;letter-spacing:.06em;display:block;}
 .task-done-toggle:hover{color:var(--text);}
 .task-empty{color:var(--muted);font-size:13px;font-style:italic;padding:18px 0;text-align:center;}
+.task-urgency-legend{display:flex;gap:14px;margin-bottom:12px;font-size:10px;color:var(--t3);letter-spacing:.05em;}
+.task-urgency-legend span{display:flex;align-items:center;gap:4px;}
 /* Saturday Review */
 .sat-review-btn{display:none;margin-bottom:16px;background:linear-gradient(135deg,var(--s2),var(--s1));border:1px solid var(--gold2);color:var(--gold2);padding:9px 18px;border-radius:8px;cursor:pointer;font-size:11px;letter-spacing:.1em;font-family:inherit;}
 .sat-review-btn.visible{display:block;}
@@ -778,6 +786,12 @@ body.light .page-watermark { opacity: .2; }
         <div class="sec-lbl">Tasks</div>
         <div class="sec-kj">課題</div>
         <div class="sec-line"></div>
+      </div>
+      <div class="task-urgency-legend">
+        <span>🔴 Fix now</span>
+        <span>🟡 Today</span>
+        <span>🟢 This week</span>
+        <span style="margin-left:auto;font-style:italic">tap the dot to set urgency</span>
       </div>
       <div class="task-input-row">
         <input class="task-inp" id="task-inp" placeholder="Add a task…" onkeydown="if(event.key==='Enter')addTask()">
@@ -1787,6 +1801,10 @@ function saveHabits(h){ ls.set('sq_habits',h); }
 function getTasks(){ return ls.get('sq_tasks','[]'); }
 function saveTasks(t){ ls.set('sq_tasks', t); }
 
+const URGENCY_CYCLE = [null, 'now', 'today', 'week'];
+const URGENCY_ICON  = { now:'🔴', today:'🟡', week:'🟢', null:'⚪' };
+const URGENCY_ORDER = { now:0, today:1, week:2, null:3 };
+
 let showDoneTasks = false;
 function toggleDoneTasks(){ showDoneTasks = !showDoneTasks; renderTasks(); }
 
@@ -1795,7 +1813,7 @@ function addTask(){
   const text = inp.value.trim();
   if(!text) return;
   const all = getTasks();
-  all.unshift({ id: uid(), text, done: false, doneDate: null, createdAt: new Date().toISOString() });
+  all.unshift({ id: uid(), text, done: false, doneDate: null, urgency: null, createdAt: new Date().toISOString() });
   saveTasks(all);
   inp.value = '';
   renderTasks();
@@ -1811,6 +1829,17 @@ function toggleTask(id){
   pushSync();
 }
 
+function cycleUrgency(id){
+  const all = getTasks();
+  const task = all.find(t => t.id === id);
+  if(!task) return;
+  const cur = task.urgency || null;
+  const next = URGENCY_CYCLE[(URGENCY_CYCLE.indexOf(cur) + 1) % URGENCY_CYCLE.length];
+  saveTasks(all.map(t => t.id === id ? {...t, urgency: next} : t));
+  renderTasks();
+  pushSync();
+}
+
 function deleteTask(id){
   saveTasks(getTasks().filter(t => t.id !== id));
   renderTasks();
@@ -1818,17 +1847,21 @@ function deleteTask(id){
 }
 
 function renderTasks(){
-  const activeEl = document.getElementById('task-active-list');
-  const doneEl   = document.getElementById('task-done-list');
+  const activeEl  = document.getElementById('task-active-list');
+  const doneEl    = document.getElementById('task-done-list');
   const toggleBtn = document.getElementById('task-done-toggle');
   if(!activeEl) return;
 
   const all    = getTasks();
-  const active = all.filter(t => !t.done);
+  // Sort active tasks: now → today → week → unset
+  const active = all.filter(t => !t.done)
+    .sort((a,b) => URGENCY_ORDER[a.urgency||'null'] - URGENCY_ORDER[b.urgency||'null']);
   const done   = all.filter(t => t.done);
 
   function taskRow(t){
-    return `<div class="task-item">
+    const u = t.urgency || null;
+    return `<div class="task-item" data-u="${u}">
+      <button class="task-urgency-btn" data-u="${u}" onclick="cycleUrgency('${t.id}')" title="Tap to set urgency">${URGENCY_ICON[u]}</button>
       <input type="checkbox" class="task-cb" ${t.done ? 'checked' : ''} onchange="toggleTask('${t.id}')">
       <span class="task-text ${t.done ? 'done' : ''}">${t.text.replace(/</g,'&lt;')}</span>
       <button class="task-del" onclick="deleteTask('${t.id}')">✕</button>
