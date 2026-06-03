@@ -1899,12 +1899,12 @@ async function triageTasks(){
     toast('All tasks already have urgency set.', 3000); return;
   }
 
-  // Get or prompt for API key
-  let apiKey = ls.raw('sq_anthropic_key');
+  // Get or prompt for Gemini API key (free at aistudio.google.com)
+  let apiKey = ls.raw('sq_gemini_key');
   if(!apiKey){
-    apiKey = prompt('Enter your Anthropic API key (stored only on this device):');
+    apiKey = prompt('Paste your free Gemini API key\n(get one in 60s at aistudio.google.com → Get API key)\n\nStored only on this device:');
     if(!apiKey) return;
-    ls.setRaw('sq_anthropic_key', apiKey.trim());
+    ls.setRaw('sq_gemini_key', apiKey.trim());
     apiKey = apiKey.trim();
   }
 
@@ -1912,60 +1912,59 @@ async function triageTasks(){
 
   const taskList = unclassified.map(t => `- id:"${t.id}" → "${t.text}"`).join('\n');
 
-  const systemPrompt = `You are the personal triage agent for a dedicated chess player in intensive daily training.
+  const prompt = `You are the personal triage agent for a dedicated chess player in intensive daily training.
 
 USER PROFILE:
 - Daily training goal: 9+ hours of focused chess/fitness work
 - Skills trained: Opening repertoire, Tactics, Game analysis, Training games, Opening revision, Fitness
-- Work style: Deep focus sessions (~90 min), Pomodoro blocks. Each interruption costs ~20 min of recovery time.
+- Work style: Deep focus sessions (~90 min), Pomodoro blocks. Each interruption costs ~20 min of focus recovery.
 - Values: Protecting flow state is the top priority. Interrupting a session is a last resort.
-- Context: Tasks appear during training. They need to know: stop now, or handle later?
+- Context: Tasks appear during training. Decide: stop now, or handle later?
 
 URGENCY FRAMEWORK:
-- "now": Must stop training immediately. The problem is actively getting worse by the hour OR it blocks all training today. Rare. Examples: app/tool completely broken and needed right now, health issue, time-sensitive external deadline.
-- "today": Real but not an emergency. Handle after the training session ends. Examples: admin task due today, something a person is waiting on, a bug that doesn't block current work.
-- "week": No real urgency. Can be planned and done any day this week without consequence. Examples: improvements, research, low-stakes prep.
+- "now": Must stop training immediately. Getting worse by the hour OR blocks all training today. Should be RARE. Examples: critical tool broken and needed right now, health issue, time-sensitive external deadline in hours.
+- "today": Real but not an emergency. Handle after the training session ends. Examples: admin task due today, someone waiting on a reply, bug that doesn't block current work.
+- "week": No real urgency. Plan it any day this week. Examples: improvements, research, low-stakes prep, chess study ideas.
 
-Lean toward "today" and "week". Reserve "now" only for genuine emergencies that can't wait a few hours.
+Lean toward "today" and "week". Reserve "now" only for genuine emergencies that truly cannot wait a few hours.
 
-Respond with ONLY valid JSON — no explanation, no markdown, no code fences. Just the array:
-[{"id":"...","urgency":"now|today|week"}]`;
+Classify these tasks and respond with ONLY valid JSON — no explanation, no markdown, no code fences:
+[{"id":"...","urgency":"now|today|week"}]
+
+Tasks:
+${taskList}`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5',
-        max_tokens: 512,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: `Classify these tasks:\n${taskList}` }],
-      }),
-    });
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(apiKey)}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 512 },
+        }),
+      }
+    );
 
     if(!res.ok){
       const err = await res.text();
-      if(res.status === 401){ ls.setRaw('sq_anthropic_key',''); }
-      throw new Error(res.status === 401 ? 'Invalid API key — cleared, try again.' : `API error ${res.status}: ${err.slice(0,80)}`);
+      if(res.status === 400 || res.status === 403){ ls.setRaw('sq_gemini_key',''); }
+      throw new Error(res.status === 400 || res.status === 403
+        ? 'Invalid API key — cleared, try again.'
+        : `API error ${res.status}: ${err.slice(0,80)}`);
     }
 
     const data = await res.json();
-    const raw = data.content?.[0]?.text || '';
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     let classifications;
     try {
-      // Strip any accidental markdown fences
       const clean = raw.replace(/```json|```/g,'').trim();
       classifications = JSON.parse(clean);
     } catch(e) {
       throw new Error('Could not parse AI response. Try again.');
     }
 
-    // Apply urgency to tasks
     const all = getTasks();
     let updated = 0;
     classifications.forEach(({id, urgency}) => {
