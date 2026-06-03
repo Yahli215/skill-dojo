@@ -2052,6 +2052,20 @@ ${taskList}`;
     if(!res.ok){
       const err = await res.text();
       if(res.status === 401 || res.status === 403){ ls.setRaw('sq_gemini_key',''); }
+      if(res.status === 429){
+        // Rate limited — auto-retry after 60s
+        let secs = 60;
+        const countdown = setInterval(() => {
+          secs--;
+          if(btn) btn.textContent = `⏳ Rate limited — retry in ${secs}s`;
+          if(secs <= 0){
+            clearInterval(countdown);
+            if(btn){ btn.textContent = '⚡ AI Triage'; btn.disabled = false; btn.classList.remove('running'); }
+            runTriage(apiKey); // auto-retry
+          }
+        }, 1000);
+        return; // skip the finally block's reset
+      }
       throw new Error(`API error ${res.status}: ${err.slice(0,100)}`);
     }
 
