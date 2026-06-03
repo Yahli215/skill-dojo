@@ -2058,14 +2058,22 @@ ${taskList}`;
     const data = await res.json();
     const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     let classifications;
-    try {
-      // Strip markdown fences, then find the JSON array anywhere in the response
-      const stripped = raw.replace(/```json|```/g,'').trim();
-      const match = stripped.match(/\[[\s\S]*\]/);
-      classifications = JSON.parse(match ? match[0] : stripped);
-    } catch(e) {
-      throw new Error(`Parse error — raw: ${raw.slice(0,300)}`);
+    const stripped = raw.replace(/```json|```/g,'').trim();
+    // Attempt 1: direct parse
+    try { classifications = JSON.parse(stripped); } catch(_){}
+    // Attempt 2: extract JSON array with regex
+    if(!classifications){
+      try {
+        const m = stripped.match(/\[[\s\S]*\]/);
+        if(m) classifications = JSON.parse(m[0]);
+      } catch(_){}
     }
+    // Attempt 3: extract individual {id, urgency} pairs — works even on truncated/malformed JSON
+    if(!classifications){
+      const pairs = [...raw.matchAll(/"id"\s*:\s*"([^"]+)"[^}]*"urgency"\s*:\s*"(now|today|week)"/g)];
+      if(pairs.length > 0) classifications = pairs.map(p => ({id:p[1], urgency:p[2]}));
+    }
+    if(!classifications) throw new Error(`Could not parse response. Raw: ${raw.slice(0,200)}`);
 
     const all = getTasks();
     let updated = 0;
