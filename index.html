@@ -2007,7 +2007,7 @@ ${taskList}`;
   const BASE = 'https://generativelanguage.googleapis.com/v1beta/';
   const reqBody = JSON.stringify({
     contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: { temperature: 0.1, maxOutputTokens: 512 },
+    generationConfig: { temperature: 0.1, maxOutputTokens: 512, responseMimeType: 'application/json' },
   });
 
   // Step 1: discover which models this key can actually use
@@ -2059,10 +2059,12 @@ ${taskList}`;
     const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     let classifications;
     try {
-      const clean = raw.replace(/```json|```/g,'').trim();
-      classifications = JSON.parse(clean);
+      // Strip markdown fences, then find the JSON array anywhere in the response
+      const stripped = raw.replace(/```json|```/g,'').trim();
+      const match = stripped.match(/\[[\s\S]*\]/);
+      classifications = JSON.parse(match ? match[0] : stripped);
     } catch(e) {
-      throw new Error('Could not parse AI response. Try again.');
+      throw new Error(`Parse error — raw response: ${raw.slice(0,120)}`);
     }
 
     const all = getTasks();
