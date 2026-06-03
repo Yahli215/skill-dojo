@@ -2060,18 +2060,27 @@ ${taskList}`;
     let classifications;
     const stripped = raw.replace(/```json|```/g,'').trim();
     // Attempt 1: direct parse
-    try { classifications = JSON.parse(stripped); } catch(_){}
-    // Attempt 2: extract JSON array with regex
+    try {
+      const p = JSON.parse(stripped);
+      if(Array.isArray(p) && p.length > 0) classifications = p;
+    } catch(_){}
+    // Attempt 2: extract JSON array via regex then parse
     if(!classifications){
       try {
-        const m = stripped.match(/\[[\s\S]*\]/);
-        if(m) classifications = JSON.parse(m[0]);
+        const m = stripped.match(/\[[\s\S]*\]/s);
+        if(m){ const p = JSON.parse(m[0]); if(Array.isArray(p) && p.length > 0) classifications = p; }
       } catch(_){}
     }
-    // Attempt 3: extract individual {id, urgency} pairs — works even on truncated/malformed JSON
+    // Attempt 3: extract individual {id, urgency} pairs — handles both field orders and malformed JSON
     if(!classifications){
-      const pairs = [...raw.matchAll(/"id"\s*:\s*"([^"]+)"[^}]*"urgency"\s*:\s*"(now|today|week)"/g)];
-      if(pairs.length > 0) classifications = pairs.map(p => ({id:p[1], urgency:p[2]}));
+      const hits = [];
+      for(const m of raw.matchAll(/\{[^}]*\}/g)){
+        const obj = m[0];
+        const idM  = obj.match(/"id"\s*:\s*"([^"]+)"/);
+        const urgM = obj.match(/"urgency"\s*:\s*"(now|today|week)"/);
+        if(idM && urgM) hits.push({id: idM[1], urgency: urgM[1]});
+      }
+      if(hits.length > 0) classifications = hits;
     }
     if(!classifications) throw new Error(`Could not parse response. Raw: ${raw.slice(0,200)}`);
 
