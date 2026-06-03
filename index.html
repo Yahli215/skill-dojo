@@ -1963,7 +1963,7 @@ async function runTriage(apiKey){
   const unclassified = getTasks().filter(t => !t.done && !t.urgency);
   if(unclassified.length === 0){ toast('All tasks already have urgency set.', 3000); return; }
 
-  btn.textContent = '⏳ Thinking…'; btn.disabled = true; btn.classList.add('running');
+  btn.textContent = `⏳ Triaging ${unclassified.length}…`; btn.disabled = true; btn.classList.add('running');
 
   const taskList = unclassified.map(t => `- id:"${t.id}" → "${t.text}"`).join('\n');
 
@@ -2007,7 +2007,7 @@ ${taskList}`;
   const BASE = 'https://generativelanguage.googleapis.com/v1beta/';
   const reqBody = JSON.stringify({
     contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: { temperature: 0.1, maxOutputTokens: 1024 },
+    generationConfig: { temperature: 0.1, maxOutputTokens: 4096 },
   });
 
   // Step 1: discover which models this key can actually use
