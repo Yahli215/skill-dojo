@@ -500,6 +500,19 @@ body.light .page-watermark { opacity: .2; }
 .triage-btn:hover{border-color:var(--gold2);color:var(--gold2);}
 .triage-btn:disabled{opacity:.45;cursor:not-allowed;}
 .triage-btn.running{border-color:var(--gold2);color:var(--gold2);animation:pulse 1s infinite;}
+/* Gemini key modal */
+.gkey-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:400;align-items:center;justify-content:center;}
+.gkey-overlay.on{display:flex;}
+.gkey-box{background:var(--bg);border:1px solid var(--b1);border-radius:14px;padding:24px;width:92%;max-width:420px;}
+.gkey-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;}
+.gkey-sub{font-size:12px;color:var(--t3);margin-bottom:16px;line-height:1.5;}
+.gkey-sub a{color:var(--gold2);text-decoration:none;}
+.gkey-inp{width:100%;background:var(--b1);border:1px solid var(--b2);color:var(--text);border-radius:8px;padding:10px 12px;font-size:13px;font-family:inherit;box-sizing:border-box;margin-bottom:12px;}
+.gkey-inp:focus{outline:none;border-color:var(--gold2);}
+.gkey-row{display:flex;gap:8px;justify-content:flex-end;}
+.gkey-cancel{background:none;border:1px solid var(--b2);color:var(--t3);border-radius:8px;padding:8px 16px;cursor:pointer;font-family:inherit;font-size:12px;}
+.gkey-save{background:var(--gold2);color:#000;border:none;border-radius:8px;padding:8px 18px;font-weight:700;cursor:pointer;font-family:inherit;font-size:12px;}
+.gkey-save:disabled{opacity:.4;cursor:not-allowed;}
 /* Saturday Review */
 .sat-review-btn{display:none;margin-bottom:16px;background:linear-gradient(135deg,var(--s2),var(--s1));border:1px solid var(--gold2);color:var(--gold2);padding:9px 18px;border-radius:8px;cursor:pointer;font-size:11px;letter-spacing:.1em;font-family:inherit;}
 .sat-review-btn.visible{display:block;}
@@ -836,6 +849,27 @@ body.light .page-watermark { opacity: .2; }
 
 <!-- Sync -->
 
+
+<!-- Gemini key modal -->
+<div class="gkey-overlay" id="gkey-overlay">
+  <div class="gkey-box">
+    <div class="gkey-title">⚡ AI Triage — one-time setup</div>
+    <div class="gkey-sub">
+      Paste your free Gemini API key below.<br>
+      Get one in ~60 seconds at
+      <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a>
+      → <strong>Create API key</strong>.<br>
+      No billing or credit card needed. Stored only on this device.
+    </div>
+    <input class="gkey-inp" id="gkey-inp" type="password" placeholder="AIza…"
+      oninput="document.getElementById('gkey-save').disabled=!this.value.trim()"
+      onkeydown="if(event.key==='Enter'&&this.value.trim())saveGeminiKey()">
+    <div class="gkey-row">
+      <button class="gkey-cancel" onclick="closeGkeyModal()">Cancel</button>
+      <button class="gkey-save" id="gkey-save" disabled onclick="saveGeminiKey()">Save & Triage</button>
+    </div>
+  </div>
+</div>
 
 <!-- Round Complete -->
 <div class="round-overlay z" id="round-overlay">
@@ -1892,21 +1926,35 @@ function renderTasks(){
     doneEl.style.display = 'none';
   }
 }
+function closeGkeyModal(){ document.getElementById('gkey-overlay').classList.remove('on'); }
+function saveGeminiKey(){
+  const key = document.getElementById('gkey-inp').value.trim();
+  if(!key) return;
+  ls.setRaw('sq_gemini_key', key);
+  closeGkeyModal();
+  runTriage(key);
+}
+
 async function triageTasks(){
+  const unclassified = getTasks().filter(t => !t.done && !t.urgency);
+  if(unclassified.length === 0){ toast('All tasks already have urgency set.', 3000); return; }
+
+  const apiKey = ls.raw('sq_gemini_key');
+  if(!apiKey){
+    // Show modal instead of prompt() — prompt() is blocked in PWA mode
+    document.getElementById('gkey-inp').value = '';
+    document.getElementById('gkey-save').disabled = true;
+    document.getElementById('gkey-overlay').classList.add('on');
+    setTimeout(() => document.getElementById('gkey-inp').focus(), 100);
+    return;
+  }
+  runTriage(apiKey);
+}
+
+async function runTriage(apiKey){
   const btn = document.getElementById('triage-btn');
   const unclassified = getTasks().filter(t => !t.done && !t.urgency);
-  if(unclassified.length === 0){
-    toast('All tasks already have urgency set.', 3000); return;
-  }
-
-  // Get or prompt for Gemini API key (free at aistudio.google.com)
-  let apiKey = ls.raw('sq_gemini_key');
-  if(!apiKey){
-    apiKey = prompt('Paste your free Gemini API key\n(get one in 60s at aistudio.google.com → Get API key)\n\nStored only on this device:');
-    if(!apiKey) return;
-    ls.setRaw('sq_gemini_key', apiKey.trim());
-    apiKey = apiKey.trim();
-  }
+  if(unclassified.length === 0){ toast('All tasks already have urgency set.', 3000); return; }
 
   btn.textContent = '⏳ Thinking…'; btn.disabled = true; btn.classList.add('running');
 
