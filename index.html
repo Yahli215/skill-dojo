@@ -1456,6 +1456,7 @@ function startTimer(){
   document.getElementById('desc-inp').dataset.eventEnd='';
   document.getElementById('desc-inp').dataset.eventId='';
   activeTimer = {skillId:selSkillId,desc,startTime:Date.now(),isPomo,pw,pb,phase:'work',round:1,phaseStart:Date.now(),eventEndTime:eventEnd?new Date(eventEnd).getTime():null,eventId};
+  _timerOwner = true; // this device owns the timer
   ls.set('sq_active_timer', activeTimer);
   const sk = skills.find(s=>s.id===selSkillId);
   document.getElementById('t-icon').textContent = sk?.emoji||'⚡';
@@ -2652,6 +2653,7 @@ function getSyncCode(){
   return c;
 }
 
+let _timerOwner = false; // true on the device that started the current/last timer
 async function pushCloud(){
   const userId = getGUser(); if(!userId) return { ok: false, reason: 'not logged in' };
   const sess = getSess();
@@ -2659,8 +2661,11 @@ async function pushCloud(){
     skillDefs: getDefs(), skillData: getData(),
     sessions: sess, habits: getHabits(), tasks: getTasks(),
     conclusions: getConclusions(),
-    activeTimer: activeTimer || null,
+    // Only write activeTimer if THIS device owns it (running or just stopped).
+    // Devices with no timer must NOT push null — that would wipe another device's running timer.
+    ...(_timerOwner || activeTimer ? { activeTimer: activeTimer || null } : {}),
   };
+  if(!activeTimer) _timerOwner = false; // clear flag after pushing the stop
   try {
     const res = await fetch(`${SB_URL}/rest/v1/skillquest?on_conflict=google_user_id`, {
       method: 'POST',
