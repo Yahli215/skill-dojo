@@ -943,11 +943,12 @@ function init(){
   // Check if returning from Google OAuth redirect (Safari-compatible flow)
   if(checkOAuthReturn()) return;
   // One-time migration: remove accidental 2026-05-31 habit marks
-  (function(){
+  (async function(){
     const bad = '2026-05-31';
     let h = ls.get('sq_habits','[]');
     if(Array.isArray(h) && h.some(x=>(x.history||[]).includes(bad))){
       ls.set('sq_habits', h.map(x=>({...x, history:(x.history||[]).filter(d=>d!==bad)})));
+      if(getGUser()) await pushCloud(); // push fix immediately so cloud is also clean
     }
   })();
   if(getGUser()){
