@@ -494,8 +494,12 @@ body.light .page-watermark { opacity: .2; }
 .task-done-toggle{background:none;border:none;color:var(--t3);font-size:11px;cursor:pointer;padding:6px 0 4px;font-family:inherit;letter-spacing:.06em;display:block;}
 .task-done-toggle:hover{color:var(--text);}
 .task-empty{color:var(--muted);font-size:13px;font-style:italic;padding:18px 0;text-align:center;}
-.task-urgency-legend{display:flex;gap:14px;margin-bottom:12px;font-size:10px;color:var(--t3);letter-spacing:.05em;}
+.task-urgency-legend{display:flex;gap:14px;margin-bottom:12px;font-size:10px;color:var(--t3);letter-spacing:.05em;align-items:center;}
 .task-urgency-legend span{display:flex;align-items:center;gap:4px;}
+.triage-btn{margin-left:auto;background:none;border:1px solid var(--b2);color:var(--t3);border-radius:20px;padding:3px 11px;font-size:10px;cursor:pointer;font-family:inherit;letter-spacing:.06em;transition:all .2s;white-space:nowrap;}
+.triage-btn:hover{border-color:var(--gold2);color:var(--gold2);}
+.triage-btn:disabled{opacity:.45;cursor:not-allowed;}
+.triage-btn.running{border-color:var(--gold2);color:var(--gold2);animation:pulse 1s infinite;}
 /* Saturday Review */
 .sat-review-btn{display:none;margin-bottom:16px;background:linear-gradient(135deg,var(--s2),var(--s1));border:1px solid var(--gold2);color:var(--gold2);padding:9px 18px;border-radius:8px;cursor:pointer;font-size:11px;letter-spacing:.1em;font-family:inherit;}
 .sat-review-btn.visible{display:block;}
@@ -791,7 +795,7 @@ body.light .page-watermark { opacity: .2; }
         <span>🔴 Fix now</span>
         <span>🟡 Today</span>
         <span>🟢 This week</span>
-        <span style="margin-left:auto;font-style:italic">tap the dot to set urgency</span>
+        <button class="triage-btn" id="triage-btn" onclick="triageTasks()">⚡ AI Triage</button>
       </div>
       <div class="task-input-row">
         <input class="task-inp" id="task-inp" placeholder="Add a task…" onkeydown="if(event.key==='Enter')addTask()">
@@ -1886,6 +1890,99 @@ function renderTasks(){
   } else {
     toggleBtn.style.display = 'none';
     doneEl.style.display = 'none';
+  }
+}
+async function triageTasks(){
+  const btn = document.getElementById('triage-btn');
+  const unclassified = getTasks().filter(t => !t.done && !t.urgency);
+  if(unclassified.length === 0){
+    toast('All tasks already have urgency set.', 3000); return;
+  }
+
+  // Get or prompt for API key
+  let apiKey = ls.raw('sq_anthropic_key');
+  if(!apiKey){
+    apiKey = prompt('Enter your Anthropic API key (stored only on this device):');
+    if(!apiKey) return;
+    ls.setRaw('sq_anthropic_key', apiKey.trim());
+    apiKey = apiKey.trim();
+  }
+
+  btn.textContent = '⏳ Thinking…'; btn.disabled = true; btn.classList.add('running');
+
+  const taskList = unclassified.map(t => `- id:"${t.id}" → "${t.text}"`).join('\n');
+
+  const systemPrompt = `You are the personal triage agent for a dedicated chess player in intensive daily training.
+
+USER PROFILE:
+- Daily training goal: 9+ hours of focused chess/fitness work
+- Skills trained: Opening repertoire, Tactics, Game analysis, Training games, Opening revision, Fitness
+- Work style: Deep focus sessions (~90 min), Pomodoro blocks. Each interruption costs ~20 min of recovery time.
+- Values: Protecting flow state is the top priority. Interrupting a session is a last resort.
+- Context: Tasks appear during training. They need to know: stop now, or handle later?
+
+URGENCY FRAMEWORK:
+- "now": Must stop training immediately. The problem is actively getting worse by the hour OR it blocks all training today. Rare. Examples: app/tool completely broken and needed right now, health issue, time-sensitive external deadline.
+- "today": Real but not an emergency. Handle after the training session ends. Examples: admin task due today, something a person is waiting on, a bug that doesn't block current work.
+- "week": No real urgency. Can be planned and done any day this week without consequence. Examples: improvements, research, low-stakes prep.
+
+Lean toward "today" and "week". Reserve "now" only for genuine emergencies that can't wait a few hours.
+
+Respond with ONLY valid JSON — no explanation, no markdown, no code fences. Just the array:
+[{"id":"...","urgency":"now|today|week"}]`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5',
+        max_tokens: 512,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: `Classify these tasks:\n${taskList}` }],
+      }),
+    });
+
+    if(!res.ok){
+      const err = await res.text();
+      if(res.status === 401){ ls.setRaw('sq_anthropic_key',''); }
+      throw new Error(res.status === 401 ? 'Invalid API key — cleared, try again.' : `API error ${res.status}: ${err.slice(0,80)}`);
+    }
+
+    const data = await res.json();
+    const raw = data.content?.[0]?.text || '';
+    let classifications;
+    try {
+      // Strip any accidental markdown fences
+      const clean = raw.replace(/```json|```/g,'').trim();
+      classifications = JSON.parse(clean);
+    } catch(e) {
+      throw new Error('Could not parse AI response. Try again.');
+    }
+
+    // Apply urgency to tasks
+    const all = getTasks();
+    let updated = 0;
+    classifications.forEach(({id, urgency}) => {
+      const idx = all.findIndex(t => t.id === id);
+      if(idx >= 0 && ['now','today','week'].includes(urgency)){
+        all[idx] = {...all[idx], urgency};
+        updated++;
+      }
+    });
+    saveTasks(all);
+    renderTasks();
+    pushSync();
+    toast(`⚡ Triaged ${updated} task${updated!==1?'s':''}`, 3500);
+  } catch(e) {
+    toast(`Triage failed: ${e.message}`, 5000);
+  } finally {
+    btn.textContent = '⚡ AI Triage'; btn.disabled = false; btn.classList.remove('running');
   }
 }
 // ── End Tasks ──────────────────────────────────────────
