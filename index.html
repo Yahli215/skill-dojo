@@ -2007,7 +2007,7 @@ ${taskList}`;
   const BASE = 'https://generativelanguage.googleapis.com/v1beta/';
   const reqBody = JSON.stringify({
     contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: { temperature: 0.1, maxOutputTokens: 512, responseMimeType: 'application/json' },
+    generationConfig: { temperature: 0.1, maxOutputTokens: 1024 },
   });
 
   // Step 1: discover which models this key can actually use
@@ -2064,7 +2064,7 @@ ${taskList}`;
       const match = stripped.match(/\[[\s\S]*\]/);
       classifications = JSON.parse(match ? match[0] : stripped);
     } catch(e) {
-      throw new Error(`Parse error — raw response: ${raw.slice(0,120)}`);
+      throw new Error(`Parse error — raw: ${raw.slice(0,300)}`);
     }
 
     const all = getTasks();
