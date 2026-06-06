@@ -1105,7 +1105,7 @@ async function bootFromCloud(){
         }
       }
       _cloudTimerCache = d.activeTimer || null;
-      _cloudSyncDone = true;
+      _cloudSyncDone = true; if(typeof _lastPullAt !== 'undefined') _lastPullAt = Date.now();
       if(d.activeTimer && !activeTimer) { boot(); startRemoteTimer(d.activeTimer); return; }
     } else {
       _cloudSyncDone = true;
@@ -1144,8 +1144,23 @@ function boot(){
   initGCal();
   setInterval(checkNudges, 60000);
   setInterval(()=>{ const d=getGCal(); if(!d?.token)return; if(window.google?.accounts) doGCalAuth(false); }, 45*60*1000);
-  // Auto-push to cloud every 60s
-  setInterval(pushCloud, 60000);
+  // Auto-sync every 60s: pull first if cloud is newer, then push
+  // This ensures server-side changes (e.g. habit additions) are never overwritten
+  let _lastPullAt = Date.now();
+  setInterval(async ()=>{
+    if(!getGUser()) return;
+    try {
+      const r = await fetch(`${SB_URL}/rest/v1/skillquest?google_user_id=eq.${encodeURIComponent(getGUser())}&select=updated_at`, { headers: sbH(), cache:'no-store' });
+      const rows = await r.json();
+      const cloudUpdated = rows[0]?.updated_at ? new Date(rows[0].updated_at).getTime() : 0;
+      if(cloudUpdated > _lastPullAt){
+        // Cloud is newer — pull first so we don't overwrite server changes
+        await refreshFromCloud();
+        _lastPullAt = Date.now();
+      }
+    } catch(e){}
+    pushCloud();
+  }, 60000);
   // Re-sync from cloud when app comes back to foreground (fixes stale data on phone)
   document.addEventListener('visibilitychange', ()=>{
     if(document.visibilityState==='visible' && getGUser()) refreshFromCloud();
@@ -1225,7 +1240,7 @@ async function refreshFromCloud(){
       renderApp();
       // Cache cloud timer so pushCloud can preserve it
       _cloudTimerCache = d.activeTimer || null;
-      _cloudSyncDone = true;
+      _cloudSyncDone = true; if(typeof _lastPullAt !== 'undefined') _lastPullAt = Date.now();
       // Show remote timer if computer has one running and we don't have a local timer
       if(d.activeTimer && !activeTimer) startRemoteTimer(d.activeTimer);
       else if(!d.activeTimer && !activeTimer){ remoteTimer=null; renderRemoteTimer(); }
