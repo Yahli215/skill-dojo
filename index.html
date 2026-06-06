@@ -1000,8 +1000,26 @@ function init(){
     let h = ls.get('sq_habits','[]');
     if(Array.isArray(h) && h.some(x=>(x.history||[]).includes(bad))){
       ls.set('sq_habits', h.map(x=>({...x, history:(x.history||[]).filter(d=>d!==bad)})));
-      if(getGUser()) await pushCloud(); // push fix immediately so cloud is also clean
+      if(getGUser()) await pushCloud();
     }
+  })();
+  // Migration: add Saturday-review habits dh4 + dh5, update dh2 name
+  (function(){
+    let h = ls.get('sq_habits','[]');
+    if(!Array.isArray(h)) return;
+    let changed = false;
+    // Update dh2 name to easier wording
+    const dh2 = h.find(x=>x.id==='dh2');
+    if(dh2 && dh2.name === 'Fixed wake time — same every day'){
+      dh2.name = 'Wake within 30 min of target time'; changed = true;
+    }
+    if(!h.find(x=>x.id==='dh4')){
+      h.push({id:'dh4', name:'Breaks stay ≤ 15 min', emoji:'⏱', history:[]}); changed = true;
+    }
+    if(!h.find(x=>x.id==='dh5')){
+      h.push({id:'dh5', name:"Review today's wrong exercises", emoji:'🔍', history:[]}); changed = true;
+    }
+    if(changed) ls.set('sq_habits', h);
   })();
   if(getGUser()){
     bootFromCloud();
