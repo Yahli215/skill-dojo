@@ -513,6 +513,28 @@ body.light .page-watermark { opacity: .2; }
 .gkey-cancel{background:none;border:1px solid var(--b2);color:var(--t3);border-radius:8px;padding:8px 16px;cursor:pointer;font-family:inherit;font-size:12px;}
 .gkey-save{background:var(--gold2);color:#000;border:none;border-radius:8px;padding:8px 18px;font-weight:700;cursor:pointer;font-family:inherit;font-size:12px;}
 .gkey-save:disabled{opacity:.4;cursor:not-allowed;}
+/* Protein tracker */
+.protein-card{background:var(--s1);border:1px solid var(--b1);border-radius:10px;padding:14px 16px;margin-bottom:28px;}
+.protein-top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px;}
+.protein-nums{display:flex;align-items:baseline;gap:3px;}
+.protein-val{font-size:28px;font-weight:700;color:var(--verm);transition:color .3s;}
+.protein-val.mid{color:var(--gold2);}
+.protein-val.hit{color:var(--green);}
+.protein-unit{font-size:14px;color:var(--t3);}
+.protein-goal-lbl{font-size:13px;color:var(--t3);margin-left:2px;}
+.protein-range-lbl{font-size:10px;color:var(--muted);letter-spacing:.05em;}
+.protein-bar-bg{height:5px;background:var(--b2);border-radius:3px;margin-bottom:12px;overflow:hidden;}
+.protein-bar-fill{height:100%;background:var(--verm);border-radius:3px;transition:width .4s,background .3s;}
+.protein-bar-fill.mid{background:var(--gold2);}
+.protein-bar-fill.hit{background:var(--green);}
+.protein-btns{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.pro-btn{background:var(--b1);border:1px solid var(--b2);color:var(--text);border-radius:8px;padding:5px 11px;font-size:12px;cursor:pointer;font-family:inherit;transition:all .15s;}
+.pro-btn:hover{border-color:var(--green);color:var(--green);}
+.pro-inp{width:70px;background:var(--b1);border:1px solid var(--b2);color:var(--text);border-radius:8px;padding:5px 8px;font-size:12px;font-family:inherit;text-align:center;}
+.pro-inp:focus{outline:none;border-color:var(--gold2);}
+.pro-set-btn{background:var(--gold2);color:#000;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
+.pro-reset-btn{background:none;border:1px solid var(--b2);color:var(--muted);border-radius:8px;padding:5px 9px;font-size:12px;cursor:pointer;margin-left:auto;}
+.pro-reset-btn:hover{border-color:var(--verm);color:var(--verm);}
 /* Saturday Review */
 .sat-review-btn{display:none;margin-bottom:16px;background:linear-gradient(135deg,var(--s2),var(--s1));border:1px solid var(--gold2);color:var(--gold2);padding:9px 18px;border-radius:8px;cursor:pointer;font-size:11px;letter-spacing:.1em;font-family:inherit;}
 .sat-review-btn.visible{display:block;}
@@ -780,6 +802,33 @@ body.light .page-watermark { opacity: .2; }
       </div>
     </div>
 
+
+    <!-- Protein tracker -->
+    <div class="sec-hdr" style="margin-top:4px">
+      <div class="sec-lbl">Protein</div>
+      <div class="sec-kj">タンパク質</div>
+      <div class="sec-line"></div>
+    </div>
+    <div class="protein-card" id="protein-card">
+      <div class="protein-top">
+        <div class="protein-nums">
+          <span class="protein-val" id="protein-val">0</span>
+          <span class="protein-unit">g</span>
+          <span class="protein-goal-lbl" id="protein-goal-lbl">/ 130g</span>
+        </div>
+        <div class="protein-range-lbl" id="protein-range-lbl">target 105–130g</div>
+      </div>
+      <div class="protein-bar-bg"><div class="protein-bar-fill" id="protein-bar-fill" style="width:0%"></div></div>
+      <div class="protein-btns">
+        <button class="pro-btn" onclick="addProtein(10)">+10g</button>
+        <button class="pro-btn" onclick="addProtein(20)">+20g</button>
+        <button class="pro-btn" onclick="addProtein(30)">+30g</button>
+        <button class="pro-btn" onclick="addProtein(40)">+40g</button>
+        <input class="pro-inp" id="pro-inp" type="number" min="0" max="500" placeholder="custom">
+        <button class="pro-set-btn" onclick="setProteinCustom()">Set</button>
+        <button class="pro-reset-btn" onclick="resetProtein()" title="Reset to 0">↺</button>
+      </div>
+    </div>
 
     </div><!-- /training-view -->
 
@@ -1122,6 +1171,7 @@ async function bootFromCloud(){
           ls.set('sq_tasks', d.tasks);
         }
       }
+      if(d.protein) ls.set('sq_protein', d.protein);
       _cloudTimerCache = d.activeTimer || null;
       _cloudSyncDone = true; if(typeof _lastPullAt !== 'undefined') _lastPullAt = Date.now();
       if(d.activeTimer && !activeTimer) { boot(); startRemoteTimer(d.activeTimer); return; }
@@ -1250,6 +1300,7 @@ async function refreshFromCloud(){
           ls.set('sq_tasks', d.tasks);
         }
       }
+      if(d.protein) ls.set('sq_protein', d.protein);
       // Reload the in-memory skill array and re-render without touching intervals
       const defs2 = getDefs(), data2 = getData();
       skills = defs2.map(def => ({...def, keywords:def.keywords||[], dailyGoalMins:def.dailyGoalMins||0,
@@ -1349,6 +1400,7 @@ function renderApp(){
   try { renderReport(); }   catch(e){ console.error('renderReport:', e); }
   try { renderJourneyGrid(); }    catch(e){ console.error('renderJourneyGrid:', e); }
   try { renderHabits(); }         catch(e){ console.error('renderHabits:', e); }
+  try { renderProtein(); }        catch(e){ console.error('renderProtein:', e); }
 }
 
 function renderPills(){
@@ -2168,6 +2220,65 @@ ${taskList}`;
 }
 // ── End Tasks ──────────────────────────────────────────
 
+// ── Protein tracker ───────────────────────────────────
+const PROTEIN_MIN  = 105;
+const PROTEIN_TARGET = 130;
+
+function getProteinLog(){ return ls.get('sq_protein','{}'); }
+function saveProteinLog(p){ ls.set('sq_protein', p); }
+
+function getTodayProtein(){
+  return getProteinLog()[todayKey()] || 0;
+}
+
+function addProtein(g){
+  const log = getProteinLog();
+  const k = todayKey();
+  log[k] = (log[k] || 0) + g;
+  saveProteinLog(log);
+  renderProtein();
+  pushSync();
+}
+
+function setProteinCustom(){
+  const inp = document.getElementById('pro-inp');
+  const val = parseInt(inp.value);
+  if(isNaN(val) || val < 0) return;
+  const log = getProteinLog();
+  log[todayKey()] = val;
+  saveProteinLog(log);
+  inp.value = '';
+  renderProtein();
+  pushSync();
+}
+
+function resetProtein(){
+  const log = getProteinLog();
+  log[todayKey()] = 0;
+  saveProteinLog(log);
+  renderProtein();
+  pushSync();
+}
+
+function renderProtein(){
+  const grams = getTodayProtein();
+  const pct   = Math.min(100, Math.round(grams / PROTEIN_TARGET * 100));
+  const isHit = grams >= PROTEIN_TARGET;
+  const isMid = grams >= PROTEIN_MIN && !isHit;
+
+  const valEl  = document.getElementById('protein-val');
+  const barEl  = document.getElementById('protein-bar-fill');
+  const lblEl  = document.getElementById('protein-range-lbl');
+  if(!valEl) return;
+
+  valEl.textContent = grams;
+  valEl.className   = 'protein-val' + (isHit ? ' hit' : isMid ? ' mid' : '');
+  barEl.style.width = pct + '%';
+  barEl.className   = 'protein-bar-fill' + (isHit ? ' hit' : isMid ? ' mid' : '');
+  lblEl.textContent = isHit ? '✓ target hit!' : isMid ? 'in range — keep going' : 'target 105–130g';
+}
+// ── End Protein ────────────────────────────────────────
+
 function todayKey(){ return new Date().toISOString().slice(0,10); }
 
 let habitViewDay = 'today'; // 'today' | 'yesterday'
@@ -2710,7 +2821,7 @@ async function pushCloud(){
     ?? (_cloudSyncDone ? _cloudTimerCache : undefined);
   const data = {
     skillDefs: getDefs(), skillData: getData(),
-    sessions: sess, habits: getHabits(), tasks: getTasks(),
+    sessions: sess, habits: getHabits(), tasks: getTasks(), protein: getProteinLog(),
     conclusions: getConclusions(),
     ...(timerToWrite !== undefined ? { activeTimer: timerToWrite } : {}),
   };
