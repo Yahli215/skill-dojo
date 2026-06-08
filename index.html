@@ -1164,8 +1164,13 @@ async function bootFromCloud(){
         const localT = ls.get('sq_tasks','[]');
         if(Array.isArray(localT) && localT.length > 0 && Array.isArray(d.tasks) && d.tasks.length > 0){
           const cloudMap = Object.fromEntries(d.tasks.map(t=>[t.id,t]));
+          const localMap = Object.fromEntries(localT.map(t=>[t.id,t]));
           const allIds = new Set([...d.tasks.map(t=>t.id), ...localT.map(t=>t.id)]);
-          const merged = [...allIds].map(id => cloudMap[id] || localT.find(t=>t.id===id));
+          const merged = [...allIds].map(id => {
+            const c = cloudMap[id], l = localMap[id];
+            if(c && l) return (l._updatedAt||0) > (c._updatedAt||0) ? l : c;
+            return c || l;
+          });
           ls.set('sq_tasks', merged.filter(Boolean));
         } else {
           ls.set('sq_tasks', d.tasks);
@@ -1293,8 +1298,13 @@ async function refreshFromCloud(){
         const localT = ls.get('sq_tasks','[]');
         if(Array.isArray(localT) && localT.length > 0 && Array.isArray(d.tasks) && d.tasks.length > 0){
           const cloudMap = Object.fromEntries(d.tasks.map(t=>[t.id,t]));
+          const localMap = Object.fromEntries(localT.map(t=>[t.id,t]));
           const allIds = new Set([...d.tasks.map(t=>t.id), ...localT.map(t=>t.id)]);
-          const merged = [...allIds].map(id => cloudMap[id] || localT.find(t=>t.id===id));
+          const merged = [...allIds].map(id => {
+            const c = cloudMap[id], l = localMap[id];
+            if(c && l) return (l._updatedAt||0) > (c._updatedAt||0) ? l : c;
+            return c || l;
+          });
           ls.set('sq_tasks', merged.filter(Boolean));
         } else {
           ls.set('sq_tasks', d.tasks);
@@ -1953,7 +1963,7 @@ function addTask(){
 
 function toggleTask(id){
   const all = getTasks().map(t => t.id === id
-    ? {...t, done: !t.done, doneDate: !t.done ? new Date().toISOString() : null}
+    ? {...t, done: !t.done, doneDate: !t.done ? new Date().toISOString() : null, _updatedAt: Date.now()}
     : t);
   saveTasks(all);
   renderTasks();
@@ -1966,7 +1976,7 @@ function cycleUrgency(id){
   if(!task) return;
   const cur = task.urgency || null;
   const next = URGENCY_CYCLE[(URGENCY_CYCLE.indexOf(cur) + 1) % URGENCY_CYCLE.length];
-  saveTasks(all.map(t => t.id === id ? {...t, urgency: next} : t));
+  saveTasks(all.map(t => t.id === id ? {...t, urgency: next, _updatedAt: Date.now()} : t));
   renderTasks();
   pushSync();
 }
@@ -2196,7 +2206,7 @@ ${taskList}`;
     classifications.forEach(({id, urgency}) => {
       const idx = all.findIndex(t => t.id === id);
       if(idx >= 0 && ['now','today','week'].includes(urgency)){
-        all[idx] = {...all[idx], urgency};
+        all[idx] = {...all[idx], urgency, _updatedAt: Date.now()};
         updated++;
       }
     });
