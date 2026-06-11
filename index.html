@@ -635,29 +635,57 @@ body.light .page-watermark { opacity: .2; }
 .checklist-add-btn{background:var(--verm);color:#fff;border:none;border-radius:8px;padding:9px 15px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;transition:filter .2s;}
 .checklist-add-btn:hover{filter:brightness(1.1);}
 .checklist-full-msg{background:rgba(200,72,40,.1);border:1px solid rgba(200,72,40,.3);border-radius:8px;padding:10px 14px;font-size:11px;color:var(--verm);letter-spacing:.04em;margin-bottom:12px;}
-/* current habit */
-.habit-mgr-active{background:var(--s1);border:1px solid var(--b1);border-radius:10px;padding:18px 16px;margin-bottom:20px;}
-.habit-mgr-label{font-size:9px;letter-spacing:3px;color:var(--gold2);text-transform:uppercase;margin-bottom:8px;}
-.habit-mgr-text{font-size:15px;font-weight:600;line-height:1.5;color:var(--text);margin-bottom:14px;}
-.habit-mgr-behavior-lbl{font-size:10px;color:var(--muted2);letter-spacing:.06em;margin-bottom:5px;}
-.habit-mgr-textarea{width:100%;background:var(--bg);border:1px solid var(--b2);border-radius:8px;padding:9px 12px;color:var(--text);font-size:12px;font-family:inherit;resize:vertical;min-height:64px;outline:none;line-height:1.6;box-sizing:border-box;}
-.habit-mgr-textarea:focus{border-color:var(--gold2);}
-.habit-mgr-textarea::placeholder{color:var(--muted);}
-.habit-mgr-done-btn{margin-top:10px;width:100%;background:var(--green);color:#fff;border:none;border-radius:8px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.06em;transition:filter .2s;}
-.habit-mgr-done-btn:hover{filter:brightness(1.1);}
+/* current habit ── redesigned ─────────────────────────── */
+.habit-active-card{background:var(--s1);border:1px solid var(--b1);border-radius:10px;padding:18px 16px;margin-bottom:12px;border-left:3px solid var(--gold2);}
+.habit-active-card.layered{border-left-color:var(--green2);}
+.habit-active-label{font-size:9px;letter-spacing:3px;color:var(--gold2);text-transform:uppercase;margin-bottom:10px;}
+.habit-active-card.layered .habit-active-label{color:var(--green2);}
+.habit-active-text{font-size:14px;font-weight:600;line-height:1.5;color:var(--text);margin-bottom:4px;}
+.habit-status-track{display:flex;align-items:flex-start;gap:0;margin:14px 0 16px;}
+.habit-status-step{display:flex;flex-direction:column;align-items:center;gap:5px;flex:0 0 auto;}
+.habit-status-circle{width:24px;height:24px;border-radius:50%;border:2px solid var(--b2);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;transition:all .25s;color:var(--muted);}
+.habit-status-circle.active{border-color:var(--gold2);color:var(--gold2);background:rgba(232,184,64,.1);}
+.habit-status-circle.done{border-color:var(--green2);background:var(--green2);color:#fff;}
+.habit-status-lbl{font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:center;}
+.habit-status-lbl.active{color:var(--gold2);}
+.habit-status-lbl.done{color:var(--green2);}
+.habit-status-bar{flex:1;height:2px;background:var(--b1);margin-top:11px;transition:background .25s;}
+.habit-status-bar.done{background:var(--green2);}
+.habit-notes-lbl{font-size:10px;color:var(--muted2);letter-spacing:.06em;margin-bottom:5px;}
+.habit-notes-inp{width:100%;background:var(--bg);border:1px solid var(--b2);border-radius:8px;padding:9px 12px;color:var(--text);font-size:12px;font-family:inherit;resize:vertical;min-height:60px;outline:none;line-height:1.6;box-sizing:border-box;}
+.habit-notes-inp:focus{border-color:var(--gold2);}
+.habit-notes-inp::placeholder{color:var(--muted);}
+.habit-advance-btn{margin-top:12px;width:100%;border:1px solid var(--b2);background:none;color:var(--text);border-radius:8px;padding:9px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;letter-spacing:.04em;transition:all .2s;}
+.habit-advance-btn:hover{border-color:var(--gold2);color:var(--gold2);}
+.habit-advance-btn.to-auto{border-color:var(--green2);color:var(--green2);}
+.habit-advance-btn.to-auto:hover{background:var(--green);border-color:var(--green);color:#fff;}
 .habit-mgr-empty{background:var(--s1);border:1px dashed var(--b2);border-radius:10px;padding:26px 16px;text-align:center;color:var(--muted);font-size:12px;line-height:2;margin-bottom:20px;}
+.habit-layer-btn{width:100%;background:none;border:1px dashed var(--green2);color:var(--green2);border-radius:8px;padding:9px;font-size:11px;cursor:pointer;font-family:inherit;letter-spacing:.05em;transition:all .2s;margin-bottom:14px;}
+.habit-layer-btn:hover{background:rgba(112,184,128,.08);}
 .habit-queue-hdr{font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:10px;}
-.habit-queue-item{display:flex;align-items:flex-start;gap:8px;background:var(--s1);border:1px solid var(--b1);border-radius:8px;padding:10px 12px;margin-bottom:6px;}
+.habit-queue-item{display:flex;align-items:flex-start;gap:6px;background:var(--s1);border:1px solid var(--b1);border-radius:8px;padding:10px 11px;margin-bottom:5px;transition:border-color .15s,opacity .2s;cursor:default;}
+.habit-queue-item.drag-over{border-color:var(--gold2);background:rgba(232,184,64,.06);}
+.habit-queue-handle{color:var(--muted);cursor:grab;padding:0 3px;font-size:15px;flex-shrink:0;line-height:1.6;user-select:none;}
+.habit-queue-handle:active{cursor:grabbing;}
+.habit-queue-num{font-size:10px;color:var(--muted);flex-shrink:0;padding-top:3px;min-width:14px;}
 .habit-queue-text{flex:1;font-size:12px;color:var(--text);line-height:1.5;}
-.habit-queue-activate{background:none;border:1px solid var(--b2);color:var(--muted2);border-radius:6px;padding:4px 10px;font-size:10px;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap;flex-shrink:0;}
-.habit-queue-activate:hover{border-color:var(--green2);color:var(--green2);}
-.habit-queue-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;opacity:0;padding:2px 4px;transition:opacity .15s;flex-shrink:0;line-height:1;}
+.habit-queue-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;opacity:0;padding:1px 4px;transition:opacity .15s;flex-shrink:0;}
 .habit-queue-item:hover .habit-queue-del{opacity:.45;}
 .habit-queue-del:hover{opacity:1!important;color:var(--verm);}
-.habit-history{margin-top:20px;}
-.habit-history-hdr{font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
-.habit-hist-item{font-size:11px;color:var(--muted2);padding:6px 0;border-bottom:1px solid var(--b1);display:flex;justify-content:space-between;align-items:center;gap:8px;}
-.habit-hist-item:last-child{border-bottom:none;}
+.habit-arch-toggle{background:none;border:none;color:var(--muted2);font-size:11px;cursor:pointer;padding:4px 0;font-family:inherit;letter-spacing:.05em;transition:color .15s;display:block;margin-top:8px;}
+.habit-arch-toggle:hover{color:var(--gold2);}
+.habit-arch-pick{background:var(--s1);border:1px solid var(--b1);border-radius:8px;padding:10px 12px;margin-top:6px;}
+.habit-arch-search{width:100%;background:var(--bg);border:1px solid var(--b2);border-radius:6px;padding:7px 10px;color:var(--text);font-size:12px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:8px;}
+.habit-arch-search:focus{border-color:var(--gold2);}
+.habit-arch-results{max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;}
+.habit-arch-result{font-size:11px;color:var(--text);padding:6px 9px;background:var(--bg);border-radius:5px;cursor:pointer;line-height:1.5;transition:background .15s;}
+.habit-arch-result:hover{background:var(--b1);}
+.habit-completed-section{margin-top:24px;border-top:1px solid var(--b1);padding-top:16px;}
+.habit-completed-hdr{font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:10px;}
+.habit-completed-item{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--b1);}
+.habit-completed-item:last-child{border-bottom:none;}
+.habit-completed-text{font-size:12px;color:var(--muted2);flex:1;line-height:1.4;}
+.habit-completed-date{font-size:10px;color:var(--muted);white-space:nowrap;flex-shrink:0;}
 /* archive */
 .archive-search-row{display:flex;gap:8px;margin-bottom:12px;align-items:center;}
 .archive-search{flex:1;background:var(--s1);border:1px solid var(--b2);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:inherit;outline:none;}
@@ -958,16 +986,22 @@ body.light .page-watermark { opacity: .2; }
 
       <!-- Current Habit -->
       <div class="ins-section" id="ins-habit">
-        <div id="habit-mgr-active-area"></div>
-        <div class="habit-queue-hdr">Queue</div>
+        <div id="habit-active-area"></div>
+        <div id="habit-layer-area"></div>
+        <div class="habit-queue-hdr" style="margin-top:4px">Queue</div>
         <div id="habit-queue-list"></div>
-        <div class="checklist-add-row" style="margin-top:12px">
+        <div class="checklist-add-row" style="margin-top:10px">
           <textarea class="checklist-inp" id="habit-queue-inp" rows="2"
-            placeholder="Add a habit to the queue…"
+            placeholder="Type a new habit…"
             onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addHabitToQueue();}"></textarea>
           <button class="checklist-add-btn" onclick="addHabitToQueue()">+ Queue</button>
         </div>
-        <div id="habit-history-area" class="habit-history"></div>
+        <button class="habit-arch-toggle" id="habit-arch-toggle" onclick="toggleArchivePick()">🗂 Pick from Archive ▾</button>
+        <div id="habit-arch-pick" class="habit-arch-pick" style="display:none">
+          <input class="habit-arch-search" id="habit-arch-search" placeholder="Search insights…" oninput="renderArchivePick()">
+          <div class="habit-arch-results" id="habit-arch-results"></div>
+        </div>
+        <div id="habit-completed-area"></div>
       </div>
 
       <!-- Chess Archive -->
@@ -3092,7 +3126,21 @@ function getPregame()  { return ls.get('sq_pregame','[]'); }
 function savePregame(a){ ls.set('sq_pregame',a); pushSync(); }
 function getOpener()   { return ls.get('sq_opener','[]'); }
 function saveOpener(a) { ls.set('sq_opener',a); pushSync(); }
-function getHabitMgr() { return ls.get('sq_habit_mgr', JSON.stringify({active:null,queue:[],completed:[]})); }
+function getHabitMgr(){
+  const raw = ls.get('sq_habit_mgr', null);
+  if(!raw) return {active:[], queue:[], completed:[]};
+  // Migrate old format: active was object|null, not array
+  if(!Array.isArray(raw.active)){
+    const migrated = {
+      active: raw.active ? [{...raw.active, notes:raw.active.behavior||'', status:'remembering'}] : [],
+      queue:  raw.queue||[],
+      completed: (raw.completed||[]).map(c=>({...c, notes:c.behavior||c.notes||''}))
+    };
+    ls.set('sq_habit_mgr', migrated);
+    return migrated;
+  }
+  return {active:raw.active||[], queue:raw.queue||[], completed:raw.completed||[]};
+}
 function saveHabitMgr(d){ ls.set('sq_habit_mgr',d); pushSync(); }
 function getArchive()  { return ls.get('sq_archive','[]'); }
 function saveArchive(a){ ls.set('sq_archive',a); pushSync(); }
@@ -3178,100 +3226,146 @@ function delOpener(id){  saveOpener(getOpener().filter(i=>i.id!==id));   renderO
 
 // ── CURRENT HABIT ─────────────────────────────────────────────────────
 
-let _behaviorDebounce = null;
+const HABIT_STATUS_ORDER = ['remembering','consistent','automatic'];
+const HABIT_STATUS_LABEL = {remembering:'Remembering', consistent:'Consistent', automatic:'Automatic'};
+
+function renderHabitCard(h, idx){
+  const si = HABIT_STATUS_ORDER.indexOf(h.status||'remembering');
+  const isLayered = idx > 0;
+  const statusHtml = HABIT_STATUS_ORDER.map((s,i) => {
+    const isDone   = i < si;
+    const isActive = i === si;
+    const circleClass = isDone ? 'done' : isActive ? 'active' : '';
+    const lblClass    = isDone ? 'done' : isActive ? 'active' : '';
+    const bar = i < 2 ? `<div class="habit-status-bar${i < si ? ' done' : ''}"></div>` : '';
+    return `<div class="habit-status-step">
+      <div class="habit-status-circle ${circleClass}">${isDone ? '✓' : (i+1)}</div>
+      <div class="habit-status-lbl ${lblClass}">${HABIT_STATUS_LABEL[s]}</div>
+    </div>${bar}`;
+  }).join('');
+  const advClass = h.status === 'consistent' ? 'to-auto' : '';
+  const advLabel = h.status === 'consistent'
+    ? "✓ Mark Automatic — it's effortless now"
+    : '→ Mark Consistent';
+  return `<div class="habit-active-card ${isLayered?'layered':''}">
+    <div class="habit-active-label">${isLayered ? '◎ Layered' : '▶ Primary'}</div>
+    <div class="habit-active-text">${esc(h.text)}</div>
+    <div class="habit-status-track">${statusHtml}</div>
+    <div class="habit-notes-lbl">Specific behavior I'm building:</div>
+    <textarea class="habit-notes-inp" id="habit-notes-${idx}"
+      placeholder="Describe the exact trigger, action, and reward…"
+      oninput="schedSaveHabitNotes(${idx},this.value)">${esc(h.notes||'')}</textarea>
+    <button class="habit-advance-btn ${advClass}" onclick="advanceHabitStatus(${idx})">${advLabel}</button>
+  </div>`;
+}
 
 function renderHabitMgr(){
   const d = getHabitMgr();
-  const activeEl = document.getElementById('habit-mgr-active-area');
-  const queueEl  = document.getElementById('habit-queue-list');
-  const histEl   = document.getElementById('habit-history-area');
+  const activeEl    = document.getElementById('habit-active-area');
+  const layerEl     = document.getElementById('habit-layer-area');
+  const queueEl     = document.getElementById('habit-queue-list');
+  const completedEl = document.getElementById('habit-completed-area');
   if(!activeEl) return;
 
-  // Active
-  if(d.active){
-    activeEl.innerHTML = `<div class="habit-mgr-active">
-      <div class="habit-mgr-label">▶ Current Habit</div>
-      <div class="habit-mgr-text">${esc(d.active.text)}</div>
-      <div class="habit-mgr-behavior-lbl">What specific behavior am I building?</div>
-      <textarea class="habit-mgr-textarea" id="habit-behavior-inp"
-        placeholder="Describe the exact trigger, action, and reward…"
-        oninput="schedSaveHabitBehavior(this.value)">${esc(d.active.behavior||'')}</textarea>
-      <button class="habit-mgr-done-btn" onclick="completeHabit()">✓ It's automatic now — mark complete</button>
-    </div>`;
-  } else {
-    activeEl.innerHTML = `<div class="habit-mgr-empty">No active habit.<br>Set one from the queue below.</div>`;
+  // Active habits
+  activeEl.innerHTML = d.active.length
+    ? d.active.map((h,i) => renderHabitCard(h,i)).join('')
+    : `<div class="habit-mgr-empty">No active habit.<br>Add one from the queue below.</div>`;
+
+  // Layer-in button (appears when primary is Consistent and queue non-empty)
+  if(layerEl){
+    const primary = d.active[0];
+    const canLayer = primary && primary.status === 'consistent' && d.active.length < 2 && d.queue.length > 0;
+    layerEl.innerHTML = canLayer
+      ? `<button class="habit-layer-btn" onclick="layerNextHabit()">+ Layer in next: "${esc(d.queue[0].text.slice(0,48))}"</button>`
+      : '';
   }
 
   // Queue
-  if(!d.queue || !d.queue.length){
-    queueEl.innerHTML = `<div style="color:var(--muted);font-size:11px;padding:10px 0;letter-spacing:.05em">Queue is empty — add habits below.</div>`;
-  } else {
-    queueEl.innerHTML = d.queue.map((h,i) => {
-      const canActivate = !d.active;
-      const activateBtn = canActivate
-        ? `<button class="habit-queue-activate" style="background:var(--green);border-color:var(--green);color:#fff;" onclick="activateHabit('${h.id}')">Set Active</button>`
-        : `<span style="font-size:9px;color:var(--muted);letter-spacing:.08em;padding:4px 6px">#${i+1}</span>`;
-      return `<div class="habit-queue-item">
-        <div class="habit-queue-text">${esc(h.text)}</div>
-        ${activateBtn}
+  queueEl.innerHTML = !d.queue.length
+    ? `<div style="color:var(--muted);font-size:11px;padding:10px 0;letter-spacing:.05em">Queue is empty.</div>`
+    : d.queue.map((h,i) => `
+      <div class="habit-queue-item" draggable="true"
+        ondragstart="queueDragStart(event,${i})"
+        ondragover="queueDragOver(event,${i})"
+        ondragleave="queueDragLeave(event)"
+        ondrop="queueDrop(event,${i})"
+        ondragend="queueDragEnd(event)">
+        <span class="habit-queue-handle">⠿</span>
+        <span class="habit-queue-num">${i+1}</span>
+        <span class="habit-queue-text">${esc(h.text)}</span>
         <button class="habit-queue-del" onclick="delHabitQueue('${h.id}')">✕</button>
-      </div>`;
-    }).join('');
-  }
+      </div>`).join('');
 
-  // History
-  if(histEl){
-    const comp = d.completed || [];
-    histEl.innerHTML = comp.length
-      ? `<div class="habit-history-hdr">Completed (${comp.length})</div>`+
-        comp.slice().reverse().map(h=>`<div class="habit-hist-item">
-          <span>${esc(h.text)}</span>
-          <span style="font-size:10px;color:var(--muted);white-space:nowrap">${new Date(h.completedAt).toLocaleDateString([],{month:'short',day:'numeric',year:'2-digit'})}</span>
-        </div>`).join('')
+  // Completed archive
+  if(completedEl){
+    const comp = d.completed||[];
+    completedEl.innerHTML = comp.length
+      ? `<div class="habit-completed-section">
+          <div class="habit-completed-hdr">Completed (${comp.length})</div>
+          ${comp.slice().reverse().map(h=>`
+            <div class="habit-completed-item">
+              <span class="habit-completed-text">${esc(h.text)}</span>
+              <span class="habit-completed-date">${new Date(h.completedAt).toLocaleDateString([],{month:'short',day:'numeric',year:'2-digit'})}</span>
+            </div>`).join('')}
+        </div>`
       : '';
   }
 }
 
-function schedSaveHabitBehavior(text){
-  if(_behaviorDebounce) clearTimeout(_behaviorDebounce);
-  _behaviorDebounce = setTimeout(()=>{
+let _notesDebounce = {};
+function schedSaveHabitNotes(idx, text){
+  if(_notesDebounce[idx]) clearTimeout(_notesDebounce[idx]);
+  _notesDebounce[idx] = setTimeout(()=>{
     const d = getHabitMgr();
-    if(!d.active) return;
-    d.active.behavior = text;
+    if(!d.active[idx]) return;
+    d.active[idx].notes = text;
     saveHabitMgr(d);
   }, 700);
 }
 
-function activateHabit(id){
+function advanceHabitStatus(idx){
   const d = getHabitMgr();
-  if(d.active){ toast('Complete the current habit before activating a new one.', 3500); return; }
-  const habit = (d.queue||[]).find(h=>h.id===id);
-  if(!habit) return;
-  d.queue = d.queue.filter(h=>h.id!==id);
-  d.active = {...habit, behavior:'', startedAt:new Date().toISOString()};
-  saveHabitMgr(d);
-  renderHabitMgr();
-  toast(`Habit set: "${habit.text.slice(0,50)}"`, 3000);
+  const h = d.active[idx];
+  if(!h) return;
+
+  if(h.status === 'remembering'){
+    h.status = 'consistent';
+    h.consistentAt = new Date().toISOString();
+    saveHabitMgr(d);
+    renderHabitMgr();
+    toast('Habit marked Consistent ✓', 2500);
+
+  } else if(h.status === 'consistent'){
+    // Flush notes textarea before completing
+    const notesEl = document.getElementById(`habit-notes-${idx}`);
+    if(notesEl) h.notes = notesEl.value;
+    h.completedAt = new Date().toISOString();
+    if(!d.completed) d.completed = [];
+    d.completed.push({...h});
+    d.active.splice(idx, 1);
+    // Auto-promote from queue only if active list is now empty
+    if(d.active.length === 0 && d.queue.length > 0){
+      const next = d.queue.shift();
+      d.active.push({...next, notes:'', status:'remembering', startedAt:new Date().toISOString()});
+      toast(`🎉 Automatic! Next up: "${next.text.slice(0,40)}"`, 4000);
+    } else {
+      toast('🎉 Habit marked Automatic — fully internalized!', 3000);
+    }
+    saveHabitMgr(d);
+    renderHabitMgr();
+  }
 }
 
-function completeHabit(){
+function layerNextHabit(){
   const d = getHabitMgr();
-  if(!d.active) return;
-  const behavInp = document.getElementById('habit-behavior-inp');
-  if(behavInp) d.active.behavior = behavInp.value.trim();
-  d.active.completedAt = new Date().toISOString();
-  if(!d.completed) d.completed = [];
-  d.completed.push({...d.active});
-  if(d.queue && d.queue.length){
-    const next = d.queue.shift();
-    d.active = {...next, behavior:'', startedAt:new Date().toISOString()};
-    toast(`🎉 Complete! Next: "${next.text.slice(0,40)}"`, 4000);
-  } else {
-    d.active = null;
-    toast('🎉 Habit complete! Queue is empty — add the next one.', 3500);
-  }
+  if(!d.queue.length){ toast('Queue is empty.', 2500); return; }
+  if(d.active.length >= 2){ toast('Already have 2 active habits.', 2500); return; }
+  const next = d.queue.shift();
+  d.active.push({...next, notes:'', status:'remembering', startedAt:new Date().toISOString()});
   saveHabitMgr(d);
   renderHabitMgr();
+  toast(`Layered in: "${next.text.slice(0,50)}"`, 3000);
 }
 
 function addHabitToQueue(){
@@ -3280,9 +3374,15 @@ function addHabitToQueue(){
   const text = inp.value.trim(); if(!text) return;
   const d = getHabitMgr();
   if(!d.queue) d.queue = [];
-  d.queue.push({id:uid(), text});
-  saveHabitMgr(d);
+  // If no active habit yet, go straight to active
+  if(d.active.length === 0){
+    d.active.push({id:uid(), text, notes:'', status:'remembering', startedAt:new Date().toISOString()});
+    toast('Set as active habit.', 2500);
+  } else {
+    d.queue.push({id:uid(), text});
+  }
   inp.value = '';
+  saveHabitMgr(d);
   renderHabitMgr();
 }
 
@@ -3291,6 +3391,51 @@ function delHabitQueue(id){
   d.queue = (d.queue||[]).filter(h=>h.id!==id);
   saveHabitMgr(d);
   renderHabitMgr();
+}
+
+// Drag-to-reorder queue
+let _qDragSrc = null;
+function queueDragStart(e,i){ _qDragSrc=i; e.dataTransfer.effectAllowed='move'; e.currentTarget.style.opacity='0.4'; }
+function queueDragOver(e,i){ e.preventDefault(); e.dataTransfer.dropEffect='move'; document.querySelectorAll('.habit-queue-item').forEach((el,j)=>el.classList.toggle('drag-over',j===i&&j!==_qDragSrc)); }
+function queueDragLeave(e){ e.currentTarget.classList.remove('drag-over'); }
+function queueDrop(e,i){ e.preventDefault(); if(_qDragSrc===null||_qDragSrc===i)return; const d=getHabitMgr(); const [m]=d.queue.splice(_qDragSrc,1); d.queue.splice(i,0,m); saveHabitMgr(d); renderHabitMgr(); _qDragSrc=null; }
+function queueDragEnd(e){ e.currentTarget.style.opacity='1'; document.querySelectorAll('.habit-queue-item').forEach(el=>el.classList.remove('drag-over')); _qDragSrc=null; }
+
+// Archive picker
+let _archPickOpen = false;
+function toggleArchivePick(){
+  _archPickOpen = !_archPickOpen;
+  const el  = document.getElementById('habit-arch-pick');
+  const btn = document.getElementById('habit-arch-toggle');
+  if(el)  el.style.display = _archPickOpen ? 'block' : 'none';
+  if(btn) btn.textContent  = _archPickOpen ? '🗂 Pick from Archive ▲' : '🗂 Pick from Archive ▾';
+  if(_archPickOpen){ renderArchivePick(); document.getElementById('habit-arch-search')?.focus(); }
+}
+function renderArchivePick(){
+  const q   = (document.getElementById('habit-arch-search')?.value||'').toLowerCase().trim();
+  const all = getArchive();
+  const shown = q ? all.filter(i=>i.text.toLowerCase().includes(q)) : all;
+  const el = document.getElementById('habit-arch-results');
+  if(!el) return;
+  el.innerHTML = shown.slice(0,40).map(i=>
+    `<div class="habit-arch-result" onclick="pickFromArchive('${i.id}')">${esc(i.text)}</div>`
+  ).join('') || '<div style="color:var(--muted);font-size:11px;padding:8px">No matches.</div>';
+}
+function pickFromArchive(id){
+  const item = getArchive().find(i=>i.id===id);
+  if(!item) return;
+  const d = getHabitMgr();
+  if(!d.queue) d.queue = [];
+  if(d.active.length === 0){
+    d.active.push({id:uid(), text:item.text, notes:'', status:'remembering', startedAt:new Date().toISOString()});
+    toast('Set as active habit.', 2500);
+  } else {
+    d.queue.push({id:uid(), text:item.text});
+    toast(`Queued: "${item.text.slice(0,40)}"`, 2500);
+  }
+  saveHabitMgr(d);
+  renderHabitMgr();
+  toggleArchivePick();
 }
 
 // ── CHESS ARCHIVE ─────────────────────────────────────────────────────
