@@ -611,6 +611,73 @@ body.light .page-watermark { opacity: .2; }
 .insight-rename-btn:hover{color:var(--gold2);}
 .insight-rename-row{display:flex;gap:8px;align-items:center;flex:1;}
 .insight-rename-inp{background:var(--bg);border:1px solid var(--gold2);border-radius:8px;padding:5px 10px;color:var(--text);font-size:14px;font-weight:700;font-family:inherit;outline:none;max-width:260px;}
+
+/* ── INSIGHT MANAGEMENT (4-section system) ──────────── */
+.ins-nav{display:flex;gap:0;border-bottom:1px solid var(--b1);margin-bottom:20px;}
+.ins-nav-btn{flex:1;text-align:center;padding:8px 4px;font-size:9px;letter-spacing:1px;text-transform:uppercase;border:none;background:none;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;font-family:var(--mono);transition:color .2s;white-space:nowrap;}
+.ins-nav-btn.on{color:var(--text);border-bottom-color:var(--verm);}
+.ins-section{display:none;}
+.ins-section.on{display:block;}
+.ins-caption{font-size:10px;color:var(--muted2);letter-spacing:.06em;line-height:1.7;margin-bottom:14px;}
+/* checklists */
+.checklist-items{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
+.checklist-item{display:flex;align-items:flex-start;gap:10px;background:var(--s1);border:1px solid var(--b1);border-radius:8px;padding:11px 13px;transition:border-color .15s;}
+.checklist-item:hover{border-color:var(--b2);}
+.checklist-num{font-family:var(--serif);font-size:17px;font-weight:900;color:var(--gold2);flex-shrink:0;width:18px;line-height:1.3;padding-top:1px;}
+.checklist-text{flex:1;font-size:13px;line-height:1.6;color:var(--text);}
+.checklist-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;opacity:0;transition:opacity .15s,color .15s;padding:0 3px;flex-shrink:0;line-height:1;}
+.checklist-item:hover .checklist-del{opacity:.5;}
+.checklist-del:hover{opacity:1!important;color:var(--verm);}
+.checklist-add-row{display:flex;gap:8px;align-items:flex-start;}
+.checklist-inp{flex:1;background:var(--bg);border:1px solid var(--b2);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:inherit;resize:none;outline:none;min-height:42px;line-height:1.5;}
+.checklist-inp:focus{border-color:var(--gold2);}
+.checklist-inp::placeholder{color:var(--muted);}
+.checklist-add-btn{background:var(--verm);color:#fff;border:none;border-radius:8px;padding:9px 15px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;transition:filter .2s;}
+.checklist-add-btn:hover{filter:brightness(1.1);}
+.checklist-full-msg{background:rgba(200,72,40,.1);border:1px solid rgba(200,72,40,.3);border-radius:8px;padding:10px 14px;font-size:11px;color:var(--verm);letter-spacing:.04em;margin-bottom:12px;}
+/* current habit */
+.habit-mgr-active{background:var(--s1);border:1px solid var(--b1);border-radius:10px;padding:18px 16px;margin-bottom:20px;}
+.habit-mgr-label{font-size:9px;letter-spacing:3px;color:var(--gold2);text-transform:uppercase;margin-bottom:8px;}
+.habit-mgr-text{font-size:15px;font-weight:600;line-height:1.5;color:var(--text);margin-bottom:14px;}
+.habit-mgr-behavior-lbl{font-size:10px;color:var(--muted2);letter-spacing:.06em;margin-bottom:5px;}
+.habit-mgr-textarea{width:100%;background:var(--bg);border:1px solid var(--b2);border-radius:8px;padding:9px 12px;color:var(--text);font-size:12px;font-family:inherit;resize:vertical;min-height:64px;outline:none;line-height:1.6;box-sizing:border-box;}
+.habit-mgr-textarea:focus{border-color:var(--gold2);}
+.habit-mgr-textarea::placeholder{color:var(--muted);}
+.habit-mgr-done-btn{margin-top:10px;width:100%;background:var(--green);color:#fff;border:none;border-radius:8px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.06em;transition:filter .2s;}
+.habit-mgr-done-btn:hover{filter:brightness(1.1);}
+.habit-mgr-empty{background:var(--s1);border:1px dashed var(--b2);border-radius:10px;padding:26px 16px;text-align:center;color:var(--muted);font-size:12px;line-height:2;margin-bottom:20px;}
+.habit-queue-hdr{font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:10px;}
+.habit-queue-item{display:flex;align-items:flex-start;gap:8px;background:var(--s1);border:1px solid var(--b1);border-radius:8px;padding:10px 12px;margin-bottom:6px;}
+.habit-queue-text{flex:1;font-size:12px;color:var(--text);line-height:1.5;}
+.habit-queue-activate{background:none;border:1px solid var(--b2);color:var(--muted2);border-radius:6px;padding:4px 10px;font-size:10px;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap;flex-shrink:0;}
+.habit-queue-activate:hover{border-color:var(--green2);color:var(--green2);}
+.habit-queue-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;opacity:0;padding:2px 4px;transition:opacity .15s;flex-shrink:0;line-height:1;}
+.habit-queue-item:hover .habit-queue-del{opacity:.45;}
+.habit-queue-del:hover{opacity:1!important;color:var(--verm);}
+.habit-history{margin-top:20px;}
+.habit-history-hdr{font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
+.habit-hist-item{font-size:11px;color:var(--muted2);padding:6px 0;border-bottom:1px solid var(--b1);display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.habit-hist-item:last-child{border-bottom:none;}
+/* archive */
+.archive-search-row{display:flex;gap:8px;margin-bottom:12px;align-items:center;}
+.archive-search{flex:1;background:var(--s1);border:1px solid var(--b2);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:inherit;outline:none;}
+.archive-search:focus{border-color:var(--gold2);}
+.archive-search::placeholder{color:var(--muted);}
+.archive-count{font-size:10px;color:var(--muted);white-space:nowrap;letter-spacing:.04em;flex-shrink:0;}
+.archive-list{display:flex;flex-direction:column;gap:4px;max-height:420px;overflow-y:auto;margin-bottom:4px;}
+.archive-item{display:flex;align-items:flex-start;gap:8px;background:var(--s1);border:1px solid var(--b1);border-radius:7px;padding:9px 11px;transition:border-color .15s;}
+.archive-item:hover{border-color:var(--b2);}
+.archive-item-text{flex:1;font-size:12px;line-height:1.6;color:var(--text);}
+.archive-item-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;opacity:0;padding:2px 4px;transition:opacity .15s;flex-shrink:0;line-height:1;}
+.archive-item:hover .archive-item-del{opacity:.45;}
+.archive-item-del:hover{opacity:1!important;color:var(--verm);}
+.archive-add-row{display:flex;gap:8px;margin-top:10px;align-items:flex-start;}
+.archive-add-inp{flex:1;background:var(--bg);border:1px solid var(--b2);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:inherit;resize:none;outline:none;line-height:1.5;min-height:42px;}
+.archive-add-inp:focus{border-color:var(--gold2);}
+.archive-add-inp::placeholder{color:var(--muted);}
+.archive-add-btn{background:var(--verm);color:#fff;border:none;border-radius:8px;padding:9px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;transition:filter .2s;}
+.archive-add-btn:hover{filter:brightness(1.1);}
+.archive-empty{text-align:center;color:var(--muted);font-size:11px;padding:28px 0;letter-spacing:.08em;}
 </style>
 </head>
 <body class="z">
@@ -863,48 +930,60 @@ body.light .page-watermark { opacity: .2; }
 
     <!-- Insights / Conclusions -->
     <div id="insights-view" style="display:none">
-
-      <!-- ① Folder grid -->
-      <div id="insights-folder-view">
-        <div class="sec-hdr">
-          <div class="sec-lbl">Insights</div>
-          <div class="sec-kj">洞察</div>
-          <div class="sec-line"></div>
-        </div>
-        <!-- inline create form (hidden by default) -->
-        <div class="folder-create-row" id="folder-create-row" style="display:none">
-          <input class="folder-emoji-inp" id="folder-emoji-inp" type="text" placeholder="📁" maxlength="2">
-          <input class="folder-name-inp" id="folder-name-inp" type="text" placeholder="Folder name…"
-            onkeydown="if(event.key==='Enter')confirmCreateFolder();if(event.key==='Escape')cancelCreateFolder()">
-          <button class="folder-cancel-btn" onclick="cancelCreateFolder()">Cancel</button>
-          <button class="folder-save-btn" onclick="confirmCreateFolder()">Create</button>
-        </div>
-        <div class="insight-folders-grid" id="insight-folders-grid"></div>
-        <button class="insight-add-folder-btn" onclick="startCreateFolder()">+ New Folder</button>
+      <div class="sec-hdr">
+        <div class="sec-lbl">Insights</div>
+        <div class="sec-kj">洞察</div>
+        <div class="sec-line"></div>
+      </div>
+      <div class="ins-nav">
+        <button class="ins-nav-btn on" id="ins-tab-pregame" onclick="switchInsight('pregame')">🎯 Pre-Game</button>
+        <button class="ins-nav-btn"    id="ins-tab-opener"  onclick="switchInsight('opener')" >⚔️ Session</button>
+        <button class="ins-nav-btn"    id="ins-tab-habit"   onclick="switchInsight('habit')"  >🔄 Habit</button>
+        <button class="ins-nav-btn"    id="ins-tab-archive" onclick="switchInsight('archive')">🗂 Archive</button>
       </div>
 
-      <!-- ② Open folder (items view) -->
-      <div id="insights-items-view" style="display:none">
-        <div class="insight-breadcrumb" id="insight-breadcrumb">
-          <button class="insight-back-btn" onclick="closeFolder()">← Folders</button>
-          <!-- title / rename inline -->
-          <span id="insight-title-display" style="display:flex;align-items:center;gap:6px;">
-            <span class="insight-folder-title-lbl"><span id="insight-open-emoji">📁</span> <span id="insight-open-title">—</span></span>
-            <button class="insight-rename-btn" onclick="startRenameFolder()" title="Rename">✏ rename</button>
-          </span>
-          <span id="insight-title-edit" style="display:none;" class="insight-rename-row">
-            <input class="insight-rename-inp" id="insight-rename-inp" type="text"
-              onkeydown="if(event.key==='Enter')confirmRenameFolder();if(event.key==='Escape')cancelRenameFolder()"
-              onblur="confirmRenameFolder()">
-          </span>
-        </div>
-        <div class="concl-input-row">
-          <textarea class="concl-textarea" id="concl-inp" placeholder="Write an insight…" oninput="document.getElementById('concl-add-btn').disabled=!this.value.trim()"></textarea>
-          <button class="concl-add-btn" id="concl-add-btn" disabled onclick="addConclusion()">+ Add</button>
-        </div>
-        <div class="concl-list" id="concl-list"></div>
+      <!-- Pre-Game Checklist -->
+      <div class="ins-section on" id="ins-pregame">
+        <p class="ins-caption">Read before every game — hard limit 5 items. Remove one to add another.</p>
+        <div id="pregame-list"></div>
+        <div id="pregame-add-area"></div>
       </div>
 
+      <!-- Session Opener -->
+      <div class="ins-section" id="ins-opener">
+        <p class="ins-caption">Read when sitting down to train — hard limit 4 items.</p>
+        <div id="opener-list"></div>
+        <div id="opener-add-area"></div>
+      </div>
+
+      <!-- Current Habit -->
+      <div class="ins-section" id="ins-habit">
+        <div id="habit-mgr-active-area"></div>
+        <div class="habit-queue-hdr">Queue</div>
+        <div id="habit-queue-list"></div>
+        <div class="checklist-add-row" style="margin-top:12px">
+          <textarea class="checklist-inp" id="habit-queue-inp" rows="2"
+            placeholder="Add a habit to the queue…"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addHabitToQueue();}"></textarea>
+          <button class="checklist-add-btn" onclick="addHabitToQueue()">+ Queue</button>
+        </div>
+        <div id="habit-history-area" class="habit-history"></div>
+      </div>
+
+      <!-- Chess Archive -->
+      <div class="ins-section" id="ins-archive">
+        <div class="archive-search-row">
+          <input class="archive-search" id="archive-search" placeholder="Search insights…" oninput="renderArchive()">
+          <span class="archive-count" id="archive-count"></span>
+        </div>
+        <div id="archive-list" class="archive-list"></div>
+        <div class="archive-add-row">
+          <textarea class="archive-add-inp" id="archive-inp" rows="2"
+            placeholder="Add to archive…"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addArchiveItem();}"></textarea>
+          <button class="archive-add-btn" onclick="addArchiveItem()">+ Add</button>
+        </div>
+      </div>
     </div><!-- /insights-view -->
 
     <!-- Tasks view -->
@@ -1235,6 +1314,83 @@ function init(){
     ls.set('sq_conclusions', data);
     ls.setRaw('sq_insights_seeded','1');
   })();
+  // Seed Chess Archive with tagged insights (one-time)
+  (function(){
+    if(ls.raw('sq_arch_seeded')) return;
+    const aa = (id,text) => {
+      const cur = ls.get('sq_archive','[]');
+      if(!cur.find(i=>i.id===id)){ cur.push({id,text,addedAt:new Date().toISOString()}); ls.set('sq_archive',cur); }
+    };
+    aa('a01','What is the element? is a useless question — start by what is the opponent\'s idea and go from there');
+    aa('a02','The strategic questions: 1. Where do I play  2. Who\'s better statically  3. Which exchanges I want (and don\'t)  4. Which pawn break is favourable');
+    aa('a03','The 5 Iron advantages are a tool you can connect to the 4 strategic questions and also use as an evaluation tool');
+    aa('a04','For understanding moves in your file use the 5 Iron advantages, but use Jacob ideas when it feels connected');
+    aa('a05','The only time we do strategic ideas before developing all pieces is if there is bad energy beneficial to use');
+    aa('a06','Jacob ideas more often than not are good — at least start the calculation with them, or lean a bit towards them');
+    aa('a07','All the thinking habits are like a bionic arm — the last form of thinking is Boris\'s way of thinking about moves');
+    aa('a08','The habit of thinking about ideas in games is exactly what Jacob tries to make me develop');
+    aa('a09','In pure chess ideas follow Jacob\'s teachings');
+    aa('a10','We are trying to find ideas, not statements');
+    aa('a11','"What is the problem?" is to understand the problem — in files we only need to understand the solution');
+    aa('a12','Only a handful of ideas are the solution to a problem repeatedly — Jacob ideas are such things. Apart from these we don\'t need to remember ideas');
+    aa('a13','Your aim should be to be familiar with every pawn structure you are playing — familiar means knowing the answer to the strategic questions');
+    aa('a14','In order to find Jacob ideas you need to do a big and long investigation');
+    aa('a15','A line is killed after both the program of finding ideas from strong players failed AND Alvar failed at finding something');
+    aa('a16','There is a limit to how deep into positions in openings we investigate before it stops benefiting us');
+    aa('a17','"What am I playing for?" might be a very helpful strategic question');
+    aa('a18','Pay attention to all the ideas — most often they are true, but every position has its own logic');
+    aa('a19','The aim with ideas is to think about them whenever they are apparent on the board');
+    aa('a20','There are different ideas for different phases you are trying to learn in chess');
+    aa('a21','Being able to assess ideas is a huge part of chess');
+    aa('a22','To every idea there is "but in this circumstance it\'s less of value"');
+    aa('a23','You are developing judgment through trial and error');
+    aa('a24','Being practical is a huge and important skill in chess');
+    aa('a25','Strong players lower their evaluation for positions');
+    aa('a26','Remove the habit of playing what looks easier to play');
+    aa('a27','Practising ideas intentionally (Jacob way) and writing about ideas seen in openings are different tools for different improvements');
+    aa('a28','I see chess uniquely — if someone is teaching me, convert it into my own language of learning');
+    aa('a29','Don\'t try to improve things which are good enough — my philosophy of chess is 100% good enough');
+    aa('a30','In Blitz (and maybe Rapid) use a different thinking method — only first move, then calculate only if seeing I am losing');
+    aa('a31','Boris likes to analyse his own openings because only he knows which positions feel natural for him');
+    aa('a32','The way Jacob distinguishes positional and strategic play is exactly how I do it');
+    aa('a33','It\'s completely fine how my intuition sees lines and not branches — branches are done with calculation');
+    aa('a34','To understand which tools to use is also training in itself');
+    aa('a35','Sticking to your plan and not doing more or less is an art in itself');
+    aa('a36','There is no perfect system, but there is a way to control your own system very well');
+    aa('a37','Learn ideas only which you missed at a game or exercise — prevents relearning things already understood deeply');
+    aa('a38','Make all files smaller and more digestible');
+    aa('a39','Stop opening all files for the day at once — go file by file');
+    aa('a40','Always study actively');
+    aa('a41','Focus on your bottlenecks');
+    aa('a42','Deliberate practice and post-understanding of mistakes is mostly simple reasons');
+    aa('a43','Making the habit you want to do easier than the one you want to avoid is the most effective method');
+    aa('a44','Don\'t fight thoughts about structure in your training');
+    aa('a45','Stop trying to make a complete method — the world and chess are too big, just cover as much ground as possible with tools');
+    aa('a46','One trusted source per domain');
+    aa('a47','Never watch YouTube — it\'s harmful');
+    aa('a48','If something works for you, work with it');
+    aa('a49','We learn the most from our mistakes');
+    aa('a50','You should never negotiate with facts');
+    aa('a51','Nothing in this world is perfect, except habits');
+    aa('a52','The Toji picture of doing things just works');
+    aa('a53','Go to a game when externally you are Ayanokoji and internally you are Toji');
+    aa('a54','Your mood temperature is simply nervousness temperature — you feel much better when more relaxed');
+    aa('a55','Nitzan is only for psychological work mid tournament');
+    aa('a56','Don\'t watch other\'s games unless you are done with the habit of comparing yourself to others');
+    aa('a57','To win is more fun than fun');
+    aa('a58','When listening to music while going over openings you are NOT looking to get a good feeling');
+    aa('a59','Never switch songs mid session');
+    aa('a60','Music for opening work is fine');
+    aa('a61','In the first session of the day — 30 minutes puzzle rush');
+    aa('a62','I like an organised way of doing things even if small — every day 10 openings, not more not less');
+    aa('a63','Don\'t watch inspiring anime that gives me a crush');
+    aa('a64','Workout before sleep disturbs my sleep');
+    aa('a65','When doing the assessment of Julen simply count the CP as you go over the elements');
+    aa('a66','Stop using the term "Iron advantage"');
+    aa('a67','My Blitz repertoire is fixed forever for 1.d4 and all new stuff we have training games');
+    aa('a68','Sicilian Pin is too obvious for me');
+    ls.setRaw('sq_arch_seeded','1');
+  })();
   if(getGUser()){
     bootFromCloud();
   } else {
@@ -1325,6 +1481,10 @@ async function bootFromCloud(){
         }
       }
       if(d.conclusions) ls.set('sq_conclusions', d.conclusions);
+      if(d.pregame)  ls.set('sq_pregame',   d.pregame);
+      if(d.opener)   ls.set('sq_opener',    d.opener);
+      if(d.habitMgr) ls.set('sq_habit_mgr', d.habitMgr);
+      if(d.archive)  ls.set('sq_archive',   d.archive);
       if(d.tasks){
         const localT = ls.get('sq_tasks','[]');
         if(Array.isArray(localT) && localT.length > 0 && Array.isArray(d.tasks) && d.tasks.length > 0){
@@ -1459,6 +1619,10 @@ async function refreshFromCloud(){
         }
       }
       if(d.conclusions) ls.set('sq_conclusions', d.conclusions);
+      if(d.pregame)  ls.set('sq_pregame',   d.pregame);
+      if(d.opener)   ls.set('sq_opener',    d.opener);
+      if(d.habitMgr) ls.set('sq_habit_mgr', d.habitMgr);
+      if(d.archive)  ls.set('sq_archive',   d.archive);
       if(d.tasks){
         const localT = ls.get('sq_tasks','[]');
         if(Array.isArray(localT) && localT.length > 0 && Array.isArray(d.tasks) && d.tasks.length > 0){
@@ -2916,36 +3080,24 @@ function handleGoogleCredential(response){
 }
 
 /* ── CONCLUSIONS / INSIGHTS ─────────────────────────── */
-// ── INSIGHT DATA (folder format) ─────────────────────────────────────
-// Storage format: {v:2, folders:[{id,name,emoji}], items:[{id,folderId,text,date}]}
-// Old format: array of {id,text,date} → auto-migrated to General folder on first read
+// ── INSIGHT MANAGEMENT SYSTEM ─────────────────────────────────────────
+// 4 sections: Pre-Game Checklist, Session Opener, Current Habit, Chess Archive
 
 function getConclusions(){ try { return ls.get('sq_conclusions','[]'); } catch(e){ return []; } }
 function saveConclusions(arr){ ls.set('sq_conclusions', arr); }
 
-function getInsightData(){
-  const raw = getConclusions();
-  if(Array.isArray(raw)){
-    // Migrate old flat array → folder format
-    const defId = 'f_' + uid();
-    const data = {
-      v: 2,
-      folders: raw.length ? [{id:defId, name:'General', emoji:'📝'}] : [],
-      items: raw.map(c => ({...c, folderId: defId}))
-    };
-    saveConclusions(data);          // persist migration immediately
-    return data;
-  }
-  if(raw && raw.v === 2) return raw;
-  return {v:2, folders:[], items:[]};
-}
+const MAX_PREGAME = 5;
+const MAX_OPENER  = 4;
+function getPregame()  { return ls.get('sq_pregame','[]'); }
+function savePregame(a){ ls.set('sq_pregame',a); pushSync(); }
+function getOpener()   { return ls.get('sq_opener','[]'); }
+function saveOpener(a) { ls.set('sq_opener',a); pushSync(); }
+function getHabitMgr() { return ls.get('sq_habit_mgr', JSON.stringify({active:null,queue:[],completed:[]})); }
+function saveHabitMgr(d){ ls.set('sq_habit_mgr',d); pushSync(); }
+function getArchive()  { return ls.get('sq_archive','[]'); }
+function saveArchive(a){ ls.set('sq_archive',a); pushSync(); }
 
-function saveInsightData(data){
-  saveConclusions(data);
-  pushSync();
-}
-
-let _openFolderId = null;
+let _insightTab = 'pregame';
 
 function switchView(view){
   ['training','tasks','insights'].forEach(v => {
@@ -2956,150 +3108,227 @@ function switchView(view){
   if(view === 'tasks') renderTasks();
 }
 
-// ── FOLDER LIST ───────────────────────────────────────────────────────
-function renderInsights(){
-  _openFolderId = null;
-  const data = getInsightData();
-  document.getElementById('insights-folder-view').style.display = '';
-  document.getElementById('insights-items-view').style.display  = 'none';
-  cancelCreateFolder();
+function renderInsights(){ switchInsight(_insightTab); }
 
-  const grid = document.getElementById('insight-folders-grid');
-  if(!data.folders.length){
-    grid.innerHTML = '<div class="concl-empty" style="grid-column:1/-1">フォルダなし<br>No folders yet.<br>Hit "+ New Folder" to start.</div>';
-    return;
-  }
-  grid.innerHTML = data.folders.map(f => {
-    const count = data.items.filter(i => i.folderId === f.id).length;
-    return `<div class="insight-folder-card" onclick="openFolder('${f.id}')">
-      <button class="insight-folder-del" onclick="event.stopPropagation();deleteFolder('${f.id}')" title="Delete folder">✕</button>
-      <div class="insight-folder-emoji">${f.emoji || '📁'}</div>
-      <div class="insight-folder-name">${esc(f.name)}</div>
-      <div class="insight-folder-count">${count} insight${count!==1?'s':''}</div>
+function switchInsight(tab){
+  _insightTab = tab;
+  ['pregame','opener','habit','archive'].forEach(t => {
+    const s = document.getElementById('ins-'+t);
+    const b = document.getElementById('ins-tab-'+t);
+    if(s) s.classList.toggle('on', t===tab);
+    if(b) b.classList.toggle('on', t===tab);
+  });
+  if(tab==='pregame') renderPregame();
+  else if(tab==='opener') renderOpener();
+  else if(tab==='habit') renderHabitMgr();
+  else if(tab==='archive') renderArchive();
+}
+
+// ── CHECKLISTS (Pre-Game & Session Opener) ────────────────────────────
+
+function renderChecklist(type){
+  const max   = type==='pregame' ? MAX_PREGAME : MAX_OPENER;
+  const items = type==='pregame' ? getPregame() : getOpener();
+  const listEl = document.getElementById(`${type}-list`);
+  const addEl  = document.getElementById(`${type}-add-area`);
+  if(!listEl) return;
+
+  const fnDel = type==='pregame' ? 'delPregame' : 'delOpener';
+  listEl.innerHTML = !items.length
+    ? `<div class="concl-empty" style="padding:20px 0">Empty — add up to ${max} items.</div>`
+    : `<div class="checklist-items">${items.map((item,i)=>`
+        <div class="checklist-item">
+          <div class="checklist-num">${i+1}</div>
+          <div class="checklist-text">${esc(item.text)}</div>
+          <button class="checklist-del" onclick="${fnDel}('${item.id}')">✕</button>
+        </div>`).join('')}</div>`;
+
+  if(!addEl) return;
+  if(items.length >= max){
+    addEl.innerHTML = `<div class="checklist-full-msg">⚠ Full (${max}/${max}) — remove an existing item to add a new one.</div>`;
+  } else {
+    const fnAdd = type==='pregame' ? 'addPregame' : 'addOpener';
+    addEl.innerHTML = `<div class="checklist-add-row">
+      <textarea class="checklist-inp" id="${type}-inp" rows="2" placeholder="Add item…"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();${fnAdd}();}"></textarea>
+      <button class="checklist-add-btn" onclick="${fnAdd}()">+ Add</button>
     </div>`;
-  }).join('');
+  }
 }
 
-function startCreateFolder(){
-  document.getElementById('folder-create-row').style.display = 'flex';
-  document.getElementById('folder-name-inp').focus();
+function renderPregame(){ renderChecklist('pregame'); }
+function renderOpener(){  renderChecklist('opener'); }
+
+function _addToChecklist(type){
+  const max  = type==='pregame' ? MAX_PREGAME : MAX_OPENER;
+  const get  = type==='pregame' ? getPregame  : getOpener;
+  const save = type==='pregame' ? savePregame : saveOpener;
+  const inp  = document.getElementById(`${type}-inp`);
+  if(!inp) return;
+  const text = inp.value.trim(); if(!text) return;
+  const items = get();
+  if(items.length >= max){ toast(`Max ${max} items — remove one first.`, 3500); return; }
+  items.push({id:uid(), text});
+  save(items); inp.value=''; renderChecklist(type);
 }
-function cancelCreateFolder(){
-  document.getElementById('folder-create-row').style.display = 'none';
-  document.getElementById('folder-emoji-inp').value = '';
-  document.getElementById('folder-name-inp').value  = '';
-}
-function confirmCreateFolder(){
-  const name = document.getElementById('folder-name-inp').value.trim();
-  if(!name) return;
-  const emoji = document.getElementById('folder-emoji-inp').value.trim() || '📁';
-  const data = getInsightData();
-  data.folders.push({id:'f_'+uid(), name, emoji});
-  saveInsightData(data);
-  cancelCreateFolder();
-  renderInsights();
-}
-function deleteFolder(folderId){
-  const data = getInsightData();
-  const folder = data.folders.find(f => f.id === folderId);
-  if(!folder) return;
-  const count = data.items.filter(i => i.folderId === folderId).length;
-  const msg = count > 0
-    ? `Delete "${folder.name}"? This will also delete ${count} insight${count!==1?'s':''} inside.`
-    : `Delete folder "${folder.name}"?`;
-  if(!confirm(msg)) return;
-  data.folders = data.folders.filter(f => f.id !== folderId);
-  data.items   = data.items.filter(i => i.folderId !== folderId);
-  saveInsightData(data);
-  renderInsights();
+function addPregame(){ _addToChecklist('pregame'); }
+function addOpener(){  _addToChecklist('opener'); }
+function delPregame(id){ savePregame(getPregame().filter(i=>i.id!==id)); renderPregame(); }
+function delOpener(id){  saveOpener(getOpener().filter(i=>i.id!==id));   renderOpener(); }
+
+// ── CURRENT HABIT ─────────────────────────────────────────────────────
+
+let _behaviorDebounce = null;
+
+function renderHabitMgr(){
+  const d = getHabitMgr();
+  const activeEl = document.getElementById('habit-mgr-active-area');
+  const queueEl  = document.getElementById('habit-queue-list');
+  const histEl   = document.getElementById('habit-history-area');
+  if(!activeEl) return;
+
+  // Active
+  if(d.active){
+    activeEl.innerHTML = `<div class="habit-mgr-active">
+      <div class="habit-mgr-label">▶ Current Habit</div>
+      <div class="habit-mgr-text">${esc(d.active.text)}</div>
+      <div class="habit-mgr-behavior-lbl">What specific behavior am I building?</div>
+      <textarea class="habit-mgr-textarea" id="habit-behavior-inp"
+        placeholder="Describe the exact trigger, action, and reward…"
+        oninput="schedSaveHabitBehavior(this.value)">${esc(d.active.behavior||'')}</textarea>
+      <button class="habit-mgr-done-btn" onclick="completeHabit()">✓ It's automatic now — mark complete</button>
+    </div>`;
+  } else {
+    activeEl.innerHTML = `<div class="habit-mgr-empty">No active habit.<br>Set one from the queue below.</div>`;
+  }
+
+  // Queue
+  if(!d.queue || !d.queue.length){
+    queueEl.innerHTML = `<div style="color:var(--muted);font-size:11px;padding:10px 0;letter-spacing:.05em">Queue is empty — add habits below.</div>`;
+  } else {
+    queueEl.innerHTML = d.queue.map((h,i) => {
+      const canActivate = !d.active;
+      const activateBtn = canActivate
+        ? `<button class="habit-queue-activate" style="background:var(--green);border-color:var(--green);color:#fff;" onclick="activateHabit('${h.id}')">Set Active</button>`
+        : `<span style="font-size:9px;color:var(--muted);letter-spacing:.08em;padding:4px 6px">#${i+1}</span>`;
+      return `<div class="habit-queue-item">
+        <div class="habit-queue-text">${esc(h.text)}</div>
+        ${activateBtn}
+        <button class="habit-queue-del" onclick="delHabitQueue('${h.id}')">✕</button>
+      </div>`;
+    }).join('');
+  }
+
+  // History
+  if(histEl){
+    const comp = d.completed || [];
+    histEl.innerHTML = comp.length
+      ? `<div class="habit-history-hdr">Completed (${comp.length})</div>`+
+        comp.slice().reverse().map(h=>`<div class="habit-hist-item">
+          <span>${esc(h.text)}</span>
+          <span style="font-size:10px;color:var(--muted);white-space:nowrap">${new Date(h.completedAt).toLocaleDateString([],{month:'short',day:'numeric',year:'2-digit'})}</span>
+        </div>`).join('')
+      : '';
+  }
 }
 
-// ── OPEN FOLDER ───────────────────────────────────────────────────────
-function openFolder(folderId){
-  const data = getInsightData();
-  const folder = data.folders.find(f => f.id === folderId);
-  if(!folder) return;
-  _openFolderId = folderId;
-  document.getElementById('insights-folder-view').style.display = 'none';
-  document.getElementById('insights-items-view').style.display  = '';
-  document.getElementById('insight-open-emoji').textContent = folder.emoji || '📁';
-  document.getElementById('insight-open-title').textContent = folder.name;
-  document.getElementById('insight-title-display').style.display = 'flex';
-  document.getElementById('insight-title-edit').style.display    = 'none';
-  renderConclusions();
-}
-function closeFolder(){
-  _openFolderId = null;
-  renderInsights();
+function schedSaveHabitBehavior(text){
+  if(_behaviorDebounce) clearTimeout(_behaviorDebounce);
+  _behaviorDebounce = setTimeout(()=>{
+    const d = getHabitMgr();
+    if(!d.active) return;
+    d.active.behavior = text;
+    saveHabitMgr(d);
+  }, 700);
 }
 
-// ── INLINE RENAME ─────────────────────────────────────────────────────
-function startRenameFolder(){
-  const data = getInsightData();
-  const folder = data.folders.find(f => f.id === _openFolderId);
-  if(!folder) return;
-  document.getElementById('insight-title-display').style.display = 'none';
-  document.getElementById('insight-title-edit').style.display    = 'flex';
-  const inp = document.getElementById('insight-rename-inp');
-  inp.value = folder.name;
-  inp.focus(); inp.select();
-}
-function cancelRenameFolder(){
-  document.getElementById('insight-title-display').style.display = 'flex';
-  document.getElementById('insight-title-edit').style.display    = 'none';
-}
-function confirmRenameFolder(){
-  const inp = document.getElementById('insight-rename-inp');
-  const name = inp.value.trim();
-  if(!name){ cancelRenameFolder(); return; }
-  const data = getInsightData();
-  const folder = data.folders.find(f => f.id === _openFolderId);
-  if(!folder){ cancelRenameFolder(); return; }
-  folder.name = name;
-  saveInsightData(data);
-  document.getElementById('insight-open-title').textContent = name;
-  cancelRenameFolder();
+function activateHabit(id){
+  const d = getHabitMgr();
+  if(d.active){ toast('Complete the current habit before activating a new one.', 3500); return; }
+  const habit = (d.queue||[]).find(h=>h.id===id);
+  if(!habit) return;
+  d.queue = d.queue.filter(h=>h.id!==id);
+  d.active = {...habit, behavior:'', startedAt:new Date().toISOString()};
+  saveHabitMgr(d);
+  renderHabitMgr();
+  toast(`Habit set: "${habit.text.slice(0,50)}"`, 3000);
 }
 
-// ── INSIGHT ITEMS ─────────────────────────────────────────────────────
-function addConclusion(){
-  const inp = document.getElementById('concl-inp');
-  const text = inp.value.trim();
-  if(!text || !_openFolderId) return;
-  const data = getInsightData();
-  data.items.unshift({id:uid(), folderId:_openFolderId, text, date:new Date().toISOString()});
-  saveInsightData(data);
+function completeHabit(){
+  const d = getHabitMgr();
+  if(!d.active) return;
+  const behavInp = document.getElementById('habit-behavior-inp');
+  if(behavInp) d.active.behavior = behavInp.value.trim();
+  d.active.completedAt = new Date().toISOString();
+  if(!d.completed) d.completed = [];
+  d.completed.push({...d.active});
+  if(d.queue && d.queue.length){
+    const next = d.queue.shift();
+    d.active = {...next, behavior:'', startedAt:new Date().toISOString()};
+    toast(`🎉 Complete! Next: "${next.text.slice(0,40)}"`, 4000);
+  } else {
+    d.active = null;
+    toast('🎉 Habit complete! Queue is empty — add the next one.', 3500);
+  }
+  saveHabitMgr(d);
+  renderHabitMgr();
+}
+
+function addHabitToQueue(){
+  const inp = document.getElementById('habit-queue-inp');
+  if(!inp) return;
+  const text = inp.value.trim(); if(!text) return;
+  const d = getHabitMgr();
+  if(!d.queue) d.queue = [];
+  d.queue.push({id:uid(), text});
+  saveHabitMgr(d);
   inp.value = '';
-  document.getElementById('concl-add-btn').disabled = true;
-  renderConclusions();
+  renderHabitMgr();
 }
 
-function deleteConclusion(id){
-  if(!confirm('Delete this insight?')) return;
-  const data = getInsightData();
-  data.items = data.items.filter(c => c.id !== id);
-  saveInsightData(data);
-  renderConclusions();
+function delHabitQueue(id){
+  const d = getHabitMgr();
+  d.queue = (d.queue||[]).filter(h=>h.id!==id);
+  saveHabitMgr(d);
+  renderHabitMgr();
 }
 
-function renderConclusions(){
-  const el = document.getElementById('concl-list');
-  if(!el) return;
-  const data  = getInsightData();
-  const items = data.items.filter(i => i.folderId === _openFolderId);
-  if(!items.length){
-    el.innerHTML = '<div class="concl-empty">洞察なし<br>No insights in this folder yet.</div>';
+// ── CHESS ARCHIVE ─────────────────────────────────────────────────────
+
+function renderArchive(){
+  const q   = (document.getElementById('archive-search')?.value||'').toLowerCase().trim();
+  const all = getArchive();
+  const shown = q ? all.filter(i => i.text.toLowerCase().includes(q)) : all;
+  const countEl = document.getElementById('archive-count');
+  if(countEl) countEl.textContent = q ? `${shown.length} / ${all.length}` : `${all.length} insights`;
+  const listEl = document.getElementById('archive-list');
+  if(!listEl) return;
+  if(!shown.length){
+    listEl.innerHTML = q ? '<div class="archive-empty">No results.</div>' : '<div class="archive-empty">Archive is empty.</div>';
     return;
   }
-  el.innerHTML = items.map(c => {
-    const d = new Date(c.date);
-    const dStr = d.toLocaleDateString([], {weekday:'short',year:'numeric',month:'short',day:'numeric'});
-    return `<div class="concl-card">
-      <div class="concl-card-date">${dStr}</div>
-      <div class="concl-card-text">${esc(c.text)}</div>
-      <div class="concl-card-foot"><button class="concl-del-btn" onclick="deleteConclusion('${c.id}')">✕ delete</button></div>
-    </div>`;
-  }).join('');
+  listEl.innerHTML = shown.map(i=>`
+    <div class="archive-item">
+      <div class="archive-item-text">${esc(i.text)}</div>
+      <button class="archive-item-del" onclick="delArchiveItem('${i.id}')">✕</button>
+    </div>`).join('');
+}
+
+function addArchiveItem(){
+  const inp = document.getElementById('archive-inp');
+  if(!inp) return;
+  const text = inp.value.trim(); if(!text) return;
+  const all = getArchive();
+  all.unshift({id:uid(), text, addedAt:new Date().toISOString()});
+  saveArchive(all);
+  inp.value = '';
+  renderArchive();
+}
+
+function delArchiveItem(id){
+  if(!confirm('Remove from archive?')) return;
+  saveArchive(getArchive().filter(i=>i.id!==id));
+  renderArchive();
 }
 
 function pushSync(){
@@ -3132,6 +3361,7 @@ async function pushCloud(){
     skillDefs: getDefs(), skillData: getData(),
     sessions: sess, habits: getHabits(), tasks: getTasks(), protein: getProteinLog(),
     conclusions: getConclusions(),
+    pregame: getPregame(), opener: getOpener(), habitMgr: getHabitMgr(), archive: getArchive(),
     ...(timerToWrite !== undefined ? { activeTimer: timerToWrite } : {}),
   };
   try {
