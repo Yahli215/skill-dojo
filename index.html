@@ -1131,6 +1131,110 @@ function init(){
     }
     if(changed) ls.set('sq_habits', h);
   })();
+  // Seed insight folders + all tagged insights (one-time, idempotent by fixed IDs)
+  (function(){
+    if(ls.raw('sq_insights_seeded')) return;
+    const raw = ls.get('sq_conclusions', null);
+    const data = (raw && raw.v===2) ? raw : {v:2, folders:[], items:[]};
+    const af = (id,name,emoji) => { if(!data.folders.find(f=>f.id===id)) data.folders.push({id,name,emoji}); };
+    const ai = (id,fid,text) => { if(!data.items.find(i=>i.id===id)) data.items.push({id,folderId:fid,text,date:new Date().toISOString()}); };
+    af('f_before',  'Before a Game',          '🎯');
+    af('f_mid',     'Mid Tournament',          '🏆');
+    af('f_training','During Training',         '⚔️');
+    af('f_stuck',   'When Stuck on Chess',     '♟️');
+    af('f_opening', 'Opening Specific',        '📖');
+    af('f_dread',   'Dread or Resistance',     '🔥');
+    af('f_compare', 'Comparing to Others',     '🪞');
+    af('f_general', 'General (weekly)',        '📅');
+    // ── BEFORE A GAME ──
+    ai('si_b1','f_before','Positive thoughts are extremely helpful — remember your Rapid tournament');
+    ai('si_b2','f_before','Your "mood temperature" is simply nervousness temperature. You feel much better when more relaxed');
+    ai('si_b3','f_before','Nitzan is only for psychological work mid tournament — not before');
+    ai('si_b4','f_before',"Don't watch other's games unless you're done with this habit of comparing yourself to others");
+    ai('si_b5','f_before','To win is more fun than fun');
+    // ── MID TOURNAMENT ──
+    ai('si_m1','f_mid','Nitzan is only for psychological work mid tournament');
+    ai('si_m2','f_mid','You should never negotiate with facts');
+    ai('si_m3','f_mid','The Toji picture of doing things just works');
+    ai('si_m4','f_mid','If something works for you, work with it');
+    // ── DURING TRAINING ──
+    ai('si_t1','f_training','Never switch songs mid session');
+    ai('si_t2','f_training','Music for opening work is fine — but you are NOT looking to get a good feeling');
+    ai('si_t3','f_training','Stop opening all the files you are going to view for the day — go file by file');
+    ai('si_t4','f_training','In the first session of the day: 30 minutes puzzle rush');
+    ai('si_t5','f_training','I like it when there is an organised way of doing things, even if small — like every day 10 openings, not more not less');
+    ai('si_t6','f_training','Always study actively');
+    ai('si_t7','f_training','Sticking to your plan and not doing more or less is an art in itself');
+    ai('si_t8','f_training','Focus on your bottlenecks');
+    ai('si_t9','f_training','Deliberate practice and post-understanding of your own mistakes is mostly simple reasons');
+    ai('si_t10','f_training','Making the habit you want to do easier than the one you want to avoid is the most effective method there is');
+    ai('si_t11','f_training',"Don't fight the thoughts about structure in your training");
+    ai('si_t12','f_training','Stop trying to make a complete method — the world and chess are too big and complex. All we can do is cover as much ground as we can with tools');
+    ai('si_t13','f_training','Learn ideas only which you have missed at a game or in an exercise — it prevents you from relearning things you already understand deeply');
+    ai('si_t14','f_training','There is no perfect system, but there is a way to control your own system very well');
+    // ── WHEN STUCK ON CHESS ──
+    ai('si_s1','f_stuck','"What is the element?" is a useless question — start by asking what is the opponent\'s idea and go from there');
+    ai('si_s2','f_stuck','The strategic questions: 1. Where do I play  2. Who\'s better statically  3. Which exchanges I want (and don\'t)  4. Which pawn break is favourable');
+    ai('si_s3','f_stuck','The 5 Iron advantages are a tool you can connect to the 4 strategic questions, and also use as an evaluation tool');
+    ai('si_s4','f_stuck','For understanding moves in your file use the 5 Iron advantages, but you can use Jacob ideas when it feels connected');
+    ai('si_s5','f_stuck','The only time we do strategic ideas before developing all pieces is if there is a bad energy which is beneficial for us to use');
+    ai('si_s6','f_stuck','Jacob ideas more often than not are good — at least start the calculation with them, or lean a bit towards them');
+    ai('si_s7','f_stuck','All the thinking habits are like a bionic arm. The last form of thinking is Boris\'s way of thinking about moves');
+    ai('si_s8','f_stuck','The habit of thinking about ideas in games is exactly what Jacob tries to make you develop');
+    ai('si_s9','f_stuck','In pure chess ideas, follow Jacob\'s teachings');
+    ai('si_s10','f_stuck','We are trying to find ideas, not statements');
+    ai('si_s11','f_stuck','"What is the problem?" is to understand the problem — in files we only need to understand the solution');
+    ai('si_s12','f_stuck','Only a handful of ideas are the solution to a problem multiple times — Jacob ideas are such things. Apart from this type we don\'t need to remember ideas');
+    ai('si_s13','f_stuck','Your aim should be to be familiar with every pawn structure you are playing. Familiar = knowing the answer to the strategic questions');
+    ai('si_s14','f_stuck','In order to find Jacob ideas you need to do a big and long investigation');
+    ai('si_s15','f_stuck','A line is killed after both the program of finding ideas from strong players failed AND Alvar failed at finding something');
+    ai('si_s16','f_stuck','There is a limit to how deep into a position in openings we investigate before it stops benefiting us');
+    ai('si_s17','f_stuck','"What am I playing for?" might be a very helpful strategic question for you');
+    ai('si_s18','f_stuck','Stop using the term "Iron advantage"');
+    ai('si_s19','f_stuck','Pay attention to all the ideas — most often than not they are true, but in the end every position has its own logic');
+    ai('si_s20','f_stuck','The aim with those ideas is to think about them whenever they are apparent on the board');
+    ai('si_s21','f_stuck','There are different ideas for different phases you are trying to learn in chess');
+    ai('si_s22','f_stuck','Being able to assess ideas is a huge part of chess');
+    ai('si_s23','f_stuck','For every idea there is "but in this circumstance, it\'s less of a value"');
+    ai('si_s24','f_stuck','You are developing judgment through trial and error');
+    ai('si_s25','f_stuck','Being practical is a huge and important skill in chess');
+    ai('si_s26','f_stuck','Strong players lower their evaluation for positions');
+    ai('si_s27','f_stuck','Remove the habit of playing what looks "easier" to play');
+    ai('si_s28','f_stuck','Practising ideas intentionally (the Jacob way) and writing about ideas you see in openings are different tools to get better at different things');
+    ai('si_s29','f_stuck','I see chess uniquely — if someone is teaching you, try to convert it into your own language of learning');
+    ai('si_s30','f_stuck',"Don't try to improve things which are good enough — your philosophy of chess is 100% good enough");
+    // ── OPENING SPECIFIC ──
+    ai('si_o1','f_opening','In Blitz (and maybe Rapid) use a different thinking method — only first move, then calculate if you see you are losing');
+    ai('si_o2','f_opening','My Blitz repertoire will be forever the same — for 1.d4 and all new stuff we have training games');
+    ai('si_o3','f_opening','I might need to use the Shankland in the right way after all');
+    ai('si_o4','f_opening','Sicilian Pin is too obvious for me');
+    ai('si_o5','f_opening','Boris likes to analyse his own openings because only he knows which positions feel natural for him');
+    ai('si_o6','f_opening','About printings and this stuff — discuss with Boris');
+    ai('si_o7','f_opening','Just understand why a3 is not good in the game you showed to Boris');
+    ai('si_o8','f_opening','When doing the assessment of Julen simply count the CP as you go over the elements');
+    // ── DREAD OR RESISTANCE ──
+    ai('si_d1','f_dread','If something works for you, work with it');
+    ai('si_d2','f_dread','Nothing in this world is perfect, except habits');
+    ai('si_d3','f_dread','One trusted source per domain');
+    ai('si_d4','f_dread','Making the habit you want to do easier than the one you want to avoid is the most effective method there is');
+    ai('si_d5','f_dread','The Toji picture of doing things just works');
+    // ── COMPARING TO OTHERS ──
+    ai('si_c1','f_compare',"Don't watch other's games unless you are done with this habit of comparing yourself to others");
+    ai('si_c2','f_compare','We learn the most from our mistakes');
+    ai('si_c3','f_compare','You should never negotiate with facts');
+    // ── GENERAL (WEEKLY) ──
+    ai('si_g1','f_general','WhatsApp on web makes your computer crash');
+    ai('si_g2','f_general','Workout before sleep disturbs your sleep');
+    ai('si_g3','f_general','Never watch YouTube again — it is harmful');
+    ai('si_g4','f_general',"Don't watch inspiring anime — don't watch anime which gives you a crush");
+    ai('si_g5','f_general','Make all your files smaller and more digestible');
+    ai('si_g6','f_general','The way Jacob distinguishes positional and strategic play is exactly like you are doing it');
+    ai('si_g7','f_general',"It's completely fine how your intuition sees lines and not branches — those branches are done with calculation");
+    ai('si_g8','f_general','To understand which tools you want to use is also training in itself');
+    ai('si_g9','f_general','There is no perfect system, but there is a way to control your own system very well');
+    ls.set('sq_conclusions', data);
+    ls.setRaw('sq_insights_seeded','1');
+  })();
   if(getGUser()){
     bootFromCloud();
   } else {
