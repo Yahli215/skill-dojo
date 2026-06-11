@@ -582,6 +582,35 @@ body.light .page-watermark { opacity: .2; }
 .concl-del-btn{background:none;border:none;color:var(--muted);font-size:10px;cursor:pointer;padding:2px 6px;letter-spacing:.5px;font-family:var(--mono);transition:color .2s;}
 .concl-del-btn:hover{color:var(--verm);}
 .concl-empty{text-align:center;color:var(--muted);font-size:11px;padding:48px 0;letter-spacing:1px;line-height:2;}
+
+/* ── INSIGHT FOLDERS ──────────────────────────────────── */
+.insight-folders-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:12px;margin-bottom:14px;}
+.insight-folder-card{background:var(--s1);border:1px solid var(--b1);border-radius:10px;padding:18px 14px 13px;cursor:pointer;transition:border-color .2s,transform .15s,box-shadow .15s;position:relative;display:flex;flex-direction:column;gap:7px;min-height:108px;}
+.insight-folder-card:hover{border-color:var(--gold2);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.3);}
+.insight-folder-emoji{font-size:28px;line-height:1;}
+.insight-folder-name{font-size:13px;font-weight:600;color:var(--text);line-height:1.3;flex:1;}
+.insight-folder-count{font-size:10px;color:var(--muted);letter-spacing:.04em;}
+.insight-folder-del{position:absolute;top:7px;right:7px;background:none;border:none;color:var(--muted);opacity:0;cursor:pointer;font-size:12px;transition:opacity .15s,color .15s;padding:3px 5px;line-height:1;}
+.insight-folder-card:hover .insight-folder-del{opacity:.45;}
+.insight-folder-del:hover{opacity:1!important;color:var(--verm);}
+.insight-add-folder-btn{width:100%;background:none;border:1px dashed var(--b2);border-radius:10px;padding:13px;color:var(--muted2);font-size:11px;cursor:pointer;transition:border-color .2s,color .2s;font-family:inherit;letter-spacing:.08em;}
+.insight-add-folder-btn:hover{border-color:var(--gold2);color:var(--gold2);}
+.folder-create-row{background:var(--s1);border:1px solid var(--b1);border-radius:10px;padding:13px 14px;margin-bottom:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.folder-emoji-inp{width:46px;background:var(--bg);border:1px solid var(--b2);border-radius:8px;padding:6px;font-size:18px;text-align:center;color:var(--text);font-family:inherit;}
+.folder-emoji-inp:focus{outline:none;border-color:var(--gold2);}
+.folder-name-inp{flex:1;min-width:110px;background:var(--bg);border:1px solid var(--b2);border-radius:8px;padding:8px 11px;color:var(--text);font-size:13px;font-family:inherit;}
+.folder-name-inp:focus{outline:none;border-color:var(--gold2);}
+.folder-name-inp::placeholder{color:var(--muted);}
+.folder-save-btn{background:var(--gold2);color:#000;border:none;border-radius:8px;padding:8px 15px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
+.folder-cancel-btn{background:none;border:1px solid var(--b2);color:var(--muted);border-radius:8px;padding:8px 11px;font-size:12px;cursor:pointer;font-family:inherit;}
+.insight-breadcrumb{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+.insight-back-btn{background:none;border:1px solid var(--b2);color:var(--muted2);border-radius:8px;padding:5px 12px;font-size:11px;cursor:pointer;font-family:inherit;letter-spacing:.05em;transition:all .2s;white-space:nowrap;flex-shrink:0;}
+.insight-back-btn:hover{border-color:var(--text);color:var(--text);}
+.insight-folder-title-lbl{font-size:16px;font-weight:700;color:var(--text);}
+.insight-rename-btn{background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;padding:2px 7px;font-family:inherit;transition:color .15s;letter-spacing:.04em;}
+.insight-rename-btn:hover{color:var(--gold2);}
+.insight-rename-row{display:flex;gap:8px;align-items:center;flex:1;}
+.insight-rename-inp{background:var(--bg);border:1px solid var(--gold2);border-radius:8px;padding:5px 10px;color:var(--text);font-size:14px;font-weight:700;font-family:inherit;outline:none;max-width:260px;}
 </style>
 </head>
 <body class="z">
@@ -834,16 +863,48 @@ body.light .page-watermark { opacity: .2; }
 
     <!-- Insights / Conclusions -->
     <div id="insights-view" style="display:none">
-      <div class="sec-hdr">
-        <div class="sec-lbl">Insights</div>
-        <div class="sec-kj">洞察</div>
-        <div class="sec-line"></div>
+
+      <!-- ① Folder grid -->
+      <div id="insights-folder-view">
+        <div class="sec-hdr">
+          <div class="sec-lbl">Insights</div>
+          <div class="sec-kj">洞察</div>
+          <div class="sec-line"></div>
+        </div>
+        <!-- inline create form (hidden by default) -->
+        <div class="folder-create-row" id="folder-create-row" style="display:none">
+          <input class="folder-emoji-inp" id="folder-emoji-inp" type="text" placeholder="📁" maxlength="2">
+          <input class="folder-name-inp" id="folder-name-inp" type="text" placeholder="Folder name…"
+            onkeydown="if(event.key==='Enter')confirmCreateFolder();if(event.key==='Escape')cancelCreateFolder()">
+          <button class="folder-cancel-btn" onclick="cancelCreateFolder()">Cancel</button>
+          <button class="folder-save-btn" onclick="confirmCreateFolder()">Create</button>
+        </div>
+        <div class="insight-folders-grid" id="insight-folders-grid"></div>
+        <button class="insight-add-folder-btn" onclick="startCreateFolder()">+ New Folder</button>
       </div>
-      <div class="concl-input-row">
-        <textarea class="concl-textarea" id="concl-inp" placeholder="Write a conclusion or insight…" oninput="document.getElementById('concl-add-btn').disabled=!this.value.trim()"></textarea>
-        <button class="concl-add-btn" id="concl-add-btn" disabled onclick="addConclusion()">+ Add Insight</button>
+
+      <!-- ② Open folder (items view) -->
+      <div id="insights-items-view" style="display:none">
+        <div class="insight-breadcrumb" id="insight-breadcrumb">
+          <button class="insight-back-btn" onclick="closeFolder()">← Folders</button>
+          <!-- title / rename inline -->
+          <span id="insight-title-display" style="display:flex;align-items:center;gap:6px;">
+            <span class="insight-folder-title-lbl"><span id="insight-open-emoji">📁</span> <span id="insight-open-title">—</span></span>
+            <button class="insight-rename-btn" onclick="startRenameFolder()" title="Rename">✏ rename</button>
+          </span>
+          <span id="insight-title-edit" style="display:none;" class="insight-rename-row">
+            <input class="insight-rename-inp" id="insight-rename-inp" type="text"
+              onkeydown="if(event.key==='Enter')confirmRenameFolder();if(event.key==='Escape')cancelRenameFolder()"
+              onblur="confirmRenameFolder()">
+          </span>
+        </div>
+        <div class="concl-input-row">
+          <textarea class="concl-textarea" id="concl-inp" placeholder="Write an insight…" oninput="document.getElementById('concl-add-btn').disabled=!this.value.trim()"></textarea>
+          <button class="concl-add-btn" id="concl-add-btn" disabled onclick="addConclusion()">+ Add</button>
+        </div>
+        <div class="concl-list" id="concl-list"></div>
       </div>
-      <div class="concl-list" id="concl-list"></div>
+
     </div><!-- /insights-view -->
 
     <!-- Tasks view -->
@@ -2751,48 +2812,182 @@ function handleGoogleCredential(response){
 }
 
 /* ── CONCLUSIONS / INSIGHTS ─────────────────────────── */
+// ── INSIGHT DATA (folder format) ─────────────────────────────────────
+// Storage format: {v:2, folders:[{id,name,emoji}], items:[{id,folderId,text,date}]}
+// Old format: array of {id,text,date} → auto-migrated to General folder on first read
+
 function getConclusions(){ try { return ls.get('sq_conclusions','[]'); } catch(e){ return []; } }
 function saveConclusions(arr){ ls.set('sq_conclusions', arr); }
+
+function getInsightData(){
+  const raw = getConclusions();
+  if(Array.isArray(raw)){
+    // Migrate old flat array → folder format
+    const defId = 'f_' + uid();
+    const data = {
+      v: 2,
+      folders: raw.length ? [{id:defId, name:'General', emoji:'📝'}] : [],
+      items: raw.map(c => ({...c, folderId: defId}))
+    };
+    saveConclusions(data);          // persist migration immediately
+    return data;
+  }
+  if(raw && raw.v === 2) return raw;
+  return {v:2, folders:[], items:[]};
+}
+
+function saveInsightData(data){
+  saveConclusions(data);
+  pushSync();
+}
+
+let _openFolderId = null;
 
 function switchView(view){
   ['training','tasks','insights'].forEach(v => {
     document.getElementById(`${v}-view`).style.display = v === view ? '' : 'none';
     document.getElementById(`vnav-${v}`).classList.toggle('on', v === view);
   });
-  if(view === 'insights') renderConclusions();
+  if(view === 'insights') renderInsights();
   if(view === 'tasks') renderTasks();
 }
 
+// ── FOLDER LIST ───────────────────────────────────────────────────────
+function renderInsights(){
+  _openFolderId = null;
+  const data = getInsightData();
+  document.getElementById('insights-folder-view').style.display = '';
+  document.getElementById('insights-items-view').style.display  = 'none';
+  cancelCreateFolder();
+
+  const grid = document.getElementById('insight-folders-grid');
+  if(!data.folders.length){
+    grid.innerHTML = '<div class="concl-empty" style="grid-column:1/-1">フォルダなし<br>No folders yet.<br>Hit "+ New Folder" to start.</div>';
+    return;
+  }
+  grid.innerHTML = data.folders.map(f => {
+    const count = data.items.filter(i => i.folderId === f.id).length;
+    return `<div class="insight-folder-card" onclick="openFolder('${f.id}')">
+      <button class="insight-folder-del" onclick="event.stopPropagation();deleteFolder('${f.id}')" title="Delete folder">✕</button>
+      <div class="insight-folder-emoji">${f.emoji || '📁'}</div>
+      <div class="insight-folder-name">${esc(f.name)}</div>
+      <div class="insight-folder-count">${count} insight${count!==1?'s':''}</div>
+    </div>`;
+  }).join('');
+}
+
+function startCreateFolder(){
+  document.getElementById('folder-create-row').style.display = 'flex';
+  document.getElementById('folder-name-inp').focus();
+}
+function cancelCreateFolder(){
+  document.getElementById('folder-create-row').style.display = 'none';
+  document.getElementById('folder-emoji-inp').value = '';
+  document.getElementById('folder-name-inp').value  = '';
+}
+function confirmCreateFolder(){
+  const name = document.getElementById('folder-name-inp').value.trim();
+  if(!name) return;
+  const emoji = document.getElementById('folder-emoji-inp').value.trim() || '📁';
+  const data = getInsightData();
+  data.folders.push({id:'f_'+uid(), name, emoji});
+  saveInsightData(data);
+  cancelCreateFolder();
+  renderInsights();
+}
+function deleteFolder(folderId){
+  const data = getInsightData();
+  const folder = data.folders.find(f => f.id === folderId);
+  if(!folder) return;
+  const count = data.items.filter(i => i.folderId === folderId).length;
+  const msg = count > 0
+    ? `Delete "${folder.name}"? This will also delete ${count} insight${count!==1?'s':''} inside.`
+    : `Delete folder "${folder.name}"?`;
+  if(!confirm(msg)) return;
+  data.folders = data.folders.filter(f => f.id !== folderId);
+  data.items   = data.items.filter(i => i.folderId !== folderId);
+  saveInsightData(data);
+  renderInsights();
+}
+
+// ── OPEN FOLDER ───────────────────────────────────────────────────────
+function openFolder(folderId){
+  const data = getInsightData();
+  const folder = data.folders.find(f => f.id === folderId);
+  if(!folder) return;
+  _openFolderId = folderId;
+  document.getElementById('insights-folder-view').style.display = 'none';
+  document.getElementById('insights-items-view').style.display  = '';
+  document.getElementById('insight-open-emoji').textContent = folder.emoji || '📁';
+  document.getElementById('insight-open-title').textContent = folder.name;
+  document.getElementById('insight-title-display').style.display = 'flex';
+  document.getElementById('insight-title-edit').style.display    = 'none';
+  renderConclusions();
+}
+function closeFolder(){
+  _openFolderId = null;
+  renderInsights();
+}
+
+// ── INLINE RENAME ─────────────────────────────────────────────────────
+function startRenameFolder(){
+  const data = getInsightData();
+  const folder = data.folders.find(f => f.id === _openFolderId);
+  if(!folder) return;
+  document.getElementById('insight-title-display').style.display = 'none';
+  document.getElementById('insight-title-edit').style.display    = 'flex';
+  const inp = document.getElementById('insight-rename-inp');
+  inp.value = folder.name;
+  inp.focus(); inp.select();
+}
+function cancelRenameFolder(){
+  document.getElementById('insight-title-display').style.display = 'flex';
+  document.getElementById('insight-title-edit').style.display    = 'none';
+}
+function confirmRenameFolder(){
+  const inp = document.getElementById('insight-rename-inp');
+  const name = inp.value.trim();
+  if(!name){ cancelRenameFolder(); return; }
+  const data = getInsightData();
+  const folder = data.folders.find(f => f.id === _openFolderId);
+  if(!folder){ cancelRenameFolder(); return; }
+  folder.name = name;
+  saveInsightData(data);
+  document.getElementById('insight-open-title').textContent = name;
+  cancelRenameFolder();
+}
+
+// ── INSIGHT ITEMS ─────────────────────────────────────────────────────
 function addConclusion(){
   const inp = document.getElementById('concl-inp');
   const text = inp.value.trim();
-  if(!text) return;
-  const all = getConclusions();
-  all.unshift({ id: uid(), text, date: new Date().toISOString() });
-  saveConclusions(all);
+  if(!text || !_openFolderId) return;
+  const data = getInsightData();
+  data.items.unshift({id:uid(), folderId:_openFolderId, text, date:new Date().toISOString()});
+  saveInsightData(data);
   inp.value = '';
   document.getElementById('concl-add-btn').disabled = true;
   renderConclusions();
-  pushSync();
 }
 
 function deleteConclusion(id){
   if(!confirm('Delete this insight?')) return;
-  const all = getConclusions().filter(c => c.id !== id);
-  saveConclusions(all);
+  const data = getInsightData();
+  data.items = data.items.filter(c => c.id !== id);
+  saveInsightData(data);
   renderConclusions();
-  pushSync();
 }
 
 function renderConclusions(){
-  const all = getConclusions();
   const el = document.getElementById('concl-list');
   if(!el) return;
-  if(!all.length){
-    el.innerHTML = '<div class="concl-empty">洞察なし<br>No insights yet.<br>Add your first one above.</div>';
+  const data  = getInsightData();
+  const items = data.items.filter(i => i.folderId === _openFolderId);
+  if(!items.length){
+    el.innerHTML = '<div class="concl-empty">洞察なし<br>No insights in this folder yet.</div>';
     return;
   }
-  el.innerHTML = all.map(c => {
+  el.innerHTML = items.map(c => {
     const d = new Date(c.date);
     const dStr = d.toLocaleDateString([], {weekday:'short',year:'numeric',month:'short',day:'numeric'});
     return `<div class="concl-card">
