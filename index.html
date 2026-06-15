@@ -523,6 +523,20 @@ body.light .page-watermark { opacity: .2; }
 .protein-unit{font-size:14px;color:var(--t3);}
 .protein-goal-lbl{font-size:13px;color:var(--t3);margin-left:2px;}
 .protein-range-lbl{font-size:10px;color:var(--muted);letter-spacing:.05em;}
+/* Protein history */
+.protein-history{margin-top:14px;padding-top:12px;border-top:1px solid var(--b1);}
+.protein-hist-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.protein-hist-lbl{font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;}
+.protein-hist-stat{font-size:11px;color:var(--muted2);font-weight:600;}
+.ph-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px 4px;}
+.ph-day{display:flex;flex-direction:column;align-items:center;gap:3px;}
+.ph-dot{width:100%;aspect-ratio:1;border-radius:50%;background:var(--b2);transition:background .2s;}
+.ph-dot.mid{background:var(--gold2);}
+.ph-dot.hit{background:var(--green);}
+.ph-dot.today{outline:2px solid var(--muted2);outline-offset:2px;}
+.ph-dot.today.mid{outline-color:var(--gold2);}
+.ph-dot.today.hit{outline-color:var(--green);}
+.ph-lbl{font-size:8px;color:var(--muted);letter-spacing:.03em;}
 .protein-bar-bg{height:5px;background:var(--b2);border-radius:3px;margin-bottom:12px;overflow:hidden;}
 .protein-bar-fill{height:100%;background:var(--verm);border-radius:3px;transition:width .4s,background .3s;}
 .protein-bar-fill.mid{background:var(--gold2);}
@@ -952,6 +966,7 @@ body.light .page-watermark { opacity: .2; }
         <button class="pro-set-btn" onclick="setProteinCustom()">Set</button>
         <button class="pro-reset-btn" onclick="resetProtein()" title="Reset to 0">↺</button>
       </div>
+      <div class="protein-history" id="protein-history"></div>
     </div>
 
     </div><!-- /training-view -->
@@ -2649,6 +2664,55 @@ function renderProtein(){
   barEl.style.width = pct + '%';
   barEl.className   = 'protein-bar-fill' + (isHit ? ' hit' : isMid ? ' mid' : '');
   lblEl.textContent = isHit ? '✓ target hit!' : isMid ? 'in range — keep going' : 'target 105–130g';
+  renderProteinHistory();
+}
+
+function renderProteinHistory(){
+  const el = document.getElementById('protein-history');
+  if(!el) return;
+  const log   = getProteinLog();
+  const today = todayKey();
+
+  // Last 14 days oldest → newest
+  const days = [];
+  for(let i = 13; i >= 0; i--){
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0,10);
+    const g   = log[key] || 0;
+    days.push({
+      key, g,
+      isHit:   g >= PROTEIN_TARGET,
+      isMid:   g >= PROTEIN_MIN && g < PROTEIN_TARGET,
+      isToday: key === today,
+      dayLbl:  d.toLocaleDateString([],{weekday:'short'}).slice(0,2)
+    });
+  }
+
+  // Streak: walk back from today; skip today if not yet logged
+  let streak = 0;
+  const startIdx = days[13].g === 0 ? 12 : 13;
+  for(let i = startIdx; i >= 0; i--){
+    if(days[i].isHit || days[i].isMid) streak++;
+    else break;
+  }
+
+  const hits     = days.filter(d => d.isHit || d.isMid).length;
+  const statText = streak > 1 ? `🔥 ${streak}-day streak` : `${hits} / 14 days`;
+
+  el.innerHTML = `
+    <div class="protein-hist-hdr">
+      <div class="protein-hist-lbl">Daily Wins</div>
+      <div class="protein-hist-stat">${statText}</div>
+    </div>
+    <div class="ph-grid">
+      ${days.map(d => {
+        const cls = [d.isHit?'hit':d.isMid?'mid':'', d.isToday?'today':''].filter(Boolean).join(' ');
+        return `<div class="ph-day">
+          <div class="ph-dot ${cls}" title="${d.key}: ${d.g > 0 ? d.g+'g' : '—'}"></div>
+          <div class="ph-lbl">${d.dayLbl}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
 }
 // ── End Protein ────────────────────────────────────────
 
