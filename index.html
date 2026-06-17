@@ -1532,7 +1532,7 @@ async function bootFromCloud(){
       if(d.conclusions) ls.set('sq_conclusions', d.conclusions);
       if(d.pregame)  ls.set('sq_pregame',   d.pregame);
       if(d.opener)   ls.set('sq_opener',    d.opener);
-      if(d.habitMgr) ls.set('sq_habit_mgr', d.habitMgr);
+      if(d.habitMgr){ const localHM=ls.get('sq_habit_mgr',null); if(!localHM||((d.habitMgr._updatedAt||0)>=(localHM._updatedAt||0))) ls.set('sq_habit_mgr',d.habitMgr); }
       if(d.archive)  ls.set('sq_archive',   d.archive);
       if(d.tasks){
         const localT = ls.get('sq_tasks','[]');
@@ -1670,7 +1670,7 @@ async function refreshFromCloud(){
       if(d.conclusions) ls.set('sq_conclusions', d.conclusions);
       if(d.pregame)  ls.set('sq_pregame',   d.pregame);
       if(d.opener)   ls.set('sq_opener',    d.opener);
-      if(d.habitMgr) ls.set('sq_habit_mgr', d.habitMgr);
+      if(d.habitMgr){ const localHM=ls.get('sq_habit_mgr',null); if(!localHM||((d.habitMgr._updatedAt||0)>=(localHM._updatedAt||0))) ls.set('sq_habit_mgr',d.habitMgr); }
       if(d.archive)  ls.set('sq_archive',   d.archive);
       if(d.tasks){
         const localT = ls.get('sq_tasks','[]');
@@ -3205,7 +3205,7 @@ function getHabitMgr(){
   }
   return {active:raw.active||[], queue:raw.queue||[], completed:raw.completed||[]};
 }
-function saveHabitMgr(d){ ls.set('sq_habit_mgr',d); pushSync(); }
+function saveHabitMgr(d){ d._updatedAt = Date.now(); ls.set('sq_habit_mgr',d); pushSync(); }
 function getArchive()  { return ls.get('sq_archive','[]'); }
 function saveArchive(a){ ls.set('sq_archive',a); pushSync(); }
 
