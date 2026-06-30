@@ -1196,6 +1196,8 @@ body.light .page-watermark { opacity: .2; }
       <button class="friction-tag-chip" onclick="pickFrictionTag('endgame',this)">endgame</button>
       <button class="friction-tag-chip" onclick="pickFrictionTag('focus',this)">focus</button>
       <button class="friction-tag-chip" onclick="pickFrictionTag('memory',this)">memory</button>
+      <button class="friction-tag-chip" onclick="pickFrictionTag('distraction',this)">distraction</button>
+      <button class="friction-tag-chip" onclick="pickFrictionTag('mindset',this)">mindset</button>
       <button class="friction-tag-chip" onclick="pickFrictionTag('other',this)">other</button>
     </div>
     <div class="friction-box-row">
@@ -3312,7 +3314,7 @@ function saveArchive(a){ ls.set('sq_archive',a); pushSync(); }
 // ── FRICTION LOG ───────────────────────────────────────────────────────
 // Captures moments during training where something felt hard, resistant, or
 // repeatedly forgotten — the demonstrated-friction source for the habit queue.
-const FRICTION_TAGS = ['opening prep','calculation','endgame','focus','memory','other'];
+const FRICTION_TAGS = ['opening prep','calculation','endgame','focus','memory','distraction','mindset','other'];
 function getFrictionLog()    { return ls.get('sq_friction_log','[]'); }
 function saveFrictionLog(a)  { ls.set('sq_friction_log',a); pushSync(); }
 function getFrictionDismissed()   { return ls.get('sq_friction_dismissed','[]'); }
@@ -3324,6 +3326,8 @@ const FRICTION_HABIT_TEMPLATES = {
   'endgame':      'Drill the specific endgame pattern that just caused friction within 24 hours',
   'focus':        'Build and use a reset routine for the exact moment focus breaks',
   'memory':       'Re-test the forgotten line/pattern at +1 day instead of waiting for the next scheduled rep',
+  'distraction':  'Build a quick park-it ritual for non-chess thoughts (tasks, logistics) the moment they intrude on a session',
+  'mindset':      'Raise this directly with Nitzan/Aagaard instead of looping on it solo mid-session',
   'other':        'Address the recurring friction directly in the next session',
 };
 function suggestHabitForTag(tag){ return FRICTION_HABIT_TEMPLATES[tag] || FRICTION_HABIT_TEMPLATES.other; }
