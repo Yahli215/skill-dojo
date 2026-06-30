@@ -790,6 +790,50 @@ body.light .page-watermark { opacity: .2; }
 .proven-item-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:2px 4px;flex-shrink:0;}
 .proven-item-del:hover{color:var(--verm);}
 .proven-match-hint{color:var(--green2)!important;}
+
+/* ── EXPERIMENT TRACKER (Current Habit redesign) ──────── */
+.exp-add-box{background:var(--s1);border:1px solid var(--b1);border-radius:9px;padding:14px 15px;margin:14px 0 18px;}
+.exp-origin-chip[data-origin="borrowed"]{flex:1;text-align:center;}
+.exp-origin-badge{font-size:8px;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:10px;margin-left:6px;vertical-align:middle;white-space:nowrap;}
+.exp-origin-badge.new{background:rgba(232,184,64,.15);color:var(--gold2);}
+.exp-origin-badge.borrowed{background:rgba(112,184,128,.15);color:var(--green2);}
+.exp-problem-text{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted2);margin-bottom:6px;}
+.exp-tool-text{font-size:14px;font-weight:600;line-height:1.5;color:var(--text);margin-bottom:6px;}
+.exp-tool-empty-row{display:flex;gap:7px;margin-bottom:8px;}
+.exp-tool-empty-inp{flex:1;background:var(--bg);border:1px solid var(--gold2);border-radius:7px;padding:8px 10px;color:var(--text);font-size:12px;font-family:inherit;outline:none;box-sizing:border-box;}
+.exp-tool-empty-btn{background:var(--gold2);color:#000;border:none;border-radius:7px;padding:8px 13px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;}
+.exp-meta-row{display:flex;gap:7px;font-size:10px;color:var(--muted);letter-spacing:.04em;margin-bottom:14px;}
+.exp-section-lbl{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;margin-top:2px;}
+.exp-outcome-row{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+.exp-outcome-chip{padding:6px 12px;border-radius:20px;border:1px solid var(--b2);background:none;color:var(--muted2);font-size:10px;letter-spacing:.03em;cursor:pointer;font-family:var(--mono);transition:all .15s;}
+.exp-outcome-chip:hover{filter:brightness(1.15);}
+.exp-outcome-chip.working.sel{background:var(--green2);border-color:var(--green2);color:#fff;}
+.exp-outcome-chip.unclear.sel{background:var(--gold2);border-color:var(--gold2);color:#000;}
+.exp-outcome-chip.not-working.sel{background:var(--verm);border-color:var(--verm);color:#fff;}
+.exp-outcome-note{min-height:46px;margin-bottom:14px;}
+.exp-status-row{display:flex;gap:7px;margin-bottom:8px;}
+.exp-status-chip{flex:1;text-align:center;padding:7px 8px;border-radius:7px;border:1px solid var(--b2);background:none;color:var(--muted2);font-size:10px;letter-spacing:.03em;cursor:pointer;font-family:inherit;transition:all .15s;}
+.exp-status-chip.sel{border-color:var(--green2);color:var(--green2);}
+.exp-status-chip.warn.sel{border-color:var(--verm);color:var(--verm);}
+.exp-track-locked{font-size:10px;color:var(--muted);letter-spacing:.04em;padding:8px 0 2px;line-height:1.6;}
+.exp-queue-problem{font-size:10px;color:var(--muted2);letter-spacing:.03em;display:block;margin-bottom:2px;}
+.exp-queue-tool{font-size:12px;color:var(--text);line-height:1.5;}
+.exp-swap-msg{font-size:12px;color:var(--text);line-height:1.6;margin-bottom:16px;}
+.exp-swap-row{display:flex;flex-direction:column;gap:8px;}
+.exp-swap-btn{width:100%;border:1px solid var(--b2);background:none;color:var(--text);border-radius:8px;padding:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;letter-spacing:.03em;transition:all .2s;}
+.exp-swap-btn:hover{border-color:var(--gold2);color:var(--gold2);}
+.exp-swap-btn.swap{border-color:var(--green2);color:var(--green2);}
+.exp-swap-btn.swap:hover{background:var(--green2);color:#fff;}
+.exp-swap-cancel{background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;font-family:inherit;margin-top:10px;text-align:center;width:100%;padding:4px;}
+.habit-discarded-hdr{font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin:22px 0 10px;border-top:1px solid var(--b1);padding-top:16px;}
+.habit-discarded-group{margin-bottom:10px;}
+.habit-discarded-problem{font-size:11px;color:var(--muted2);margin-bottom:4px;letter-spacing:.03em;}
+.habit-discarded-item{display:flex;align-items:center;gap:8px;background:var(--s1);border:1px solid var(--b1);border-radius:6px;padding:7px 10px;margin-bottom:4px;}
+.habit-discarded-tool{flex:1;font-size:11px;color:var(--text);text-decoration:line-through;text-decoration-color:var(--muted);line-height:1.5;}
+.habit-discarded-origin{text-decoration:none;color:var(--muted);font-size:9px;}
+.habit-discarded-date{font-size:9px;color:var(--muted);white-space:nowrap;}
+.habit-discarded-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:1px 3px;flex-shrink:0;}
+.habit-discarded-del:hover{color:var(--verm);}
 </style>
 </head>
 <body class="z">
@@ -1101,24 +1145,37 @@ body.light .page-watermark { opacity: .2; }
 
       <!-- Current Habit -->
       <div class="ins-section" id="ins-habit">
+        <p class="ins-caption">Experiment tracker — problem + tool + duration + outcome. The Remembering→Consistent→Automatic track applies to the tool once it's confirmed working, not before.</p>
         <div id="habit-active-area"></div>
         <div id="habit-layer-area"></div>
         <div id="habit-friction-candidates"></div>
         <div class="habit-queue-hdr" style="margin-top:4px">Queue</div>
         <div id="habit-queue-list"></div>
-        <p class="friction-secondary-note">Secondary — prefer letting the Friction Log surface candidates above. Use manual entry or the archive only if nothing's surfaced yet.</p>
-        <div class="checklist-add-row" style="margin-top:10px">
-          <textarea class="checklist-inp" id="habit-queue-inp" rows="2"
-            placeholder="Type a new habit…"
-            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addHabitToQueue();}"></textarea>
-          <button class="checklist-add-btn" onclick="addHabitToQueue()">+ Queue</button>
+        <p class="friction-secondary-note">Secondary — prefer letting the Friction Log surface candidates above. Use manual entry only if nothing's surfaced yet.</p>
+
+        <div class="exp-add-box">
+          <input class="proven-add-inp" id="exp-problem-inp" placeholder="Problem you're trying to fix…">
+          <button class="habit-arch-toggle" style="margin:0 0 8px" onclick="toggleExpProblemPick()">📥 Pull from Friction Log ▾</button>
+          <div id="exp-problem-pick" class="habit-arch-pick" style="display:none">
+            <input class="habit-arch-search" id="exp-problem-search" placeholder="Search friction log…" oninput="renderExpProblemPick()">
+            <div class="habit-arch-results" id="exp-problem-results"></div>
+          </div>
+
+          <input class="proven-add-inp" id="exp-tool-inp" placeholder="Tool / technique / cue being tried…">
+          <div class="proven-domain-chips">
+            <button class="proven-domain-chip exp-origin-chip sel" data-origin="new" onclick="pickExpOrigin('new',this)">new</button>
+            <button class="proven-domain-chip exp-origin-chip" data-origin="borrowed" onclick="pickExpOrigin('borrowed',this)">borrowed from Proven Tools</button>
+          </div>
+          <div id="exp-proven-pick" class="habit-arch-pick" style="display:none">
+            <input class="habit-arch-search" id="exp-proven-search" placeholder="Search proven tools…" oninput="renderExpProvenPick()">
+            <div class="habit-arch-results" id="exp-proven-results"></div>
+          </div>
+
+          <button class="proven-add-btn" onclick="addExperiment()">+ Start Experiment</button>
         </div>
-        <button class="habit-arch-toggle" id="habit-arch-toggle" onclick="toggleArchivePick()">🗂 Browse Archive (secondary) ▾</button>
-        <div id="habit-arch-pick" class="habit-arch-pick" style="display:none">
-          <input class="habit-arch-search" id="habit-arch-search" placeholder="Search insights…" oninput="renderArchivePick()">
-          <div class="habit-arch-results" id="habit-arch-results"></div>
-        </div>
+
         <div id="habit-completed-area"></div>
+        <div id="habit-discarded-area"></div>
       </div>
 
       <!-- Chess Archive -->
@@ -1253,6 +1310,19 @@ body.light .page-watermark { opacity: .2; }
       <button class="friction-cancel-btn" onclick="closeFrictionModal()">Cancel</button>
       <button class="friction-save-btn" onclick="saveFrictionEntry()">Log it</button>
     </div>
+  </div>
+</div>
+
+<!-- Experiment: not-working swap/extend prompt -->
+<div class="friction-overlay" id="exp-swap-overlay" onclick="if(event.target===this)closeSwapPrompt()">
+  <div class="friction-box">
+    <div class="friction-box-title">⟲ Not Working</div>
+    <div class="exp-swap-msg" id="exp-swap-msg"></div>
+    <div class="exp-swap-row">
+      <button class="exp-swap-btn" onclick="extendExperiment()">Too early to tell — extend it</button>
+      <button class="exp-swap-btn swap" onclick="swapExperimentTool()">Swap in a different tool</button>
+    </div>
+    <button class="exp-swap-cancel" onclick="closeSwapPrompt()">Cancel</button>
   </div>
 </div>
 
@@ -3368,22 +3438,52 @@ function getPregame()  { return ls.get('sq_pregame','[]'); }
 function savePregame(a){ ls.set('sq_pregame',a); pushSync(); }
 function getOpener()   { return ls.get('sq_opener','[]'); }
 function saveOpener(a) { ls.set('sq_opener',a); pushSync(); }
+// Experiment tracker: the unit is problem + tool + duration + outcome, not a
+// static habit name. Old data (plain {id,text,...}) is migrated on read.
+function _migrateExperiment(item){
+  if(item.tool !== undefined) return item; // already new schema
+  return {
+    id: item.id || uid(),
+    problem: item.problem || '',
+    tool: item.text || '',
+    toolOrigin: 'new',
+    provenId: null,
+    startedAt: item.startedAt || new Date().toISOString(),
+    outcome: (item.status === 'automatic' || item.status === 'consistent') ? 'working' : 'unclear',
+    outcomeNote: '',
+    toolStatus: 'using',
+    status: item.status || 'remembering',
+    notes: item.notes || item.behavior || '',
+    consistentAt: item.consistentAt,
+    completedAt: item.completedAt,
+  };
+}
+function _migrateQueueItem(item){
+  if(item.tool !== undefined) return item;
+  return {id:item.id||uid(), problem:'', tool:item.text||'', toolOrigin:'new', provenId:null};
+}
 function getHabitMgr(){
   const raw = ls.get('sq_habit_mgr', null);
-  if(!raw) return {active:[], queue:[], completed:[]};
-  // Migrate old format: active was object|null, not array
-  if(!Array.isArray(raw.active)){
-    const migrated = {
-      active: raw.active ? [{...raw.active, notes:raw.active.behavior||'', status:'remembering'}] : [],
-      queue:  raw.queue||[],
-      completed: (raw.completed||[]).map(c=>({...c, notes:c.behavior||c.notes||''}))
-    };
-    ls.set('sq_habit_mgr', migrated);
-    return migrated;
-  }
-  return {active:raw.active||[], queue:raw.queue||[], completed:raw.completed||[]};
+  if(!raw) return {active:[], queue:[], completed:[], discarded:[]};
+  let active = raw.active;
+  if(!Array.isArray(active)) active = active ? [active] : [];
+  return {
+    active:    active.map(_migrateExperiment),
+    queue:     (raw.queue||[]).map(_migrateQueueItem),
+    completed: (raw.completed||[]).map(_migrateExperiment),
+    discarded: raw.discarded||[],
+  };
 }
 function saveHabitMgr(d){ d._updatedAt = Date.now(); ls.set('sq_habit_mgr',d); pushSync(); }
+function newExperiment(problem, tool, origin, provenId){
+  return {id:uid(), problem:problem||'', tool:tool||'', toolOrigin:origin||'new', provenId:provenId||null,
+    startedAt:new Date().toISOString(), outcome:'unclear', outcomeNote:'',
+    toolStatus:'using', status:'remembering', notes:''};
+}
+function daysSince(iso){ return Math.max(0, Math.floor((Date.now()-new Date(iso).getTime())/86400000)); }
+function fmtDuration(days){ return days===0 ? 'started today' : days===1 ? '1 day' : days+' days'; }
+function normalize(s){ return (s||'').toLowerCase().trim(); }
+const EXPERIMENT_MIN_DAYS = 5; // assumption: "set period" before forcing an extend/swap decision
 function getArchive()  { return ls.get('sq_archive','[]'); }
 function saveArchive(a){ ls.set('sq_archive',a); pushSync(); }
 
@@ -3450,6 +3550,19 @@ const FRICTION_HABIT_TEMPLATES = {
 };
 function suggestHabitForTag(tag){ return FRICTION_HABIT_TEMPLATES[tag] || FRICTION_HABIT_TEMPLATES.other; }
 
+// Human-readable "problem" statement derived from a recurring friction tag,
+// used when a Friction Candidate is promoted into an experiment.
+const FRICTION_TAG_TO_PROBLEM = {
+  'opening prep': 'Opening-prep gaps surfacing repeatedly',
+  'calculation':  'Calculation slips / missed candidates recurring',
+  'endgame':      'Endgame technique gaps recurring',
+  'memory':       'Forgetting / recall failures on reps',
+  'focus':        'Focus breaking mid-session',
+  'distraction':  'Non-chess distractions intruding on sessions',
+  'mindset':      'Mindset/motivation friction recurring',
+  'other':        'Recurring friction (other)',
+};
+
 // Entries from the trailing 7 days, grouped by tag, sorted by frequency desc.
 function getFrictionWeekly(){
   const cutoff = Date.now() - 7*24*60*60*1000;
@@ -3485,15 +3598,17 @@ function addFrictionCandidateToQueue(tag, provenId){
   const w = getFrictionWeekly().find(x => x.tag === tag);
   if(!w) return;
   const proven = provenId ? getProvenTools().find(p => p.id === provenId) : null;
-  const text = proven ? proven.tool : suggestHabitForTag(tag);
+  const tool = proven ? proven.tool : suggestHabitForTag(tag);
+  const origin = proven ? 'borrowed' : 'new';
+  const problem = FRICTION_TAG_TO_PROBLEM[tag] || FRICTION_TAG_TO_PROBLEM.other;
   const d = getHabitMgr();
   if(!d.queue) d.queue = [];
   if(d.active.length === 0){
-    d.active.push({id:uid(), text, notes:'', status:'remembering', startedAt:new Date().toISOString()});
-    toast('Set as active habit.', 2500);
+    d.active.push(newExperiment(problem, tool, origin, proven?proven.id:null));
+    toast('Set as active experiment.', 2500);
   } else {
-    d.queue.unshift({id:uid(), text}); // friction-evidenced candidates jump the queue
-    toast(`Queued: "${text.slice(0,40)}"`, 2500);
+    d.queue.unshift({id:uid(), problem, tool, toolOrigin:origin, provenId: proven?proven.id:null}); // friction-evidenced candidates jump the queue
+    toast(`Queued: "${tool.slice(0,40)}"`, 2500);
   }
   saveHabitMgr(d);
   // Auto-suppress this exact evidence snapshot now that it's been acted on
@@ -3700,6 +3815,27 @@ function findProvenMatch(text, frictionTag){
   return bestScore > 0 ? best : null;
 }
 
+// Free-text version used by the experiment swap flow: scores Proven Tools
+// against a problem statement (not a friction tag), excluding any tool
+// already discarded for this exact problem — so a failed tool never gets
+// re-suggested for the same issue.
+function findBorrowedCandidate(problemText, discarded){
+  const failedTools = new Set((discarded||[])
+    .filter(x => normalize(x.problem) === normalize(problemText))
+    .map(x => normalize(x.tool)));
+  const words = (problemText||'').toLowerCase().match(/[a-z]{4,}/g) || [];
+  const sig = words.filter(w => !PROVEN_MATCH_STOPWORDS.has(w));
+  if(!sig.length) return null;
+  let best = null, bestScore = 0;
+  getProvenTools().forEach(p => {
+    if(failedTools.has(normalize(p.tool))) return;
+    const hay = ((p.tool||'')+' '+(p.problem||'')).toLowerCase();
+    const score = sig.reduce((n,w) => n + (hay.includes(w) ? 1 : 0), 0);
+    if(score > bestScore){ bestScore = score; best = p; }
+  });
+  return bestScore > 0 ? best : null;
+}
+
 let _insightTab = 'pregame';
 
 function switchView(view){
@@ -3786,33 +3922,75 @@ function delOpener(id){  saveOpener(getOpener().filter(i=>i.id!==id));   renderO
 const HABIT_STATUS_ORDER = ['remembering','consistent','automatic'];
 const HABIT_STATUS_LABEL = {remembering:'Remembering', consistent:'Consistent', automatic:'Automatic'};
 
-function renderHabitCard(h, idx){
-  const si = HABIT_STATUS_ORDER.indexOf(h.status||'remembering');
+function renderExperimentCard(h, idx){
   const isLayered = idx > 0;
-  const statusHtml = HABIT_STATUS_ORDER.map((s,i) => {
-    const isDone   = i < si;
-    const isActive = i === si;
-    const circleClass = isDone ? 'done' : isActive ? 'active' : '';
-    const lblClass    = isDone ? 'done' : isActive ? 'active' : '';
-    const bar = i < 2 ? `<div class="habit-status-bar${i < si ? ' done' : ''}"></div>` : '';
-    return `<div class="habit-status-step">
-      <div class="habit-status-circle ${circleClass}">${isDone ? '✓' : (i+1)}</div>
-      <div class="habit-status-lbl ${lblClass}">${HABIT_STATUS_LABEL[s]}</div>
-    </div>${bar}`;
-  }).join('');
-  const advClass = h.status === 'consistent' ? 'to-auto' : '';
-  const advLabel = h.status === 'consistent'
-    ? "✓ Mark Automatic — it's effortless now"
-    : '→ Mark Consistent';
-  return `<div class="habit-active-card ${isLayered?'layered':''}">
+  const days = daysSince(h.startedAt);
+  const startedLbl = new Date(h.startedAt).toLocaleDateString([],{month:'short',day:'numeric',year:'2-digit'});
+
+  const problemRow = h.problem
+    ? `<div class="exp-problem-text">${esc(h.problem)}</div>`
+    : `<div class="exp-tool-empty-row">
+         <input class="exp-tool-empty-inp" id="exp-problem-fill-${idx}" placeholder="What problem is this tool for?">
+         <button class="exp-tool-empty-btn" onclick="fillEmptyProblem(${idx})">Set</button>
+       </div>`;
+
+  const originBadge = h.toolOrigin === 'borrowed'
+    ? '<span class="exp-origin-badge borrowed">BORROWED</span>'
+    : '<span class="exp-origin-badge new">NEW</span>';
+  const toolRow = h.tool
+    ? `<div class="exp-tool-text">${esc(h.tool)} ${originBadge}</div>`
+    : `<div class="exp-tool-empty-row">
+         <input class="exp-tool-empty-inp" id="exp-tool-fill-${idx}" placeholder="Enter the new tool to try…">
+         <button class="exp-tool-empty-btn" onclick="fillEmptyTool(${idx})">Set</button>
+       </div>`;
+
+  const outcomeChips = ['working','unclear','not working'].map(o =>
+    `<button class="exp-outcome-chip ${o.replace(' ','-')} ${h.outcome===o?'sel':''}" onclick="setExperimentOutcome(${idx},'${o}')">${o}</button>`
+  ).join('');
+
+  const statusChips = `
+    <button class="exp-status-chip ${h.toolStatus!=='needs_replacing'?'sel':''}" onclick="setToolStatus(${idx},'using')">Still using</button>
+    <button class="exp-status-chip warn ${h.toolStatus==='needs_replacing'?'sel':''}" onclick="setToolStatus(${idx},'needs_replacing')">Needs replacing</button>`;
+
+  let trackHtml;
+  if(h.outcome === 'working'){
+    const si = HABIT_STATUS_ORDER.indexOf(h.status||'remembering');
+    const statusHtml = HABIT_STATUS_ORDER.map((s,i) => {
+      const isDone   = i < si;
+      const isActive = i === si;
+      const bar = i < 2 ? `<div class="habit-status-bar${i < si ? ' done' : ''}"></div>` : '';
+      return `<div class="habit-status-step">
+        <div class="habit-status-circle ${isDone?'done':isActive?'active':''}">${isDone ? '✓' : (i+1)}</div>
+        <div class="habit-status-lbl ${isDone?'done':isActive?'active':''}">${HABIT_STATUS_LABEL[s]}</div>
+      </div>${bar}`;
+    }).join('');
+    const advClass = h.status === 'consistent' ? 'to-auto' : '';
+    const advLabel = h.status === 'consistent'
+      ? "✓ Mark Automatic — it's effortless now"
+      : '→ Mark Consistent';
+    trackHtml = `<div class="habit-status-track">${statusHtml}</div>
+      <button class="habit-advance-btn ${advClass}" onclick="advanceHabitStatus(${idx})">${advLabel}</button>`;
+  } else {
+    trackHtml = `<div class="exp-track-locked">Status track unlocks once this is confirmed working.</div>`;
+  }
+
+  return `<div class="habit-active-card exp-card ${isLayered?'layered':''}">
     <div class="habit-active-label">${isLayered ? '◎ Layered' : '▶ Primary'}</div>
-    <div class="habit-active-text">${esc(h.text)}</div>
-    <div class="habit-status-track">${statusHtml}</div>
-    <div class="habit-notes-lbl">Specific behavior I'm building:</div>
+    ${problemRow}
+    ${toolRow}
+    <div class="exp-meta-row"><span>Started ${startedLbl}</span><span>·</span><span>${fmtDuration(days)}</span></div>
+    <div class="exp-section-lbl">Outcome so far</div>
+    <div class="exp-outcome-row">${outcomeChips}</div>
+    <textarea class="habit-notes-inp exp-outcome-note" id="exp-outcome-note-${idx}"
+      placeholder="Brief running note on how it's going…"
+      oninput="schedSaveOutcomeNote(${idx},this.value)">${esc(h.outcomeNote||'')}</textarea>
+    <div class="exp-section-lbl">Status</div>
+    <div class="exp-status-row">${statusChips}</div>
+    <div class="habit-notes-lbl" style="margin-top:14px">Specific behavior I'm building:</div>
     <textarea class="habit-notes-inp" id="habit-notes-${idx}"
       placeholder="Describe the exact trigger, action, and reward…"
       oninput="schedSaveHabitNotes(${idx},this.value)">${esc(h.notes||'')}</textarea>
-    <button class="habit-advance-btn ${advClass}" onclick="advanceHabitStatus(${idx})">${advLabel}</button>
+    ${trackHtml}
   </div>`;
 }
 
@@ -3826,17 +4004,17 @@ function renderHabitMgr(){
 
   renderFrictionCandidates();
 
-  // Active habits
+  // Active experiments
   activeEl.innerHTML = d.active.length
-    ? d.active.map((h,i) => renderHabitCard(h,i)).join('')
-    : `<div class="habit-mgr-empty">No active habit.<br>Add one from the queue below.</div>`;
+    ? d.active.map((h,i) => renderExperimentCard(h,i)).join('')
+    : `<div class="habit-mgr-empty">No active experiment.<br>Add a problem + tool below to start one.</div>`;
 
-  // Layer-in button (appears when primary is Consistent and queue non-empty)
+  // Layer-in button (appears once primary is confirmed working + Consistent, and queue non-empty)
   if(layerEl){
     const primary = d.active[0];
-    const canLayer = primary && primary.status === 'consistent' && d.active.length < 2 && d.queue.length > 0;
+    const canLayer = primary && primary.outcome === 'working' && primary.status === 'consistent' && d.active.length < 2 && d.queue.length > 0;
     layerEl.innerHTML = canLayer
-      ? `<button class="habit-layer-btn" onclick="layerNextHabit()">+ Layer in next: "${esc(d.queue[0].text.slice(0,48))}"</button>`
+      ? `<button class="habit-layer-btn" onclick="layerNextHabit()">+ Layer in next: "${esc((d.queue[0].tool||'').slice(0,48))}"</button>`
       : '';
   }
 
@@ -3852,11 +4030,14 @@ function renderHabitMgr(){
         ondragend="queueDragEnd(event)">
         <span class="habit-queue-handle">⠿</span>
         <span class="habit-queue-num">${i+1}</span>
-        <span class="habit-queue-text">${esc(h.text)}</span>
+        <span class="habit-queue-text">
+          <span class="exp-queue-problem">${esc(h.problem||'(no problem set)')}</span>
+          <span class="exp-queue-tool">${esc(h.tool)} <span class="exp-origin-badge ${h.toolOrigin}">${h.toolOrigin==='borrowed'?'BORROWED':'NEW'}</span></span>
+        </span>
         <button class="habit-queue-del" onclick="delHabitQueue('${h.id}')">✕</button>
       </div>`).join('');
 
-  // Completed archive
+  // Completed (reached Automatic)
   if(completedEl){
     const comp = d.completed||[];
     completedEl.innerHTML = comp.length
@@ -3864,36 +4045,136 @@ function renderHabitMgr(){
           <div class="habit-completed-hdr">Completed (${comp.length})</div>
           ${comp.slice().reverse().map(h=>`
             <div class="habit-completed-item">
-              <span class="habit-completed-text">${esc(h.text)}</span>
+              <span class="habit-completed-text"><b>${esc(h.tool)}</b> — ${esc(h.problem||'')}</span>
               <span class="habit-completed-date">${new Date(h.completedAt).toLocaleDateString([],{month:'short',day:'numeric',year:'2-digit'})}</span>
             </div>`).join('')}
         </div>`
       : '';
   }
+
+  renderDiscarded();
 }
 
 let _notesDebounce = {};
 function schedSaveHabitNotes(idx, text){
-  if(_notesDebounce[idx]) clearTimeout(_notesDebounce[idx]);
-  _notesDebounce[idx] = setTimeout(()=>{
+  if(_notesDebounce['notes-'+idx]) clearTimeout(_notesDebounce['notes-'+idx]);
+  _notesDebounce['notes-'+idx] = setTimeout(()=>{
     const d = getHabitMgr();
     if(!d.active[idx]) return;
     d.active[idx].notes = text;
     saveHabitMgr(d);
   }, 700);
 }
+function schedSaveOutcomeNote(idx, text){
+  if(_notesDebounce['outcome-'+idx]) clearTimeout(_notesDebounce['outcome-'+idx]);
+  _notesDebounce['outcome-'+idx] = setTimeout(()=>{
+    const d = getHabitMgr();
+    if(!d.active[idx]) return;
+    d.active[idx].outcomeNote = text;
+    saveHabitMgr(d);
+  }, 700);
+}
+
+function fillEmptyProblem(idx){
+  const inp = document.getElementById(`exp-problem-fill-${idx}`);
+  if(!inp) return;
+  const val = inp.value.trim(); if(!val) return;
+  const d = getHabitMgr(); const h = d.active[idx]; if(!h) return;
+  h.problem = val;
+  saveHabitMgr(d);
+  renderHabitMgr();
+}
+function fillEmptyTool(idx){
+  const inp = document.getElementById(`exp-tool-fill-${idx}`);
+  if(!inp) return;
+  const val = inp.value.trim(); if(!val) return;
+  const d = getHabitMgr(); const h = d.active[idx]; if(!h) return;
+  h.tool = val;
+  saveHabitMgr(d);
+  renderHabitMgr();
+}
+
+function setToolStatus(idx, status){
+  const d = getHabitMgr(); const h = d.active[idx]; if(!h) return;
+  h.toolStatus = status;
+  saveHabitMgr(d);
+  renderHabitMgr();
+}
+
+// Outcome is the running read on whether the tool is working. Marking it
+// "not working" only forces an extend-or-swap decision once the experiment
+// has run for EXPERIMENT_MIN_DAYS — too early, and it just logs the note.
+function setExperimentOutcome(idx, outcome){
+  const d = getHabitMgr(); const h = d.active[idx]; if(!h) return;
+  h.outcome = outcome;
+  saveHabitMgr(d);
+  renderHabitMgr();
+  if(outcome === 'not working'){
+    const days = daysSince(h.startedAt);
+    if(days < EXPERIMENT_MIN_DAYS){
+      toast(`Logged. Only ${days}d in — ${EXPERIMENT_MIN_DAYS-days}d left before a swap decision.`, 3500);
+    } else {
+      openSwapPrompt(idx);
+    }
+  }
+}
+
+let _swapIdx = null;
+function openSwapPrompt(idx){
+  _swapIdx = idx;
+  const d = getHabitMgr(); const h = d.active[idx]; if(!h) return;
+  const days = daysSince(h.startedAt);
+  const msgEl = document.getElementById('exp-swap-msg');
+  if(msgEl) msgEl.innerHTML = `"${esc(h.tool||'(untitled tool)')}" has been running ${days} day${days===1?'':'s'} for <b>${esc(h.problem||'this problem')}</b> and isn't working.`;
+  document.getElementById('exp-swap-overlay').classList.add('on');
+}
+function closeSwapPrompt(){
+  document.getElementById('exp-swap-overlay').classList.remove('on');
+  _swapIdx = null;
+}
+function extendExperiment(){
+  if(_swapIdx === null) return;
+  const d = getHabitMgr(); const h = d.active[_swapIdx]; if(!h) return;
+  h.outcome = 'unclear';
+  saveHabitMgr(d);
+  closeSwapPrompt();
+  renderHabitMgr();
+  toast('Extended — still tracking.', 2500);
+}
+function swapExperimentTool(){
+  if(_swapIdx === null) return;
+  const idx = _swapIdx;
+  const d = getHabitMgr(); const h = d.active[idx]; if(!h) return;
+  if(!d.discarded) d.discarded = [];
+  d.discarded.push({id:uid(), problem:h.problem, tool:h.tool, toolOrigin:h.toolOrigin,
+    outcomeNote:h.outcomeNote, startedAt:h.startedAt, discardedAt:new Date().toISOString()});
+  // Check Proven Tools first for a borrowed candidate — never re-suggest a
+  // tool already discarded for this exact problem — before leaving it blank
+  // for an untested manual entry.
+  const candidate = findBorrowedCandidate(h.problem, d.discarded);
+  if(candidate){
+    d.active[idx] = newExperiment(h.problem, candidate.tool, 'borrowed', candidate.id);
+    toast(`Swapped in proven tool: "${candidate.tool.slice(0,40)}"`, 3500);
+  } else {
+    d.active[idx] = newExperiment(h.problem, '', 'new', null);
+    toast('No untried proven match — enter a new tool to try.', 3500);
+  }
+  saveHabitMgr(d);
+  closeSwapPrompt();
+  renderHabitMgr();
+}
 
 function advanceHabitStatus(idx){
   const d = getHabitMgr();
   const h = d.active[idx];
-  if(!h) return;
+  if(!h || h.outcome !== 'working') return;
 
   if(h.status === 'remembering'){
     h.status = 'consistent';
     h.consistentAt = new Date().toISOString();
     saveHabitMgr(d);
     renderHabitMgr();
-    toast('Habit marked Consistent ✓', 2500);
+    toast('Marked Consistent ✓', 2500);
 
   } else if(h.status === 'consistent'){
     // Flush notes textarea before completing
@@ -3906,10 +4187,11 @@ function advanceHabitStatus(idx){
     // Auto-promote from queue only if active list is now empty
     if(d.active.length === 0 && d.queue.length > 0){
       const next = d.queue.shift();
-      d.active.push({...next, notes:'', status:'remembering', startedAt:new Date().toISOString()});
-      toast(`🎉 Automatic! Next up: "${next.text.slice(0,40)}"`, 4000);
+      d.active.push(newExperiment(next.problem, next.tool, next.toolOrigin, next.provenId));
+      toast(`🎉 Automatic! Next up: "${(next.tool||'').slice(0,40)}"`, 4000);
     } else {
-      toast('🎉 Habit marked Automatic — fully internalized!', 3000);
+      const hint = h.toolOrigin === 'new' ? ' — worth logging it to Proven Tools.' : '';
+      toast(`🎉 Automatic — fully internalized!${hint}`, 3500);
     }
     saveHabitMgr(d);
     renderHabitMgr();
@@ -3919,29 +4201,121 @@ function advanceHabitStatus(idx){
 function layerNextHabit(){
   const d = getHabitMgr();
   if(!d.queue.length){ toast('Queue is empty.', 2500); return; }
-  if(d.active.length >= 2){ toast('Already have 2 active habits.', 2500); return; }
+  if(d.active.length >= 2){ toast('Already have 2 active experiments.', 2500); return; }
   const next = d.queue.shift();
-  d.active.push({...next, notes:'', status:'remembering', startedAt:new Date().toISOString()});
+  d.active.push(newExperiment(next.problem, next.tool, next.toolOrigin, next.provenId));
   saveHabitMgr(d);
   renderHabitMgr();
-  toast(`Layered in: "${next.text.slice(0,50)}"`, 3000);
+  toast(`Layered in: "${(next.tool||'').slice(0,50)}"`, 3000);
 }
 
-function addHabitToQueue(){
-  const inp = document.getElementById('habit-queue-inp');
-  if(!inp) return;
-  const text = inp.value.trim(); if(!text) return;
-  const d = getHabitMgr();
-  if(!d.queue) d.queue = [];
-  // If no active habit yet, go straight to active
-  if(d.active.length === 0){
-    d.active.push({id:uid(), text, notes:'', status:'remembering', startedAt:new Date().toISOString()});
-    toast('Set as active habit.', 2500);
+// New-experiment add form state
+let _expOrigin = 'new';
+let _expProvenId = null;
+let _expProvenPickOpen = false;
+let _expProblemPickOpen = false;
+
+function pickExpOrigin(origin, btn){
+  _expOrigin = origin;
+  document.querySelectorAll('.exp-origin-chip').forEach(c=>c.classList.remove('sel'));
+  if(btn) btn.classList.add('sel');
+  if(origin === 'new'){
+    _expProvenId = null;
+    const el = document.getElementById('exp-proven-pick');
+    if(el) el.style.display = 'none';
+    _expProvenPickOpen = false;
   } else {
-    d.queue.push({id:uid(), text});
+    _expProvenPickOpen = true;
+    const el = document.getElementById('exp-proven-pick');
+    if(el) el.style.display = 'block';
+    renderExpProvenPick();
   }
-  inp.value = '';
+}
+function toggleExpProvenPick(){
+  _expProvenPickOpen = !_expProvenPickOpen;
+  const el = document.getElementById('exp-proven-pick');
+  if(el) el.style.display = _expProvenPickOpen ? 'block' : 'none';
+  if(_expProvenPickOpen) renderExpProvenPick();
+}
+function renderExpProvenPick(){
+  const q = (document.getElementById('exp-proven-search')?.value||'').toLowerCase().trim();
+  const all = getProvenTools();
+  const shown = q ? all.filter(p=>p.tool.toLowerCase().includes(q) || (p.problem||'').toLowerCase().includes(q)) : all;
+  const el = document.getElementById('exp-proven-results');
+  if(!el) return;
+  el.innerHTML = shown.slice(0,40).map(p=>
+    `<div class="habit-arch-result" onclick="pickExpProvenTool('${p.id}')">${esc(p.tool)} <span style="color:var(--muted)">(${esc(p.domain||'other')})</span></div>`
+  ).join('') || '<div style="color:var(--muted);font-size:11px;padding:8px">No proven tools logged yet.</div>';
+}
+function pickExpProvenTool(id){
+  const p = getProvenTools().find(x=>x.id===id);
+  if(!p) return;
+  _expOrigin = 'borrowed';
+  _expProvenId = id;
+  const inp = document.getElementById('exp-tool-inp');
+  if(inp) inp.value = p.tool;
+  document.querySelectorAll('.exp-origin-chip').forEach(c=>c.classList.toggle('sel', c.dataset.origin==='borrowed'));
+  const el = document.getElementById('exp-proven-pick');
+  if(el) el.style.display = 'none';
+  _expProvenPickOpen = false;
+}
+
+function toggleExpProblemPick(){
+  _expProblemPickOpen = !_expProblemPickOpen;
+  const el = document.getElementById('exp-problem-pick');
+  if(el) el.style.display = _expProblemPickOpen ? 'block' : 'none';
+  if(_expProblemPickOpen) renderExpProblemPick();
+}
+function renderExpProblemPick(){
+  const q = (document.getElementById('exp-problem-search')?.value||'').toLowerCase().trim();
+  const all = getFrictionLog();
+  const shown = q ? all.filter(f=>f.text.toLowerCase().includes(q)) : all;
+  const el = document.getElementById('exp-problem-results');
+  if(!el) return;
+  el.innerHTML = shown.slice(0,40).map(f=>
+    `<div class="habit-arch-result" onclick="pickExpProblemFromFriction('${f.id}')">${esc(f.text)} <span style="color:var(--muted)">(${esc(f.tag||'other')})</span></div>`
+  ).join('') || '<div style="color:var(--muted);font-size:11px;padding:8px">No friction logged yet.</div>';
+}
+function pickExpProblemFromFriction(id){
+  const f = getFrictionLog().find(x=>x.id===id);
+  if(!f) return;
+  const inp = document.getElementById('exp-problem-inp');
+  if(inp) inp.value = f.text;
+  const el = document.getElementById('exp-problem-pick');
+  if(el) el.style.display = 'none';
+  _expProblemPickOpen = false;
+}
+
+function addExperiment(){
+  const probInp = document.getElementById('exp-problem-inp');
+  const toolInp = document.getElementById('exp-tool-inp');
+  const problem = probInp.value.trim();
+  const tool = toolInp.value.trim();
+  if(!problem || !tool){ toast('Need both a problem and a tool.', 2500); return; }
+  const d = getHabitMgr();
+  if(!d.discarded) d.discarded = [];
+  // Never re-try something that already failed for the same issue without at least a heads-up.
+  const dupe = d.discarded.find(x => normalize(x.problem)===normalize(problem) && normalize(x.tool)===normalize(tool));
+  if(dupe && !confirm(`"${tool}" already failed for this problem on ${new Date(dupe.discardedAt).toLocaleDateString()}. Try it again anyway?`)) return;
+  const origin = _expOrigin || 'new';
+  const provenId = origin === 'borrowed' ? _expProvenId : null;
+  if(!d.queue) d.queue = [];
+  if(d.active.length === 0){
+    d.active.push(newExperiment(problem, tool, origin, provenId));
+    toast('Started as active experiment.', 2500);
+  } else {
+    d.queue.push({id:uid(), problem, tool, toolOrigin:origin, provenId});
+    toast(`Queued: "${tool.slice(0,40)}"`, 2500);
+  }
   saveHabitMgr(d);
+  probInp.value = ''; toolInp.value = '';
+  _expOrigin = 'new'; _expProvenId = null;
+  document.querySelectorAll('.exp-origin-chip').forEach(c=>c.classList.remove('sel'));
+  document.querySelector('.exp-origin-chip[data-origin="new"]')?.classList.add('sel');
+  const provenPick = document.getElementById('exp-proven-pick'); if(provenPick) provenPick.style.display='none';
+  _expProvenPickOpen = false;
+  const problemPick = document.getElementById('exp-problem-pick'); if(problemPick) problemPick.style.display='none';
+  _expProblemPickOpen = false;
   renderHabitMgr();
 }
 
@@ -3952,6 +4326,35 @@ function delHabitQueue(id){
   renderHabitMgr();
 }
 
+// Tools tried and discarded, grouped by problem — so a failed tool never
+// gets re-suggested (or re-typed without a warning) for the same issue.
+function renderDiscarded(){
+  const el = document.getElementById('habit-discarded-area');
+  if(!el) return;
+  const d = getHabitMgr();
+  const groups = {};
+  (d.discarded||[]).forEach(x => { (groups[x.problem||'(no problem set)'] = groups[x.problem||'(no problem set)']||[]).push(x); });
+  const entries = Object.entries(groups);
+  el.innerHTML = !entries.length ? '' : `
+    <div class="habit-discarded-hdr">Discarded — tried &amp; failed</div>
+    ${entries.map(([problem,items]) => `
+      <div class="habit-discarded-group">
+        <div class="habit-discarded-problem">${esc(problem)}</div>
+        ${items.slice().reverse().map(x => `
+          <div class="habit-discarded-item">
+            <span class="habit-discarded-tool">${esc(x.tool||'(untitled tool)')} <span class="habit-discarded-origin">(${esc(x.toolOrigin||'new')})</span></span>
+            <span class="habit-discarded-date">${new Date(x.discardedAt).toLocaleDateString([],{month:'short',day:'numeric'})}</span>
+            <button class="habit-discarded-del" onclick="delDiscarded('${x.id}')">✕</button>
+          </div>`).join('')}
+      </div>`).join('')}`;
+}
+function delDiscarded(id){
+  const d = getHabitMgr();
+  d.discarded = (d.discarded||[]).filter(x=>x.id!==id);
+  saveHabitMgr(d);
+  renderDiscarded();
+}
+
 // Drag-to-reorder queue
 let _qDragSrc = null;
 function queueDragStart(e,i){ _qDragSrc=i; e.dataTransfer.effectAllowed='move'; e.currentTarget.style.opacity='0.4'; }
@@ -3959,43 +4362,6 @@ function queueDragOver(e,i){ e.preventDefault(); e.dataTransfer.dropEffect='move
 function queueDragLeave(e){ e.currentTarget.classList.remove('drag-over'); }
 function queueDrop(e,i){ e.preventDefault(); if(_qDragSrc===null||_qDragSrc===i)return; const d=getHabitMgr(); const [m]=d.queue.splice(_qDragSrc,1); d.queue.splice(i,0,m); saveHabitMgr(d); renderHabitMgr(); _qDragSrc=null; }
 function queueDragEnd(e){ e.currentTarget.style.opacity='1'; document.querySelectorAll('.habit-queue-item').forEach(el=>el.classList.remove('drag-over')); _qDragSrc=null; }
-
-// Archive picker
-let _archPickOpen = false;
-function toggleArchivePick(){
-  _archPickOpen = !_archPickOpen;
-  const el  = document.getElementById('habit-arch-pick');
-  const btn = document.getElementById('habit-arch-toggle');
-  if(el)  el.style.display = _archPickOpen ? 'block' : 'none';
-  if(btn) btn.textContent  = _archPickOpen ? '🗂 Pick from Archive ▲' : '🗂 Pick from Archive ▾';
-  if(_archPickOpen){ renderArchivePick(); document.getElementById('habit-arch-search')?.focus(); }
-}
-function renderArchivePick(){
-  const q   = (document.getElementById('habit-arch-search')?.value||'').toLowerCase().trim();
-  const all = getArchive();
-  const shown = q ? all.filter(i=>i.text.toLowerCase().includes(q)) : all;
-  const el = document.getElementById('habit-arch-results');
-  if(!el) return;
-  el.innerHTML = shown.slice(0,40).map(i=>
-    `<div class="habit-arch-result" onclick="pickFromArchive('${i.id}')">${esc(i.text)}</div>`
-  ).join('') || '<div style="color:var(--muted);font-size:11px;padding:8px">No matches.</div>';
-}
-function pickFromArchive(id){
-  const item = getArchive().find(i=>i.id===id);
-  if(!item) return;
-  const d = getHabitMgr();
-  if(!d.queue) d.queue = [];
-  if(d.active.length === 0){
-    d.active.push({id:uid(), text:item.text, notes:'', status:'remembering', startedAt:new Date().toISOString()});
-    toast('Set as active habit.', 2500);
-  } else {
-    d.queue.push({id:uid(), text:item.text});
-    toast(`Queued: "${item.text.slice(0,40)}"`, 2500);
-  }
-  saveHabitMgr(d);
-  renderHabitMgr();
-  toggleArchivePick();
-}
 
 // ── CHESS ARCHIVE ─────────────────────────────────────────────────────
 
