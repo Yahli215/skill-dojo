@@ -733,10 +733,12 @@ body.light .page-watermark { opacity: .2; }
 .friction-inp{width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--b2);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--mono);font-size:13px;resize:vertical;min-height:64px;outline:none;line-height:1.5;}
 .friction-inp:focus{border-color:var(--gold);}
 .friction-inp::placeholder{color:var(--muted);}
+.friction-suggest-hint{font-size:10px;color:var(--gold2);margin:6px 0 0;min-height:13px;letter-spacing:.02em;}
 .friction-tags{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0;}
 .friction-tag-chip{padding:6px 11px;border-radius:20px;border:1px solid var(--b2);background:none;color:var(--muted2);font-size:10px;letter-spacing:.03em;cursor:pointer;font-family:var(--mono);transition:all .15s;}
 .friction-tag-chip:hover{border-color:var(--gold2);}
 .friction-tag-chip.sel{background:var(--verm);border-color:var(--verm);color:#fff;}
+.friction-tag-chip.suggested{border-color:var(--gold2);box-shadow:0 0 0 1px var(--gold2) inset;}
 .friction-box-row{display:flex;justify-content:flex-end;gap:8px;margin-top:6px;}
 .friction-cancel-btn{background:none;border:1px solid var(--b2);color:var(--muted);border-radius:8px;padding:8px 14px;font-size:11px;cursor:pointer;font-family:inherit;}
 .friction-save-btn{background:var(--verm);border:none;color:#fff;border-radius:8px;padding:8px 16px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;transition:filter .2s;}
@@ -1189,7 +1191,9 @@ body.light .page-watermark { opacity: .2; }
     <div class="friction-box-title">💢 Log Friction</div>
     <div class="friction-box-sub">What just felt hard, resistant, or like you keep redoing it?</div>
     <textarea class="friction-inp" id="friction-modal-inp" placeholder="What was hard…"
+      oninput="updateFrictionSuggestHint()"
       onkeydown="if(event.key==='Enter'&&(event.metaKey||event.ctrlKey)){event.preventDefault();saveFrictionEntry();} if(event.key==='Escape'){closeFrictionModal();}"></textarea>
+    <div class="friction-suggest-hint" id="friction-suggest-hint"></div>
     <div class="friction-tags">
       <button class="friction-tag-chip" onclick="pickFrictionTag('opening prep',this)">opening prep</button>
       <button class="friction-tag-chip" onclick="pickFrictionTag('calculation',this)">calculation</button>
@@ -1338,6 +1342,21 @@ function init(){
       h.push({id:'dh5', name:"Review today's wrong exercises", emoji:'🔍', history:[]}); changed = true;
     }
     if(changed) ls.set('sq_habits', h);
+  })();
+  // One-time: re-classify existing friction-log entries tagged 'other' using the
+  // keyword heuristic, now that more specific tags (distraction/mindset) exist.
+  (function(){
+    if(ls.raw('sq_friction_retag_v1')) return;
+    const all = getFrictionLog();
+    let changed = false;
+    all.forEach(f => {
+      if((f.tag||'other') === 'other'){
+        const sug = getFrictionTagSuggestion(f.text);
+        if(sug){ f.tag = sug; changed = true; }
+      }
+    });
+    if(changed){ saveFrictionLog(all); renderFrictionLog(); renderHabitMgr(); }
+    ls.setRaw('sq_friction_retag_v1', '1');
   })();
   // Seed insight folders + all tagged insights (one-time, idempotent by fixed IDs)
   (function(){
@@ -3315,6 +3334,40 @@ function saveArchive(a){ ls.set('sq_archive',a); pushSync(); }
 // Captures moments during training where something felt hard, resistant, or
 // repeatedly forgotten — the demonstrated-friction source for the habit queue.
 const FRICTION_TAGS = ['opening prep','calculation','endgame','focus','memory','distraction','mindset','other'];
+// Lightweight in-browser keyword classifier — no API, no key, runs on every keystroke.
+// Not true NLP, just substring scoring; good enough to pre-select a tag for short notes.
+const FRICTION_TAG_KEYWORDS = {
+  'opening prep': ['opening','repertoire','prep','theory','novelty','sideline','gambit','move order','variation','line','explain'],
+  'calculation':  ['calculat','candidate move','tactic','combination','blunder','missed','visualiz','forcing','tree'],
+  'endgame':      ['endgame','ending','zugzwang','opposition','rook ending','pawn ending','king and pawn','technique'],
+  'memory':       ['forgot','forget','rememb','memoriz','recall','memory'],
+  'focus':        ['focus','concentrat','tired','fatigue','attention','zone out','drift','sleepy'],
+  'distraction':  ['task','class','classes','schedule','appointment','errand','deadline','email','meeting','homework','university','phone','notification','message','logistics'],
+  'mindset':      ['philosophy','identity','meaning','purpose','passion','motivat','exciting','struggle','sturrgle','give up','quit','believ','beliv','chess life'],
+};
+function getFrictionTagSuggestion(text){
+  const t = (text||'').toLowerCase();
+  if(!t.trim()) return null;
+  let best = null, bestScore = 0;
+  for(const tag of FRICTION_TAGS){
+    const words = FRICTION_TAG_KEYWORDS[tag];
+    if(!words) continue;
+    const score = words.reduce((n,w) => n + (t.includes(w) ? 1 : 0), 0);
+    if(score > bestScore){ bestScore = score; best = tag; }
+  }
+  return best; // null if nothing matched — caller should fall back to 'other'
+}
+function updateFrictionSuggestHint(){
+  const hint = document.getElementById('friction-suggest-hint');
+  if(!hint) return;
+  if(_frictionTag){ hint.textContent = ''; return; } // manual pick wins, no need to suggest
+  const inp = document.getElementById('friction-modal-inp');
+  const tag = getFrictionTagSuggestion(inp ? inp.value : '');
+  document.querySelectorAll('.friction-tag-chip').forEach(c => {
+    c.classList.toggle('suggested', !!tag && c.textContent.trim() === tag);
+  });
+  hint.textContent = tag ? `Auto-tag: ${tag} — tap a tag below to override` : '';
+}
 function getFrictionLog()    { return ls.get('sq_friction_log','[]'); }
 function saveFrictionLog(a)  { ls.set('sq_friction_log',a); pushSync(); }
 function getFrictionDismissed()   { return ls.get('sq_friction_dismissed','[]'); }
@@ -3390,7 +3443,9 @@ function openFrictionModal(){
   _frictionTag = null;
   const inp = document.getElementById('friction-modal-inp');
   if(inp) inp.value = '';
-  document.querySelectorAll('.friction-tag-chip').forEach(c => c.classList.remove('sel'));
+  document.querySelectorAll('.friction-tag-chip').forEach(c => c.classList.remove('sel','suggested'));
+  const hint = document.getElementById('friction-suggest-hint');
+  if(hint) hint.textContent = '';
   document.getElementById('friction-overlay').classList.add('on');
   setTimeout(() => inp?.focus(), 50);
 }
@@ -3401,13 +3456,15 @@ function pickFrictionTag(tag, btn){
   _frictionTag = (_frictionTag === tag) ? null : tag;
   document.querySelectorAll('.friction-tag-chip').forEach(c => c.classList.remove('sel'));
   if(_frictionTag) btn.classList.add('sel');
+  updateFrictionSuggestHint();
 }
 function saveFrictionEntry(){
   const inp = document.getElementById('friction-modal-inp');
   const text = inp.value.trim();
   if(!text) return;
+  const tag = _frictionTag || getFrictionTagSuggestion(text) || 'other';
   const all = getFrictionLog();
-  all.unshift({id:uid(), text, tag:_frictionTag||'other', ts:new Date().toISOString()});
+  all.unshift({id:uid(), text, tag, ts:new Date().toISOString()});
   saveFrictionLog(all);
   closeFrictionModal();
   toast('Logged.', 1800);
