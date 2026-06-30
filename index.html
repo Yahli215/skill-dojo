@@ -720,6 +720,49 @@ body.light .page-watermark { opacity: .2; }
 .archive-add-btn{background:var(--verm);color:#fff;border:none;border-radius:8px;padding:9px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;transition:filter .2s;}
 .archive-add-btn:hover{filter:brightness(1.1);}
 .archive-empty{text-align:center;color:var(--muted);font-size:11px;padding:28px 0;letter-spacing:.08em;}
+
+/* ── FRICTION LOG ──────────────────────────────────────── */
+.friction-fab{position:fixed;bottom:24px;right:20px;width:52px;height:52px;border-radius:50%;background:var(--verm);color:#fff;border:none;font-size:21px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.45);z-index:550;transition:transform .15s,filter .15s;}
+.friction-fab:hover{filter:brightness(1.12);transform:scale(1.06);}
+.friction-fab:active{transform:scale(.94);}
+.friction-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:900;align-items:center;justify-content:center;}
+.friction-overlay.on{display:flex;}
+.friction-box{background:var(--s1);border:1px solid var(--b2);border-radius:12px;padding:22px;width:90%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.6);box-sizing:border-box;}
+.friction-box-title{font-size:13px;font-weight:700;letter-spacing:.04em;margin-bottom:4px;color:var(--text);}
+.friction-box-sub{font-size:11px;color:var(--muted);margin-bottom:14px;line-height:1.5;}
+.friction-inp{width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--b2);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--mono);font-size:13px;resize:vertical;min-height:64px;outline:none;line-height:1.5;}
+.friction-inp:focus{border-color:var(--gold);}
+.friction-inp::placeholder{color:var(--muted);}
+.friction-tags{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0;}
+.friction-tag-chip{padding:6px 11px;border-radius:20px;border:1px solid var(--b2);background:none;color:var(--muted2);font-size:10px;letter-spacing:.03em;cursor:pointer;font-family:var(--mono);transition:all .15s;}
+.friction-tag-chip:hover{border-color:var(--gold2);}
+.friction-tag-chip.sel{background:var(--verm);border-color:var(--verm);color:#fff;}
+.friction-box-row{display:flex;justify-content:flex-end;gap:8px;margin-top:6px;}
+.friction-cancel-btn{background:none;border:1px solid var(--b2);color:var(--muted);border-radius:8px;padding:8px 14px;font-size:11px;cursor:pointer;font-family:inherit;}
+.friction-save-btn{background:var(--verm);border:none;color:#fff;border-radius:8px;padding:8px 16px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;transition:filter .2s;}
+.friction-save-btn:hover{filter:brightness(1.1);}
+.friction-week-hdr{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted2);margin:18px 0 8px;}
+.friction-week-hdr:first-child{margin-top:0;}
+.friction-tag-summary{display:flex;flex-direction:column;gap:6px;margin-bottom:6px;}
+.friction-tag-row{display:flex;align-items:center;justify-content:space-between;background:var(--s1);border:1px solid var(--b1);border-radius:7px;padding:8px 12px;font-size:12px;color:var(--text);}
+.friction-tag-row.hot{border-color:var(--verm);background:rgba(200,80,80,.08);}
+.friction-tag-count{font-weight:700;color:var(--muted2);}
+.friction-tag-count.hot{color:var(--verm);}
+.friction-item{display:flex;align-items:flex-start;gap:8px;background:var(--s1);border:1px solid var(--b1);border-radius:7px;padding:9px 11px;margin-bottom:6px;}
+.friction-item-text{flex:1;font-size:12px;line-height:1.6;color:var(--text);}
+.friction-item-meta{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;}
+.friction-item-tag{font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--gold2);}
+.friction-item-time{font-size:9px;color:var(--muted);white-space:nowrap;}
+.friction-item-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:2px 4px;flex-shrink:0;}
+.friction-item-del:hover{color:var(--verm);}
+.friction-candidate-card{background:var(--s1);border:1px solid var(--gold2);border-radius:9px;padding:14px 15px;margin-bottom:12px;}
+.friction-candidate-lbl{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold2);margin-bottom:6px;}
+.friction-candidate-text{font-size:13px;font-weight:600;margin-bottom:8px;line-height:1.5;color:var(--text);}
+.friction-candidate-evidence{font-size:11px;color:var(--muted);line-height:1.7;margin-bottom:10px;white-space:pre-wrap;}
+.friction-candidate-row{display:flex;gap:8px;}
+.friction-candidate-add{background:var(--gold2);color:#000;border:none;border-radius:7px;padding:7px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;}
+.friction-candidate-dismiss{background:none;border:1px solid var(--b2);color:var(--muted);border-radius:7px;padding:7px 12px;font-size:11px;cursor:pointer;font-family:inherit;}
+.friction-secondary-note{font-size:10px;color:var(--muted);letter-spacing:.03em;margin:14px 0 0;line-height:1.6;}
 </style>
 </head>
 <body class="z">
@@ -980,9 +1023,10 @@ body.light .page-watermark { opacity: .2; }
       </div>
       <div class="ins-nav">
         <button class="ins-nav-btn on" id="ins-tab-pregame" onclick="switchInsight('pregame')">🎯 Pre-Game</button>
-        <button class="ins-nav-btn"    id="ins-tab-opener"  onclick="switchInsight('opener')" >⚔️ Session</button>
-        <button class="ins-nav-btn"    id="ins-tab-habit"   onclick="switchInsight('habit')"  >🔄 Habit</button>
-        <button class="ins-nav-btn"    id="ins-tab-archive" onclick="switchInsight('archive')">🗂 Archive</button>
+        <button class="ins-nav-btn"    id="ins-tab-opener"   onclick="switchInsight('opener')"  >⚔️ Session</button>
+        <button class="ins-nav-btn"    id="ins-tab-friction" onclick="switchInsight('friction')">💢 Friction</button>
+        <button class="ins-nav-btn"    id="ins-tab-habit"    onclick="switchInsight('habit')"   >🔄 Habit</button>
+        <button class="ins-nav-btn"    id="ins-tab-archive"  onclick="switchInsight('archive')" >🗂 Archive</button>
       </div>
 
       <!-- Pre-Game Checklist -->
@@ -999,19 +1043,30 @@ body.light .page-watermark { opacity: .2; }
         <div id="opener-add-area"></div>
       </div>
 
+      <!-- Friction Log -->
+      <div class="ins-section" id="ins-friction">
+        <p class="ins-caption">Log it the moment something feels hard, repeatedly resistant, or like you keep redoing/forgetting it. Speed over structure — text + optional tag, nothing else required.</p>
+        <div class="friction-week-hdr">Last 7 Days — by tag</div>
+        <div id="friction-weekly" class="friction-tag-summary"></div>
+        <div class="friction-week-hdr">All Entries</div>
+        <div id="friction-list"></div>
+      </div>
+
       <!-- Current Habit -->
       <div class="ins-section" id="ins-habit">
         <div id="habit-active-area"></div>
         <div id="habit-layer-area"></div>
+        <div id="habit-friction-candidates"></div>
         <div class="habit-queue-hdr" style="margin-top:4px">Queue</div>
         <div id="habit-queue-list"></div>
+        <p class="friction-secondary-note">Secondary — prefer letting the Friction Log surface candidates above. Use manual entry or the archive only if nothing's surfaced yet.</p>
         <div class="checklist-add-row" style="margin-top:10px">
           <textarea class="checklist-inp" id="habit-queue-inp" rows="2"
             placeholder="Type a new habit…"
             onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addHabitToQueue();}"></textarea>
           <button class="checklist-add-btn" onclick="addHabitToQueue()">+ Queue</button>
         </div>
-        <button class="habit-arch-toggle" id="habit-arch-toggle" onclick="toggleArchivePick()">🗂 Pick from Archive ▾</button>
+        <button class="habit-arch-toggle" id="habit-arch-toggle" onclick="toggleArchivePick()">🗂 Browse Archive (secondary) ▾</button>
         <div id="habit-arch-pick" class="habit-arch-pick" style="display:none">
           <input class="habit-arch-search" id="habit-arch-search" placeholder="Search insights…" oninput="renderArchivePick()">
           <div class="habit-arch-results" id="habit-arch-results"></div>
@@ -1126,6 +1181,29 @@ body.light .page-watermark { opacity: .2; }
 </div>
 
 <div class="toast" id="toast"><span id="toast-msg"></span></div>
+
+<!-- Friction Log quick-add -->
+<button class="friction-fab" onclick="openFrictionModal()" title="Log friction">💢</button>
+<div class="friction-overlay" id="friction-overlay" onclick="if(event.target===this)closeFrictionModal()">
+  <div class="friction-box">
+    <div class="friction-box-title">💢 Log Friction</div>
+    <div class="friction-box-sub">What just felt hard, resistant, or like you keep redoing it?</div>
+    <textarea class="friction-inp" id="friction-modal-inp" placeholder="What was hard…"
+      onkeydown="if(event.key==='Enter'&&(event.metaKey||event.ctrlKey)){event.preventDefault();saveFrictionEntry();} if(event.key==='Escape'){closeFrictionModal();}"></textarea>
+    <div class="friction-tags">
+      <button class="friction-tag-chip" onclick="pickFrictionTag('opening prep',this)">opening prep</button>
+      <button class="friction-tag-chip" onclick="pickFrictionTag('calculation',this)">calculation</button>
+      <button class="friction-tag-chip" onclick="pickFrictionTag('endgame',this)">endgame</button>
+      <button class="friction-tag-chip" onclick="pickFrictionTag('focus',this)">focus</button>
+      <button class="friction-tag-chip" onclick="pickFrictionTag('memory',this)">memory</button>
+      <button class="friction-tag-chip" onclick="pickFrictionTag('other',this)">other</button>
+    </div>
+    <div class="friction-box-row">
+      <button class="friction-cancel-btn" onclick="closeFrictionModal()">Cancel</button>
+      <button class="friction-save-btn" onclick="saveFrictionEntry()">Log it</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ── RANKS ──────────────────────────────────────────── */
@@ -1534,6 +1612,17 @@ async function bootFromCloud(){
       if(d.opener)   ls.set('sq_opener',    d.opener);
       if(d.habitMgr){ const localHM=ls.get('sq_habit_mgr',null); if(!localHM||((d.habitMgr._updatedAt||0)>=(localHM._updatedAt||0))) ls.set('sq_habit_mgr',d.habitMgr); }
       if(d.archive)  ls.set('sq_archive',   d.archive);
+      if(d.frictionLog){
+        // Union by id — friction entries are append-only quick logs, never drop one
+        const local = ls.get('sq_friction_log','[]');
+        const cloudIds = new Set(d.frictionLog.map(f=>f.id));
+        const extra = local.filter(f=>!cloudIds.has(f.id));
+        ls.set('sq_friction_log', extra.length ? [...d.frictionLog,...extra] : d.frictionLog);
+      }
+      if(d.frictionDismissed){
+        const local = ls.get('sq_friction_dismissed','[]');
+        ls.set('sq_friction_dismissed', [...new Set([...d.frictionDismissed, ...local])]);
+      }
       if(d.tasks){
         const localT = ls.get('sq_tasks','[]');
         if(Array.isArray(localT) && localT.length > 0 && Array.isArray(d.tasks) && d.tasks.length > 0){
@@ -1672,6 +1761,17 @@ async function refreshFromCloud(){
       if(d.opener)   ls.set('sq_opener',    d.opener);
       if(d.habitMgr){ const localHM=ls.get('sq_habit_mgr',null); if(!localHM||((d.habitMgr._updatedAt||0)>=(localHM._updatedAt||0))) ls.set('sq_habit_mgr',d.habitMgr); }
       if(d.archive)  ls.set('sq_archive',   d.archive);
+      if(d.frictionLog){
+        // Union by id — friction entries are append-only quick logs, never drop one
+        const local = ls.get('sq_friction_log','[]');
+        const cloudIds = new Set(d.frictionLog.map(f=>f.id));
+        const extra = local.filter(f=>!cloudIds.has(f.id));
+        ls.set('sq_friction_log', extra.length ? [...d.frictionLog,...extra] : d.frictionLog);
+      }
+      if(d.frictionDismissed){
+        const local = ls.get('sq_friction_dismissed','[]');
+        ls.set('sq_friction_dismissed', [...new Set([...d.frictionDismissed, ...local])]);
+      }
       if(d.tasks){
         const localT = ls.get('sq_tasks','[]');
         if(Array.isArray(localT) && localT.length > 0 && Array.isArray(d.tasks) && d.tasks.length > 0){
@@ -3209,6 +3309,161 @@ function saveHabitMgr(d){ d._updatedAt = Date.now(); ls.set('sq_habit_mgr',d); p
 function getArchive()  { return ls.get('sq_archive','[]'); }
 function saveArchive(a){ ls.set('sq_archive',a); pushSync(); }
 
+// ── FRICTION LOG ───────────────────────────────────────────────────────
+// Captures moments during training where something felt hard, resistant, or
+// repeatedly forgotten — the demonstrated-friction source for the habit queue.
+const FRICTION_TAGS = ['opening prep','calculation','endgame','focus','memory','other'];
+function getFrictionLog()    { return ls.get('sq_friction_log','[]'); }
+function saveFrictionLog(a)  { ls.set('sq_friction_log',a); pushSync(); }
+function getFrictionDismissed()   { return ls.get('sq_friction_dismissed','[]'); }
+function saveFrictionDismissed(a) { ls.set('sq_friction_dismissed',a); }
+
+const FRICTION_HABIT_TEMPLATES = {
+  'opening prep': 'Review the opening-prep gap the same day it surfaces, not at the next scheduled rep',
+  'calculation':  'Add one extra candidate-move check before committing in calculation-heavy positions',
+  'endgame':      'Drill the specific endgame pattern that just caused friction within 24 hours',
+  'focus':        'Build and use a reset routine for the exact moment focus breaks',
+  'memory':       'Re-test the forgotten line/pattern at +1 day instead of waiting for the next scheduled rep',
+  'other':        'Address the recurring friction directly in the next session',
+};
+function suggestHabitForTag(tag){ return FRICTION_HABIT_TEMPLATES[tag] || FRICTION_HABIT_TEMPLATES.other; }
+
+// Entries from the trailing 7 days, grouped by tag, sorted by frequency desc.
+function getFrictionWeekly(){
+  const cutoff = Date.now() - 7*24*60*60*1000;
+  const recent = getFrictionLog().filter(f => new Date(f.ts).getTime() >= cutoff);
+  const byTag = {};
+  recent.forEach(f => { const t = f.tag||'other'; (byTag[t] = byTag[t]||[]).push(f); });
+  return Object.entries(byTag)
+    .map(([tag,entries]) => ({tag, count:entries.length, entries}))
+    .sort((a,b) => b.count-a.count);
+}
+
+// A candidate is identified by tag + the exact set of entry ids behind it, so
+// dismissing one only suppresses that evidence snapshot — new friction on the
+// same tag re-surfaces it.
+function candidateSig(tag, entries){ return tag+'|'+entries.map(e=>e.id).sort().join(','); }
+
+function getFrictionCandidates(){
+  const dismissed = new Set(getFrictionDismissed());
+  return getFrictionWeekly().filter(w => w.count >= 3 && !dismissed.has(candidateSig(w.tag, w.entries)));
+}
+
+function dismissFrictionCandidate(tag){
+  const w = getFrictionWeekly().find(x => x.tag === tag);
+  if(!w) return;
+  const d = getFrictionDismissed();
+  const sig = candidateSig(tag, w.entries);
+  if(!d.includes(sig)) d.push(sig);
+  saveFrictionDismissed(d);
+  renderHabitMgr();
+}
+
+function addFrictionCandidateToQueue(tag){
+  const w = getFrictionWeekly().find(x => x.tag === tag);
+  if(!w) return;
+  const text = suggestHabitForTag(tag);
+  const d = getHabitMgr();
+  if(!d.queue) d.queue = [];
+  if(d.active.length === 0){
+    d.active.push({id:uid(), text, notes:'', status:'remembering', startedAt:new Date().toISOString()});
+    toast('Set as active habit.', 2500);
+  } else {
+    d.queue.unshift({id:uid(), text}); // friction-evidenced candidates jump the queue
+    toast(`Queued: "${text.slice(0,40)}"`, 2500);
+  }
+  saveHabitMgr(d);
+  // Auto-suppress this exact evidence snapshot now that it's been acted on
+  const dl = getFrictionDismissed();
+  const sig = candidateSig(tag, w.entries);
+  if(!dl.includes(sig)) dl.push(sig);
+  saveFrictionDismissed(dl);
+  renderHabitMgr();
+}
+
+let _frictionTag = null;
+function openFrictionModal(){
+  _frictionTag = null;
+  const inp = document.getElementById('friction-modal-inp');
+  if(inp) inp.value = '';
+  document.querySelectorAll('.friction-tag-chip').forEach(c => c.classList.remove('sel'));
+  document.getElementById('friction-overlay').classList.add('on');
+  setTimeout(() => inp?.focus(), 50);
+}
+function closeFrictionModal(){
+  document.getElementById('friction-overlay').classList.remove('on');
+}
+function pickFrictionTag(tag, btn){
+  _frictionTag = (_frictionTag === tag) ? null : tag;
+  document.querySelectorAll('.friction-tag-chip').forEach(c => c.classList.remove('sel'));
+  if(_frictionTag) btn.classList.add('sel');
+}
+function saveFrictionEntry(){
+  const inp = document.getElementById('friction-modal-inp');
+  const text = inp.value.trim();
+  if(!text) return;
+  const all = getFrictionLog();
+  all.unshift({id:uid(), text, tag:_frictionTag||'other', ts:new Date().toISOString()});
+  saveFrictionLog(all);
+  closeFrictionModal();
+  toast('Logged.', 1800);
+  renderFrictionLog();
+  renderHabitMgr();
+}
+function delFrictionEntry(id){
+  saveFrictionLog(getFrictionLog().filter(f => f.id !== id));
+  renderFrictionLog();
+}
+function fmtFrictionTime(ts){
+  const d = new Date(ts);
+  return d.toLocaleDateString([], {month:'short', day:'numeric'}) + ' · ' + d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+}
+function renderFrictionWeekly(){
+  const el = document.getElementById('friction-weekly');
+  if(!el) return;
+  const weekly = getFrictionWeekly();
+  el.innerHTML = !weekly.length
+    ? '<div class="concl-empty" style="padding:16px 0">No friction logged in the last 7 days.</div>'
+    : weekly.map(w => `
+      <div class="friction-tag-row ${w.count>=3?'hot':''}">
+        <span>${esc(w.tag)}</span>
+        <span class="friction-tag-count ${w.count>=3?'hot':''}">${w.count}</span>
+      </div>`).join('');
+}
+function renderFrictionLog(){
+  const listEl = document.getElementById('friction-list');
+  if(listEl){
+    const all = getFrictionLog();
+    listEl.innerHTML = !all.length
+      ? '<div class="archive-empty">No friction logged yet. Tap 💢 whenever something feels hard.</div>'
+      : all.map(f => `
+        <div class="friction-item">
+          <div class="friction-item-text">${esc(f.text)}</div>
+          <div class="friction-item-meta">
+            <div class="friction-item-tag">${esc(f.tag||'other')}</div>
+            <div class="friction-item-time">${fmtFrictionTime(f.ts)}</div>
+          </div>
+          <button class="friction-item-del" onclick="delFrictionEntry('${f.id}')">✕</button>
+        </div>`).join('');
+  }
+  renderFrictionWeekly();
+}
+function renderFrictionCandidates(){
+  const el = document.getElementById('habit-friction-candidates');
+  if(!el) return;
+  const cands = getFrictionCandidates();
+  el.innerHTML = cands.map(c => `
+    <div class="friction-candidate-card">
+      <div class="friction-candidate-lbl">💢 Friction Candidate — ${esc(c.tag)} (${c.count}× this week)</div>
+      <div class="friction-candidate-text">${esc(suggestHabitForTag(c.tag))}</div>
+      <div class="friction-candidate-evidence">${c.entries.slice(0,6).map(e => '• '+esc(e.text)).join('\n')}</div>
+      <div class="friction-candidate-row">
+        <button class="friction-candidate-add" onclick="addFrictionCandidateToQueue('${c.tag}')">+ Add to Queue</button>
+        <button class="friction-candidate-dismiss" onclick="dismissFrictionCandidate('${c.tag}')">Dismiss</button>
+      </div>
+    </div>`).join('');
+}
+
 let _insightTab = 'pregame';
 
 function switchView(view){
@@ -3224,7 +3479,7 @@ function renderInsights(){ switchInsight(_insightTab); }
 
 function switchInsight(tab){
   _insightTab = tab;
-  ['pregame','opener','habit','archive'].forEach(t => {
+  ['pregame','opener','friction','habit','archive'].forEach(t => {
     const s = document.getElementById('ins-'+t);
     const b = document.getElementById('ins-tab-'+t);
     if(s) s.classList.toggle('on', t===tab);
@@ -3232,6 +3487,7 @@ function switchInsight(tab){
   });
   if(tab==='pregame') renderPregame();
   else if(tab==='opener') renderOpener();
+  else if(tab==='friction') renderFrictionLog();
   else if(tab==='habit') renderHabitMgr();
   else if(tab==='archive') renderArchive();
 }
@@ -3330,6 +3586,8 @@ function renderHabitMgr(){
   const queueEl     = document.getElementById('habit-queue-list');
   const completedEl = document.getElementById('habit-completed-area');
   if(!activeEl) return;
+
+  renderFrictionCandidates();
 
   // Active habits
   activeEl.innerHTML = d.active.length
@@ -3571,6 +3829,7 @@ async function pushCloud(){
     sessions: sess, habits: getHabits(), tasks: getTasks(), protein: getProteinLog(),
     conclusions: getConclusions(),
     pregame: getPregame(), opener: getOpener(), habitMgr: getHabitMgr(), archive: getArchive(),
+    frictionLog: getFrictionLog(), frictionDismissed: getFrictionDismissed(),
     ...(timerToWrite !== undefined ? { activeTimer: timerToWrite } : {}),
   };
   try {
