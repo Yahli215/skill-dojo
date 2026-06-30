@@ -765,6 +765,31 @@ body.light .page-watermark { opacity: .2; }
 .friction-candidate-add{background:var(--gold2);color:#000;border:none;border-radius:7px;padding:7px 14px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;}
 .friction-candidate-dismiss{background:none;border:1px solid var(--b2);color:var(--muted);border-radius:7px;padding:7px 12px;font-size:11px;cursor:pointer;font-family:inherit;}
 .friction-secondary-note{font-size:10px;color:var(--muted);letter-spacing:.03em;margin:14px 0 0;line-height:1.6;}
+.friction-candidate-card.proven-match{border-color:var(--green2);}
+.friction-candidate-card.proven-match .friction-candidate-lbl{color:var(--green2);}
+.friction-candidate-card.proven-match .friction-candidate-add{background:var(--green2);}
+.friction-candidate-origin{font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:8px;}
+
+/* ── PROVEN TOOLS ───────────────────────────────────── */
+.proven-add-box{background:var(--s1);border:1px solid var(--b1);border-radius:9px;padding:14px 15px;margin-bottom:18px;}
+.proven-add-inp{width:100%;background:var(--b1);border:1px solid var(--b2);color:var(--text);border-radius:7px;padding:8px 11px;font-size:12px;font-family:inherit;margin-bottom:8px;box-sizing:border-box;}
+.proven-add-inp:focus{outline:none;border-color:var(--gold2);}
+.proven-domain-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px;}
+.proven-domain-chip{padding:6px 11px;border-radius:20px;border:1px solid var(--b2);background:none;color:var(--muted2);font-size:10px;letter-spacing:.03em;cursor:pointer;font-family:var(--mono);transition:all .15s;}
+.proven-domain-chip:hover{border-color:var(--green2);}
+.proven-domain-chip.sel{background:var(--green2);border-color:var(--green2);color:#fff;}
+.proven-add-btn{width:100%;background:var(--green2);color:#000;border:none;border-radius:7px;padding:9px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.04em;}
+.proven-add-btn:hover{filter:brightness(1.08);}
+.proven-item{display:flex;align-items:flex-start;gap:8px;background:var(--s1);border:1px solid var(--b1);border-radius:7px;padding:10px 11px;margin-bottom:6px;}
+.proven-item-body{flex:1;min-width:0;}
+.proven-item-tool{font-size:12px;font-weight:600;line-height:1.6;color:var(--text);}
+.proven-item-problem{font-size:11px;color:var(--muted2);line-height:1.6;margin-top:2px;}
+.proven-item-meta{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;}
+.proven-item-domain{font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--green2);}
+.proven-item-time{font-size:9px;color:var(--muted);white-space:nowrap;}
+.proven-item-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:2px 4px;flex-shrink:0;}
+.proven-item-del:hover{color:var(--verm);}
+.proven-match-hint{color:var(--green2)!important;}
 </style>
 </head>
 <body class="z">
@@ -1027,6 +1052,7 @@ body.light .page-watermark { opacity: .2; }
         <button class="ins-nav-btn on" id="ins-tab-pregame" onclick="switchInsight('pregame')">🎯 Pre-Game</button>
         <button class="ins-nav-btn"    id="ins-tab-opener"   onclick="switchInsight('opener')"  >⚔️ Session</button>
         <button class="ins-nav-btn"    id="ins-tab-friction" onclick="switchInsight('friction')">💢 Friction</button>
+        <button class="ins-nav-btn"    id="ins-tab-proven"   onclick="switchInsight('proven')"  >🛠 Proven</button>
         <button class="ins-nav-btn"    id="ins-tab-habit"    onclick="switchInsight('habit')"   >🔄 Habit</button>
         <button class="ins-nav-btn"    id="ins-tab-archive"  onclick="switchInsight('archive')" >🗂 Archive</button>
       </div>
@@ -1052,6 +1078,25 @@ body.light .page-watermark { opacity: .2; }
         <div id="friction-weekly" class="friction-tag-summary"></div>
         <div class="friction-week-hdr">All Entries</div>
         <div id="friction-list"></div>
+      </div>
+
+      <!-- Proven Tools -->
+      <div class="ins-section" id="ins-proven">
+        <p class="ins-caption">Tools, cues, or routines proven to work in a real situation — not theoretical. Checked first, cross-domain, before generating something new.</p>
+        <div class="proven-add-box">
+          <input class="proven-add-inp" id="proven-tool-inp" placeholder="The tool/cue itself…">
+          <input class="proven-add-inp" id="proven-problem-inp" placeholder="What problem it solved…"
+            onkeydown="if(event.key==='Enter')addProvenTool();">
+          <div class="proven-domain-chips" id="proven-domain-chips">
+            <button class="proven-domain-chip" onclick="pickProvenDomain('chess',this)">chess</button>
+            <button class="proven-domain-chip" onclick="pickProvenDomain('general life',this)">general life</button>
+            <button class="proven-domain-chip" onclick="pickProvenDomain('sleep',this)">sleep</button>
+            <button class="proven-domain-chip" onclick="pickProvenDomain('anxiety',this)">anxiety</button>
+            <button class="proven-domain-chip" onclick="pickProvenDomain('other',this)">other</button>
+          </div>
+          <button class="proven-add-btn" onclick="addProvenTool()">+ Log Proven Tool</button>
+        </div>
+        <div id="proven-list"></div>
       </div>
 
       <!-- Current Habit -->
@@ -1644,6 +1689,12 @@ async function bootFromCloud(){
         const local = ls.get('sq_friction_dismissed','[]');
         ls.set('sq_friction_dismissed', [...new Set([...d.frictionDismissed, ...local])]);
       }
+      if(d.provenTools){
+        const local = ls.get('sq_proven_tools','[]');
+        const cloudIds = new Set(d.provenTools.map(p=>p.id));
+        const extra = local.filter(p=>!cloudIds.has(p.id));
+        ls.set('sq_proven_tools', extra.length ? [...d.provenTools,...extra] : d.provenTools);
+      }
       if(d.tasks){
         const localT = ls.get('sq_tasks','[]');
         if(Array.isArray(localT) && localT.length > 0 && Array.isArray(d.tasks) && d.tasks.length > 0){
@@ -1792,6 +1843,12 @@ async function refreshFromCloud(){
       if(d.frictionDismissed){
         const local = ls.get('sq_friction_dismissed','[]');
         ls.set('sq_friction_dismissed', [...new Set([...d.frictionDismissed, ...local])]);
+      }
+      if(d.provenTools){
+        const local = ls.get('sq_proven_tools','[]');
+        const cloudIds = new Set(d.provenTools.map(p=>p.id));
+        const extra = local.filter(p=>!cloudIds.has(p.id));
+        ls.set('sq_proven_tools', extra.length ? [...d.provenTools,...extra] : d.provenTools);
       }
       if(d.tasks){
         const localT = ls.get('sq_tasks','[]');
@@ -3360,13 +3417,21 @@ function getFrictionTagSuggestion(text){
 function updateFrictionSuggestHint(){
   const hint = document.getElementById('friction-suggest-hint');
   if(!hint) return;
-  if(_frictionTag){ hint.textContent = ''; return; } // manual pick wins, no need to suggest
   const inp = document.getElementById('friction-modal-inp');
-  const tag = getFrictionTagSuggestion(inp ? inp.value : '');
-  document.querySelectorAll('.friction-tag-chip').forEach(c => {
-    c.classList.toggle('suggested', !!tag && c.textContent.trim() === tag);
-  });
-  hint.textContent = tag ? `Auto-tag: ${tag} — tap a tag below to override` : '';
+  const text = inp ? inp.value : '';
+  const autoTag = getFrictionTagSuggestion(text);
+  if(!_frictionTag){
+    document.querySelectorAll('.friction-tag-chip').forEach(c => {
+      c.classList.toggle('suggested', !!autoTag && c.textContent.trim() === autoTag);
+    });
+  }
+  const lines = [];
+  if(!_frictionTag && autoTag) lines.push(`Auto-tag: ${autoTag} — tap a tag below to override`);
+  // Cross-domain check: has something like this already been proven to work
+  // elsewhere, before assuming a new habit needs to be generated?
+  const match = findProvenMatch(text, _frictionTag || autoTag || 'other');
+  if(match) lines.push(`<span class="proven-match-hint">✅ Proven tool match (${esc(match.domain)}): "${esc(match.tool)}"</span>`);
+  hint.innerHTML = lines.join('<br>');
 }
 function getFrictionLog()    { return ls.get('sq_friction_log','[]'); }
 function saveFrictionLog(a)  { ls.set('sq_friction_log',a); pushSync(); }
@@ -3416,10 +3481,11 @@ function dismissFrictionCandidate(tag){
   renderHabitMgr();
 }
 
-function addFrictionCandidateToQueue(tag){
+function addFrictionCandidateToQueue(tag, provenId){
   const w = getFrictionWeekly().find(x => x.tag === tag);
   if(!w) return;
-  const text = suggestHabitForTag(tag);
+  const proven = provenId ? getProvenTools().find(p => p.id === provenId) : null;
+  const text = proven ? proven.tool : suggestHabitForTag(tag);
   const d = getHabitMgr();
   if(!d.queue) d.queue = [];
   if(d.active.length === 0){
@@ -3513,16 +3579,125 @@ function renderFrictionCandidates(){
   const el = document.getElementById('habit-friction-candidates');
   if(!el) return;
   const cands = getFrictionCandidates();
-  el.innerHTML = cands.map(c => `
-    <div class="friction-candidate-card">
-      <div class="friction-candidate-lbl">💢 Friction Candidate — ${esc(c.tag)} (${c.count}× this week)</div>
-      <div class="friction-candidate-text">${esc(suggestHabitForTag(c.tag))}</div>
+  el.innerHTML = cands.map(c => {
+    // Check Proven Tools (cross-domain) before falling back to a generated suggestion.
+    const combinedText = c.entries.map(e => e.text).join(' ');
+    const match = findProvenMatch(combinedText, c.tag);
+    const lbl = match
+      ? `✅ Already proven — ${esc(c.tag)} (${c.count}× this week)`
+      : `💢 Friction Candidate — ${esc(c.tag)} (${c.count}× this week)`;
+    const suggestText = match ? match.tool : suggestHabitForTag(c.tag);
+    const origin = match && match.problem
+      ? `<div class="friction-candidate-origin">Originally solved (${esc(match.domain)}): ${esc(match.problem)}</div>` : '';
+    const addOnclick = match
+      ? `addFrictionCandidateToQueue('${c.tag}','${match.id}')`
+      : `addFrictionCandidateToQueue('${c.tag}')`;
+    return `
+    <div class="friction-candidate-card ${match ? 'proven-match' : ''}">
+      <div class="friction-candidate-lbl">${lbl}</div>
+      <div class="friction-candidate-text">${esc(suggestText)}</div>
+      ${origin}
       <div class="friction-candidate-evidence">${c.entries.slice(0,6).map(e => '• '+esc(e.text)).join('\n')}</div>
       <div class="friction-candidate-row">
-        <button class="friction-candidate-add" onclick="addFrictionCandidateToQueue('${c.tag}')">+ Add to Queue</button>
+        <button class="friction-candidate-add" onclick="${addOnclick}">+ Add to Queue</button>
         <button class="friction-candidate-dismiss" onclick="dismissFrictionCandidate('${c.tag}')">Dismiss</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+}
+
+// ── PROVEN TOOLS ───────────────────────────────────────────────────────
+// Anything proven to actually work in a real situation — not theoretical.
+// The matching logic below is the "check this before generating something
+// new" behavior: when friction shows up, search proven tools across the
+// mapped domains (deliberately cross-domain — a chess-anxiety cue should
+// surface for general anxiety friction, and vice versa) before falling
+// back to a freshly generated suggestion.
+const PROVEN_DOMAINS = ['chess','general life','sleep','anxiety','other'];
+
+function getProvenTools()   { return ls.get('sq_proven_tools','[]'); }
+function saveProvenTools(a) { ls.set('sq_proven_tools',a); pushSync(); }
+
+let _provenDomain = null;
+function pickProvenDomain(domain, btn){
+  _provenDomain = (_provenDomain === domain) ? null : domain;
+  document.querySelectorAll('.proven-domain-chip').forEach(c => c.classList.remove('sel'));
+  if(_provenDomain) btn.classList.add('sel');
+}
+
+function addProvenTool(){
+  const toolInp = document.getElementById('proven-tool-inp');
+  const probInp = document.getElementById('proven-problem-inp');
+  const tool = toolInp.value.trim(), problem = probInp.value.trim();
+  if(!tool) return;
+  const domain = _provenDomain || 'other';
+  const all = getProvenTools();
+  all.unshift({id:uid(), tool, problem, domain, ts:new Date().toISOString()});
+  saveProvenTools(all);
+  toolInp.value = ''; probInp.value = ''; _provenDomain = null;
+  document.querySelectorAll('.proven-domain-chip').forEach(c => c.classList.remove('sel'));
+  toast('Proven tool logged.', 1800);
+  renderProvenTools();
+}
+
+function delProvenTool(id){
+  saveProvenTools(getProvenTools().filter(p => p.id !== id));
+  renderProvenTools();
+}
+
+function renderProvenTools(){
+  const el = document.getElementById('proven-list');
+  if(!el) return;
+  const all = getProvenTools();
+  el.innerHTML = !all.length
+    ? '<div class="archive-empty">No proven tools logged yet. Add the first one above — only things that have actually worked.</div>'
+    : all.map(p => `
+      <div class="proven-item">
+        <div class="proven-item-body">
+          <div class="proven-item-tool">${esc(p.tool)}</div>
+          ${p.problem ? `<div class="proven-item-problem">→ ${esc(p.problem)}</div>` : ''}
+        </div>
+        <div class="proven-item-meta">
+          <div class="proven-item-domain">${esc(p.domain||'other')}</div>
+          <div class="proven-item-time">${fmtFrictionTime(p.ts)}</div>
+        </div>
+        <button class="proven-item-del" onclick="delProvenTool('${p.id}')">✕</button>
+      </div>`).join('');
+}
+
+// Which proven-tool domains are worth checking for a given friction tag.
+// Deliberately cross-domain — friction tagged "mindset" checks anxiety and
+// general-life tools too, not just chess ones.
+const FRICTION_TAG_TO_PROVEN_DOMAINS = {
+  'opening prep': ['chess'],
+  'calculation':  ['chess'],
+  'endgame':      ['chess'],
+  'memory':       ['chess','general life'],
+  'focus':        ['chess','general life','anxiety'],
+  'distraction':  ['general life','chess'],
+  'mindset':      ['anxiety','general life','chess'],
+  'other':        PROVEN_DOMAINS,
+};
+const PROVEN_MATCH_STOPWORDS = new Set(['this','that','with','from','have','about','into','your','just','like','when','what','their','there','then','than','some','more','very','feel','feels','felt','being','been','keep','still','again','really','thing','things']);
+
+// Best proven-tool match for a chunk of friction text, scored by shared
+// significant words (len>=4, stopwords stripped) against the tool+problem
+// fields, restricted to the domains mapped from the friction tag. Returns
+// null rather than guessing if nothing actually overlaps.
+function findProvenMatch(text, frictionTag){
+  const domains = FRICTION_TAG_TO_PROVEN_DOMAINS[frictionTag] || PROVEN_DOMAINS;
+  const pool = getProvenTools().filter(p => domains.includes(p.domain||'other'));
+  if(!pool.length) return null;
+  const words = (text||'').toLowerCase().match(/[a-z]{4,}/g) || [];
+  const sig = words.filter(w => !PROVEN_MATCH_STOPWORDS.has(w));
+  if(!sig.length) return null;
+  let best = null, bestScore = 0;
+  pool.forEach(p => {
+    const hay = ((p.tool||'')+' '+(p.problem||'')).toLowerCase();
+    const score = sig.reduce((n,w) => n + (hay.includes(w) ? 1 : 0), 0);
+    if(score > bestScore){ bestScore = score; best = p; }
+  });
+  return bestScore > 0 ? best : null;
 }
 
 let _insightTab = 'pregame';
@@ -3540,7 +3715,7 @@ function renderInsights(){ switchInsight(_insightTab); }
 
 function switchInsight(tab){
   _insightTab = tab;
-  ['pregame','opener','friction','habit','archive'].forEach(t => {
+  ['pregame','opener','friction','proven','habit','archive'].forEach(t => {
     const s = document.getElementById('ins-'+t);
     const b = document.getElementById('ins-tab-'+t);
     if(s) s.classList.toggle('on', t===tab);
@@ -3549,6 +3724,7 @@ function switchInsight(tab){
   if(tab==='pregame') renderPregame();
   else if(tab==='opener') renderOpener();
   else if(tab==='friction') renderFrictionLog();
+  else if(tab==='proven') renderProvenTools();
   else if(tab==='habit') renderHabitMgr();
   else if(tab==='archive') renderArchive();
 }
@@ -3891,6 +4067,7 @@ async function pushCloud(){
     conclusions: getConclusions(),
     pregame: getPregame(), opener: getOpener(), habitMgr: getHabitMgr(), archive: getArchive(),
     frictionLog: getFrictionLog(), frictionDismissed: getFrictionDismissed(),
+    provenTools: getProvenTools(),
     ...(timerToWrite !== undefined ? { activeTimer: timerToWrite } : {}),
   };
   try {
