@@ -776,6 +776,24 @@ body.light .page-watermark { opacity: .2; }
 .friction-candidate-card.proven-match .friction-candidate-lbl{color:var(--green2);}
 .friction-candidate-card.proven-match .friction-candidate-add{background:var(--green2);}
 .friction-candidate-origin{font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:8px;}
+/* Proposal cards */
+.proposal-section-hdr{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:10px;margin-top:4px;}
+.proposal-card{background:var(--s1);border-radius:9px;padding:14px 15px;margin-bottom:12px;border-left:3px solid var(--green2);}
+.proposal-card.proposal-needs-tool{border-left-color:var(--gold2);}
+.proposal-tag-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.proposal-tag{font-size:9px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--green2);}
+.proposal-card.proposal-needs-tool .proposal-tag{color:var(--gold2);}
+.proposal-count{font-size:10px;color:var(--t3);}
+.proposal-evidence{font-size:11px;color:var(--muted);line-height:1.7;margin-bottom:10px;}
+.proposal-tool{font-size:12px;font-weight:600;color:var(--t1);margin-bottom:12px;}
+.proposal-tool.needs-tool{color:var(--gold2);font-weight:500;font-style:italic;}
+.proposal-tool-origin{font-size:10px;color:var(--muted);font-weight:400;}
+.proposal-actions{display:flex;gap:8px;}
+.proposal-approve{background:var(--green2);color:#fff;border:none;border-radius:7px;padding:8px 18px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.03em;}
+.proposal-approve.proposal-noted{background:var(--gold2);color:#000;}
+.proposal-skip{background:none;border:1px solid var(--b2);color:var(--muted);border-radius:7px;padding:8px 14px;font-size:12px;cursor:pointer;font-family:inherit;}
+.manual-exp-toggle{background:none;border:1px dashed var(--b2);color:var(--t3);border-radius:7px;padding:8px 14px;font-size:11px;letter-spacing:.04em;cursor:pointer;width:100%;margin:14px 0 0;font-family:inherit;transition:border-color .15s;}
+.manual-exp-toggle:hover{border-color:var(--t3);}
 
 /* ── PROVEN TOOLS ───────────────────────────────────── */
 .proven-add-box{background:var(--s1);border:1px solid var(--b1);border-radius:9px;padding:14px 15px;margin-bottom:18px;}
@@ -1121,14 +1139,15 @@ body.light .page-watermark { opacity: .2; }
 
       <!-- Current Habit -->
       <div class="ins-section" id="ins-habit">
-        <p class="ins-caption">Experiment tracker — problem + tool + duration + outcome. The Remembering→Consistent→Automatic track applies to the tool once it's confirmed working, not before.</p>
+        <p class="ins-caption">When friction repeats 3× in 7 days the system proposes a fix. Tap ✓ Start or ✗ Skip — nothing else needed.</p>
+        <div id="habit-friction-candidates"></div>
         <div id="habit-active-area"></div>
         <div id="habit-layer-area"></div>
-        <div id="habit-friction-candidates"></div>
         <div class="habit-queue-hdr" style="margin-top:4px">Queue</div>
         <div id="habit-queue-list"></div>
-        <p class="friction-secondary-note">Secondary — prefer letting the Friction Log surface candidates above. Use manual entry only if nothing's surfaced yet.</p>
 
+        <button class="manual-exp-toggle" onclick="toggleManualExpForm()">＋ Add manually ▾</button>
+        <div id="manual-exp-form" style="display:none">
         <div class="exp-add-box">
           <input class="proven-add-inp" id="exp-problem-inp" placeholder="Problem you're trying to fix…">
           <button class="habit-arch-toggle" style="margin:0 0 8px" onclick="toggleExpProblemPick()">📥 Pull from Friction Log ▾</button>
@@ -1149,6 +1168,7 @@ body.light .page-watermark { opacity: .2; }
 
           <button class="proven-add-btn" onclick="addExperiment()">+ Start Experiment</button>
         </div>
+        </div><!-- /manual-exp-form -->
 
         <div id="habit-completed-area"></div>
         <div id="habit-discarded-area"></div>
@@ -3692,31 +3712,75 @@ function renderFrictionCandidates(){
   const el = document.getElementById('habit-friction-candidates');
   if(!el) return;
   const cands = getFrictionCandidates();
-  el.innerHTML = cands.map(c => {
-    // Check Proven Tools (cross-domain) before falling back to a generated suggestion.
-    const combinedText = c.entries.map(e => e.text).join(' ');
-    const match = findProvenMatch(combinedText, c.tag);
-    const lbl = match
-      ? `✅ Already proven — ${esc(c.tag)} (${c.count}× this week)`
-      : `💢 Friction Candidate — ${esc(c.tag)} (${c.count}× this week)`;
-    const suggestText = match ? match.tool : suggestHabitForTag(c.tag);
-    const origin = match && match.problem
-      ? `<div class="friction-candidate-origin">Originally solved (${esc(match.domain)}): ${esc(match.problem)}</div>` : '';
-    const addOnclick = match
-      ? `addFrictionCandidateToQueue('${c.tag}','${match.id}')`
-      : `addFrictionCandidateToQueue('${c.tag}')`;
+  if(!cands.length){ el.innerHTML=''; return; }
+  el.innerHTML = '<div class="proposal-section-hdr">System Proposals</div>' + cands.map(c => {
+    const match = findDomainTool(c.tag);
+    const hasMatch = !!match;
+    const toolHtml = hasMatch
+      ? `<div class="proposal-tool">→ ${esc(match.tool)} <span class="proposal-tool-origin">· ${esc(match.domain)}</span></div>`
+      : `<div class="proposal-tool needs-tool">→ Needs tool — consult Claude</div>`;
+    const approveOnclick = hasMatch
+      ? `approveProposal('${c.tag}','${match.id}')`
+      : `approveProposal('${c.tag}',null)`;
+    const approveLabel = hasMatch ? '✓ Start' : '✓ Noted';
+    const approveClass = hasMatch ? 'proposal-approve' : 'proposal-approve proposal-noted';
     return `
-    <div class="friction-candidate-card ${match ? 'proven-match' : ''}">
-      <div class="friction-candidate-lbl">${lbl}</div>
-      <div class="friction-candidate-text">${esc(suggestText)}</div>
-      ${origin}
-      <div class="friction-candidate-evidence">${c.entries.slice(0,6).map(e => '• '+esc(e.text)).join('\n')}</div>
-      <div class="friction-candidate-row">
-        <button class="friction-candidate-add" onclick="${addOnclick}">+ Add to Queue</button>
-        <button class="friction-candidate-dismiss" onclick="dismissFrictionCandidate('${c.tag}')">Dismiss</button>
+    <div class="proposal-card ${hasMatch?'proposal-matched':'proposal-needs-tool'}">
+      <div class="proposal-tag-row">
+        <span class="proposal-tag">${esc(c.tag)}</span>
+        <span class="proposal-count">${c.count}× in 7 days</span>
+      </div>
+      <div class="proposal-evidence">${c.entries.slice(0,3).map(e=>`<div>• ${esc(e.text)}</div>`).join('')}</div>
+      ${toolHtml}
+      <div class="proposal-actions">
+        <button class="${approveClass}" onclick="${approveOnclick}">${approveLabel}</button>
+        <button class="proposal-skip" onclick="dismissFrictionCandidate('${c.tag}')">✗ Skip</button>
       </div>
     </div>`;
   }).join('');
+}
+
+function approveProposal(tag, provenId){
+  const w = getFrictionWeekly().find(x => x.tag === tag);
+  if(!w) return;
+  if(!provenId || provenId==='null'){
+    // No tool — acknowledge and suppress
+    const dl = getFrictionDismissed();
+    const sig = candidateSig(tag, w.entries);
+    if(!dl.includes(sig)) dl.push(sig);
+    saveFrictionDismissed(dl);
+    toast('Bring this to Claude for tool research.', 3000);
+    renderHabitMgr();
+    return;
+  }
+  const proven = getProvenTools().find(p => p.id === provenId);
+  const tool = proven ? proven.tool : '';
+  const origin = proven ? 'borrowed' : 'new';
+  const problem = FRICTION_TAG_TO_PROBLEM[tag] || FRICTION_TAG_TO_PROBLEM.other;
+  const d = getHabitMgr();
+  if(d.active.length === 0){
+    d.active.push(newExperiment(problem, tool, origin, proven?proven.id:null));
+    toast('Experiment started.', 2500);
+  } else {
+    if(!d.queue) d.queue = [];
+    d.queue.unshift({id:uid(), problem, tool, toolOrigin:origin, provenId:proven?proven.id:null});
+    toast(`Queued: "${tool.slice(0,40)}"`, 2500);
+  }
+  saveHabitMgr(d);
+  const dl = getFrictionDismissed();
+  const sig = candidateSig(tag, w.entries);
+  if(!dl.includes(sig)) dl.push(sig);
+  saveFrictionDismissed(dl);
+  renderHabitMgr();
+}
+
+let _manualExpOpen = false;
+function toggleManualExpForm(){
+  _manualExpOpen = !_manualExpOpen;
+  const el = document.getElementById('manual-exp-form');
+  const btn = document.querySelector('.manual-exp-toggle');
+  if(el) el.style.display = _manualExpOpen ? '' : 'none';
+  if(btn) btn.textContent = _manualExpOpen ? '− Add manually ▴' : '＋ Add manually ▾';
 }
 
 // ── PROVEN TOOLS ───────────────────────────────────────────────────────
@@ -3792,6 +3856,15 @@ const FRICTION_TAG_TO_PROVEN_DOMAINS = {
   'other':        PROVEN_DOMAINS,
 };
 const PROVEN_MATCH_STOPWORDS = new Set(['this','that','with','from','have','about','into','your','just','like','when','what','their','there','then','than','some','more','very','feel','feels','felt','being','been','keep','still','again','really','thing','things']);
+
+// Domain-only tool finder: returns the most recent proven tool in any domain
+// mapped to the friction tag, with no word-scoring required. Used by proposals.
+function findDomainTool(frictionTag){
+  const domains = FRICTION_TAG_TO_PROVEN_DOMAINS[frictionTag] || PROVEN_DOMAINS;
+  const pool = getProvenTools().filter(p => domains.includes(p.domain||'other'));
+  if(!pool.length) return null;
+  return pool.sort((a,b) => new Date(b.ts||0)-new Date(a.ts||0))[0];
+}
 
 // Best proven-tool match for a chunk of friction text, scored by shared
 // significant words (len>=4, stopwords stripped) against the tool+problem
