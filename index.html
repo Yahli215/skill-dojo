@@ -465,6 +465,13 @@ body.light .page-watermark { opacity: .2; }
 .habit-check.just-checked{animation:habit-pop .45s cubic-bezier(.34,1.56,.64,1) forwards,habit-ring .6s ease-out forwards;}
 .habit-add-btn{background:none;border:none;padding:11px;color:var(--b2);cursor:pointer;font-size:10px;letter-spacing:.12em;transition:color .2s;text-align:center;width:100%;border-top:1px dashed var(--b1);}
 .habit-add-btn:hover{color:var(--t3);}
+.active-tool-card{background:var(--s1);border-bottom:1px solid var(--b1);padding:12px 16px;border-left:3px solid var(--gold2);}
+.active-tool-card:last-child{border-bottom:none;}
+.atc-problem{font-size:11px;color:var(--t3);letter-spacing:.04em;margin-bottom:3px;}
+.atc-tool{font-size:13px;color:var(--t1);font-weight:600;margin-bottom:6px;}
+.atc-status{display:inline-block;font-size:10px;letter-spacing:.08em;padding:2px 8px;border-radius:20px;background:var(--b1);color:var(--t3);}
+.atc-status.working{background:rgba(80,200,120,.12);color:var(--green2);}
+.active-tools-empty{padding:20px 16px;color:var(--b2);font-size:12px;text-align:center;letter-spacing:.04em;}
 .habit-day-toggle{display:flex;gap:4px;margin-left:auto;}
 .hday-btn{background:none;border:1px solid var(--b1);color:var(--t3);padding:3px 10px;border-radius:20px;font-size:10px;letter-spacing:.06em;cursor:pointer;transition:all .15s;font-family:inherit;}
 .hday-btn.on{background:var(--gold2);border-color:var(--gold2);color:#000;font-weight:700;}
@@ -1031,28 +1038,13 @@ body.light .page-watermark { opacity: .2; }
       <div class="jg-legend" id="jg-legend"></div>
     </div>
 
-    <!-- Habits -->
+    <!-- Active Tools -->
     <div class="sec-hdr">
-      <div class="sec-lbl">Habits</div>
+      <div class="sec-lbl">Active Tools</div>
       <div class="sec-kj">習慣</div>
       <div class="sec-line"></div>
-      <div class="habit-day-toggle">
-        <button class="hday-btn on" id="hday-today"    onclick="switchHabitDay('today')">Today</button>
-        <button class="hday-btn"    id="hday-yest"     onclick="switchHabitDay('yesterday')">Yesterday</button>
-      </div>
     </div>
-    <button class="sat-review-btn" id="sat-review-btn" onclick="showSaturdayReview()">⚖ 土曜日 SATURDAY REVIEW</button>
-    <div class="habit-grid" id="habit-grid"></div>
-
-    <!-- Saturday Review overlay -->
-    <div class="sat-overlay" id="sat-overlay">
-      <div class="sat-box">
-        <div class="sat-title">土曜レビュー</div>
-        <div class="sat-sub">Saturday Review — adjust difficulty based on last 7 days</div>
-        <div id="sat-rows"></div>
-        <button class="sat-close-btn" onclick="closeSaturdayReview()">閉じる — Close</button>
-      </div>
-    </div>
+    <div id="active-tools-list"></div>
 
 
     <!-- Protein tracker -->
@@ -2035,7 +2027,7 @@ function renderApp(){
   try { renderWeekBars(); } catch(e){ console.error('renderWeekBars:', e); }
   try { renderReport(); }   catch(e){ console.error('renderReport:', e); }
   try { renderJourneyGrid(); }    catch(e){ console.error('renderJourneyGrid:', e); }
-  try { renderHabits(); }         catch(e){ console.error('renderHabits:', e); }
+  try { renderActiveTools(); }     catch(e){ console.error('renderActiveTools:', e); }
   try { renderProtein(); }        catch(e){ console.error('renderProtein:', e); }
 }
 
@@ -3067,6 +3059,28 @@ function renderHabits(){
   el.innerHTML=html;
 }
 
+function renderActiveTools(){
+  const el = document.getElementById('active-tools-list'); if(!el) return;
+  const d = getHabitMgr();
+  const active = (d.habits||[]).filter(h => h.status !== 'automatic');
+  if(!active.length){
+    el.innerHTML = '<div class="active-tools-empty">No active tools — add one in the Habit tab.</div>';
+    return;
+  }
+  const STATUS_LABEL = {remembering:'Remembering', consistent:'Consistent'};
+  el.innerHTML = '<div class="habit-grid">' + active.map(h => {
+    const problem = h.problem || '(no problem set)';
+    const tool = h.tool || '(no tool set)';
+    const isWorking = h.outcome === 'working';
+    const statusLabel = isWorking ? (STATUS_LABEL[h.status] || h.status) : 'Testing';
+    return `<div class="active-tool-card">
+      <div class="atc-problem">${esc(problem)}</div>
+      <div class="atc-tool">→ ${esc(tool)}</div>
+      <span class="atc-status${isWorking?' working':''}">${statusLabel}</span>
+    </div>`;
+  }).join('') + '</div>';
+}
+
 /* Saturday Review — multi-step wizard */
 let _satAnswers = {};
 const SAT_STEPS = [
@@ -3995,6 +4009,7 @@ function renderExperimentCard(h, idx){
 }
 
 function renderHabitMgr(){
+  renderActiveTools();
   const d = getHabitMgr();
   const activeEl    = document.getElementById('habit-active-area');
   const layerEl     = document.getElementById('habit-layer-area');
