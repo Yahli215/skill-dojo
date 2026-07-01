@@ -748,8 +748,9 @@ body.light .page-watermark { opacity: .2; }
 .friction-tag-chip.suggested{border-color:var(--gold2);box-shadow:0 0 0 1px var(--gold2) inset;}
 .friction-box-row{display:flex;justify-content:flex-end;gap:8px;margin-top:6px;}
 .friction-cancel-btn{background:none;border:1px solid var(--b2);color:var(--muted);border-radius:8px;padding:8px 14px;font-size:11px;cursor:pointer;font-family:inherit;}
-.friction-save-btn{background:var(--verm);border:none;color:#fff;border-radius:8px;padding:8px 16px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;transition:filter .2s;}
-.friction-save-btn:hover{filter:brightness(1.1);}
+.friction-save-btn{background:var(--verm);border:none;color:#fff;border-radius:8px;padding:8px 16px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;transition:filter .2s,opacity .15s;}
+.friction-save-btn:hover:not(:disabled){filter:brightness(1.1);}
+.friction-save-btn:disabled{opacity:.35;cursor:default;}
 .friction-week-hdr{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted2);margin:18px 0 8px;}
 .friction-week-hdr:first-child{margin-top:0;}
 .friction-tag-summary{display:flex;flex-direction:column;gap:6px;margin-bottom:6px;}
@@ -1287,11 +1288,7 @@ body.light .page-watermark { opacity: .2; }
 <div class="friction-overlay" id="friction-overlay" onclick="if(event.target===this)closeFrictionModal()">
   <div class="friction-box">
     <div class="friction-box-title">💢 Log Friction</div>
-    <div class="friction-box-sub">What just felt hard, resistant, or like you keep redoing it?</div>
-    <textarea class="friction-inp" id="friction-modal-inp" placeholder="What was hard…"
-      oninput="updateFrictionSuggestHint()"
-      onkeydown="if(event.key==='Enter'&&(event.metaKey||event.ctrlKey)){event.preventDefault();saveFrictionEntry();} if(event.key==='Escape'){closeFrictionModal();}"></textarea>
-    <div class="friction-suggest-hint" id="friction-suggest-hint"></div>
+    <div class="friction-box-sub">Pick a tag — description is optional.</div>
     <div class="friction-tags">
       <button class="friction-tag-chip" onclick="pickFrictionTag('opening prep',this)">opening prep</button>
       <button class="friction-tag-chip" onclick="pickFrictionTag('calculation',this)">calculation</button>
@@ -1302,9 +1299,11 @@ body.light .page-watermark { opacity: .2; }
       <button class="friction-tag-chip" onclick="pickFrictionTag('mindset',this)">mindset</button>
       <button class="friction-tag-chip" onclick="pickFrictionTag('other',this)">other</button>
     </div>
+    <textarea class="friction-inp" id="friction-modal-inp" placeholder="What was hard… (optional)"
+      onkeydown="if(event.key==='Enter'&&(event.metaKey||event.ctrlKey)){event.preventDefault();saveFrictionEntry();} if(event.key==='Escape'){closeFrictionModal();}"></textarea>
     <div class="friction-box-row">
       <button class="friction-cancel-btn" onclick="closeFrictionModal()">Cancel</button>
-      <button class="friction-save-btn" onclick="saveFrictionEntry()">Log it</button>
+      <button class="friction-save-btn" id="friction-save-btn" disabled onclick="saveFrictionEntry()">Log it</button>
     </div>
   </div>
 </div>
@@ -3643,10 +3642,9 @@ function openFrictionModal(){
   const inp = document.getElementById('friction-modal-inp');
   if(inp) inp.value = '';
   document.querySelectorAll('.friction-tag-chip').forEach(c => c.classList.remove('sel','suggested'));
-  const hint = document.getElementById('friction-suggest-hint');
-  if(hint) hint.textContent = '';
+  const btn = document.getElementById('friction-save-btn');
+  if(btn) btn.disabled = true;
   document.getElementById('friction-overlay').classList.add('on');
-  setTimeout(() => inp?.focus(), 50);
 }
 function closeFrictionModal(){
   document.getElementById('friction-overlay').classList.remove('on');
@@ -3655,15 +3653,17 @@ function pickFrictionTag(tag, btn){
   _frictionTag = (_frictionTag === tag) ? null : tag;
   document.querySelectorAll('.friction-tag-chip').forEach(c => c.classList.remove('sel'));
   if(_frictionTag) btn.classList.add('sel');
-  updateFrictionSuggestHint();
+  const saveBtn = document.getElementById('friction-save-btn');
+  if(saveBtn) saveBtn.disabled = !_frictionTag;
+  // Focus textarea after tag pick so description is easy to add
+  if(_frictionTag) setTimeout(() => document.getElementById('friction-modal-inp')?.focus(), 50);
 }
 function saveFrictionEntry(){
+  if(!_frictionTag) return;
   const inp = document.getElementById('friction-modal-inp');
-  const text = inp.value.trim();
-  if(!text) return;
-  const tag = _frictionTag || getFrictionTagSuggestion(text) || 'other';
+  const text = (inp ? inp.value.trim() : '') || _frictionTag; // tag name as fallback text
   const all = getFrictionLog();
-  all.unshift({id:uid(), text, tag, ts:new Date().toISOString()});
+  all.unshift({id:uid(), text, tag:_frictionTag, ts:new Date().toISOString()});
   saveFrictionLog(all);
   closeFrictionModal();
   toast('Logged.', 1800);
