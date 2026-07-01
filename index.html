@@ -1085,26 +1085,10 @@ body.light .page-watermark { opacity: .2; }
         <div class="sec-line"></div>
       </div>
       <div class="ins-nav">
-        <button class="ins-nav-btn on" id="ins-tab-pregame" onclick="switchInsight('pregame')">🎯 Pre-Game</button>
-        <button class="ins-nav-btn"    id="ins-tab-opener"   onclick="switchInsight('opener')"  >⚔️ Session</button>
-        <button class="ins-nav-btn"    id="ins-tab-friction" onclick="switchInsight('friction')">💢 Friction</button>
+        <button class="ins-nav-btn on" id="ins-tab-friction" onclick="switchInsight('friction')">💢 Friction</button>
         <button class="ins-nav-btn"    id="ins-tab-proven"   onclick="switchInsight('proven')"  >🛠 Proven</button>
         <button class="ins-nav-btn"    id="ins-tab-habit"    onclick="switchInsight('habit')"   >🔄 Habit</button>
         <button class="ins-nav-btn"    id="ins-tab-archive"  onclick="switchInsight('archive')" >🗂 Archive</button>
-      </div>
-
-      <!-- Pre-Game Checklist -->
-      <div class="ins-section on" id="ins-pregame">
-        <p class="ins-caption">Read before every game — hard limit 5 items. Remove one to add another.</p>
-        <div id="pregame-list"></div>
-        <div id="pregame-add-area"></div>
-      </div>
-
-      <!-- Session Opener -->
-      <div class="ins-section" id="ins-opener">
-        <p class="ins-caption">Read when sitting down to train — hard limit 4 items.</p>
-        <div id="opener-list"></div>
-        <div id="opener-add-area"></div>
       </div>
 
       <!-- Friction Log -->
@@ -3850,7 +3834,7 @@ function findBorrowedCandidate(problemText, discarded){
   return bestScore > 0 ? best : null;
 }
 
-let _insightTab = 'pregame';
+let _insightTab = 'friction';
 
 function switchView(view){
   ['training','tasks','insights'].forEach(v => {
@@ -3865,7 +3849,7 @@ function renderInsights(){ switchInsight(_insightTab); }
 
 function switchInsight(tab){
   _insightTab = tab;
-  ['pregame','opener','friction','proven','habit','archive'].forEach(t => {
+  ['friction','proven','habit','archive'].forEach(t => {
     const s = document.getElementById('ins-'+t);
     const b = document.getElementById('ins-tab-'+t);
     if(s) s.classList.toggle('on', t===tab);
