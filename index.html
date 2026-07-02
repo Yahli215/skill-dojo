@@ -416,6 +416,25 @@ body.light .page-watermark { opacity: .2; }
 .rc-next.in{opacity:1;}
 .rc-next:hover{border-color:var(--gold2);color:var(--gold2);}
 
+/* ── RPE row (inside round-complete) ─────────────────── */
+.rc-rpe-row{display:flex;flex-direction:column;align-items:center;gap:8px;margin:14px 0 4px;}
+.rc-rpe-q{font-size:12px;color:var(--muted2);letter-spacing:.5px;}
+.rc-rpe-picker{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}
+.rpe-btn{width:34px;height:34px;border-radius:50%;border:1px solid var(--b1);background:var(--s2);color:var(--muted2);font-size:12px;cursor:pointer;transition:all .15s;}
+.rpe-btn:hover{border-color:var(--gold2);color:var(--gold2);}
+.rpe-btn.sel{background:var(--gold2);border-color:var(--gold2);color:#1a1608;font-weight:700;}
+.rc-rpe-skip{font-size:10px;color:var(--muted);cursor:pointer;letter-spacing:.5px;opacity:.6;}
+.rc-rpe-skip:hover{opacity:1;}
+
+/* ── Load card ────────────────────────────────────────── */
+.load-card{background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:14px 16px;margin-bottom:10px;}
+.load-row{display:flex;gap:0;justify-content:space-around;}
+.load-stat{display:flex;flex-direction:column;align-items:center;gap:3px;}
+.load-val{font-size:22px;font-weight:700;color:var(--muted2);font-family:var(--serif);}
+.load-val.cap-yes{color:var(--gold2);}
+.load-val.cap-no{color:var(--muted);}
+.load-lbl{font-size:10px;color:var(--muted);letter-spacing:.4px;text-align:center;}
+
 /* ── SESSION SLOTS (daily) ───────────────────────────── */
 .sess-slots-row{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
 .sess-slot{width:30px;height:30px;border-radius:50%;border:1px solid var(--b2);background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .4s cubic-bezier(.34,1.56,.64,1);}
@@ -1065,6 +1084,13 @@ body.light .page-watermark { opacity: .2; }
     </div>
     <div id="active-tools-list"></div>
 
+    <!-- Load -->
+    <div class="sec-hdr" style="margin-top:8px">
+      <div class="sec-lbl">Load</div>
+      <div class="sec-kj">負荷</div>
+      <div class="sec-line"></div>
+    </div>
+    <div class="load-card" id="load-card"></div>
 
     <!-- Protein tracker -->
     <div class="sec-hdr" style="margin-top:4px">
@@ -1274,12 +1300,18 @@ body.light .page-watermark { opacity: .2; }
     <div class="rc-slots" id="rc-slots"></div>
     <div class="rc-skill" id="rc-skill"></div>
     <div class="rc-dur" id="rc-dur"></div>
+    <div class="rc-rpe-row" id="rc-rpe-row" style="display:none">
+      <div class="rc-rpe-q">How hard was that? (1–10)</div>
+      <div class="rc-rpe-picker" id="rc-rpe-picker"></div>
+      <div class="rc-rpe-skip" onclick="saveEndRpe(null)">skip</div>
+    </div>
     <div class="rc-divider"></div>
     <div class="rc-quote" id="rc-quote"></div>
     <div class="rc-total" id="rc-total"></div>
     <button class="rc-next" id="rc-next" onclick="closeRoundComplete()">次へ — Continue</button>
   </div>
 </div>
+
 
 <div class="toast" id="toast"><span id="toast-msg"></span></div>
 
@@ -2031,6 +2063,7 @@ function renderApp(){
   try { renderReport(); }   catch(e){ console.error('renderReport:', e); }
   try { renderJourneyGrid(); }    catch(e){ console.error('renderJourneyGrid:', e); }
   try { renderActiveTools(); }     catch(e){ console.error('renderActiveTools:', e); }
+  try { renderLoadCard(); }       catch(e){ console.error('renderLoadCard:', e); }
   try { renderProtein(); }        catch(e){ console.error('renderProtein:', e); }
 }
 
@@ -2200,8 +2233,9 @@ function stopTimer(){
   const mins = Math.floor(elapsed/60);
   if(mins<1){ toast('稽古が短すぎます (< 1 min)'); cancelTimer(); return; }
   const desc = activeTimer.isPomo ? activeTimer.desc+' · R'+activeTimer.round : activeTimer.desc;
-  const session = {id:uid(),skillId:activeTimer.skillId,description:desc,startTime:tStart,endTime:Date.now(),duration:elapsed,mins,stop:new Date().toISOString(),start:new Date(tStart).toISOString()};
+  const session = {id:uid(),skillId:activeTimer.skillId,description:desc,startTime:tStart,endTime:Date.now(),duration:elapsed,mins,stop:new Date().toISOString(),start:new Date(tStart).toISOString(),duration_minutes:mins,end_rpe:null,peak_rpe:null,session_load:null};
   const all = getSess(); all.push(session); ls.set('sq_sessions',all); sessions=all;
+  _pendingRpeSessionId = mins >= 10 ? session.id : null;
   try{renderDaily();}catch(e){}
   const data=getData(), sid=activeTimer.skillId;
   if(!data[sid]) data[sid]={totalMins:0,rank:'Novice'};
@@ -2301,8 +2335,9 @@ function tickTimer(){
           const rEl=Math.floor((Date.now()-activeTimer.phaseStart)/1000);
           const rMins=Math.floor(rEl/60);
           if(rMins>=1){
-            const rSess={id:uid(),skillId:activeTimer.skillId,description:activeTimer.desc+' · R'+activeTimer.round,startTime:activeTimer.phaseStart,endTime:Date.now(),duration:rEl,mins:rMins,stop:new Date().toISOString(),start:new Date(activeTimer.phaseStart).toISOString()};
+            const rSess={id:uid(),skillId:activeTimer.skillId,description:activeTimer.desc+' · R'+activeTimer.round,startTime:activeTimer.phaseStart,endTime:Date.now(),duration:rEl,mins:rMins,stop:new Date().toISOString(),start:new Date(activeTimer.phaseStart).toISOString(),duration_minutes:rMins,end_rpe:null,peak_rpe:null,session_load:null};
             const rAll=getSess(); rAll.push(rSess); ls.set('sq_sessions',rAll); sessions=rAll;
+            _pendingRpeSessionId = rMins >= 10 ? rSess.id : null;
             const rData=getData(),rSid=activeTimer.skillId;
             if(!rData[rSid]) rData[rSid]={totalMins:0,rank:'Novice'};
             const rPrev=rData[rSid].rank;
@@ -2519,6 +2554,29 @@ function showRoundComplete(sk,mins){
   flash.style.background=`radial-gradient(circle at center,${rank.color} 0%,transparent 65%)`;
   flash.classList.remove('flash'); void flash.offsetWidth; flash.classList.add('flash');
 
+  // RPE row
+  const rpeRow = document.getElementById('rc-rpe-row');
+  if(rpeRow){
+    if(_pendingRpeSessionId){
+      rpeRow.style.display='';
+      const picker = document.getElementById('rc-rpe-picker');
+      if(picker){
+        picker.innerHTML = '';
+        for(let v=1;v<=10;v++){
+          const b=document.createElement('button');
+          b.className='rpe-btn'; b.dataset.v=v; b.textContent=v;
+          b.onclick=(()=>{const n=v;return()=>{
+            picker.querySelectorAll('.rpe-btn').forEach(x=>x.classList.toggle('sel',+x.dataset.v===n));
+            saveEndRpe(n);
+          }; })();
+          picker.appendChild(b);
+        }
+      }
+    } else {
+      rpeRow.style.display='none';
+    }
+  }
+
   document.getElementById('round-overlay').classList.add('on');
   const ids=['rc-num','rc-ordinal','rc-skill','rc-dur','rc-quote','rc-total','rc-next'];
   ids.forEach(id=>document.getElementById(id).classList.remove('in'));
@@ -2535,10 +2593,12 @@ function showRoundComplete(sk,mins){
 }
 
 function closeRoundComplete(){
+  if(!document.getElementById('round-overlay').classList.contains('on')) return;
   document.getElementById('round-overlay').classList.remove('on');
   ['rc-num','rc-ordinal','rc-skill','rc-dur','rc-quote','rc-total','rc-next']
     .forEach(id=>document.getElementById(id).classList.remove('in'));
   document.getElementById('rc-num').style.textShadow='';
+  _pendingRpeSessionId = null;
   renderApp(); drainLU(); checkCalBadge(); rotateWatermark();
 }
 
@@ -3775,6 +3835,83 @@ function approveProposal(tag, provenId){
 }
 
 let _manualExpOpen = false;
+
+/* ── SESSION RPE ─────────────────────────────────────── */
+let _pendingRpeSessionId = null;
+
+function getRpeConfig(){
+  return ls.get('sq_rpe_config', {escalateBelow:6, capacityTarget:8});
+}
+
+function saveEndRpe(val){
+  // Patch session in storage
+  if(_pendingRpeSessionId){
+    const all = getSess();
+    const sess = all.find(s => s.id === _pendingRpeSessionId);
+    if(sess){
+      sess.end_rpe = val;
+      sess.peak_rpe = val;
+      sess.session_load = val ? (sess.duration_minutes || sess.mins || 0) * val : null;
+      ls.set('sq_sessions', all); sessions = all;
+    }
+    pushSync();
+  }
+  // Brief delay after a tap so user sees the selection highlight, then close
+  const delay = val !== null ? 350 : 0;
+  setTimeout(closeRoundComplete, delay);
+}
+
+function getLoadMetrics(){
+  const cfg = getRpeConfig();
+  const allSess = getSess();
+  const todayStr = new Date().toISOString().slice(0,10);
+  const todaySess = allSess.filter(s => (s.stop||s.start||'').slice(0,10) === todayStr);
+  const todayLoad = todaySess.reduce((sum,s) => sum + (s.session_load||0), 0);
+  const todayCap = todaySess.some(s => (s.peak_rpe||0) >= cfg.capacityTarget);
+
+  // 7-day rolling: group by day, average daily load totals
+  const dayLoads = {};
+  const cutStr = new Date(Date.now()-7*24*60*60*1000).toISOString().slice(0,10);
+  allSess.filter(s => (s.stop||s.start||'').slice(0,10) >= cutStr).forEach(s => {
+    const d = (s.stop||s.start||'').slice(0,10);
+    dayLoads[d] = (dayLoads[d]||0) + (s.session_load||0);
+  });
+  const vals = Object.values(dayLoads);
+  const avg7 = vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length) : 0;
+
+  // Consecutive capacity-hit days streak (from today backwards)
+  let streak = 0;
+  const cur = new Date();
+  while(streak < 30){
+    const ds = cur.toISOString().slice(0,10);
+    const daySess = allSess.filter(s => (s.stop||s.start||'').slice(0,10) === ds);
+    if(!daySess.length) break;
+    if(!daySess.some(s => (s.peak_rpe||0) >= cfg.capacityTarget)) break;
+    streak++;
+    cur.setDate(cur.getDate()-1);
+  }
+  return {todayLoad, avg7, todayCap, streak};
+}
+
+function renderLoadCard(){
+  const el = document.getElementById('load-card');
+  if(!el) return;
+  const m = getLoadMetrics();
+  el.innerHTML = `<div class="load-row">
+    <div class="load-stat">
+      <div class="load-val">${m.todayLoad||'—'}</div>
+      <div class="load-lbl">Today's load</div>
+    </div>
+    <div class="load-stat">
+      <div class="load-val">${m.avg7||'—'}</div>
+      <div class="load-lbl">7-day avg</div>
+    </div>
+    <div class="load-stat">
+      <div class="load-val ${m.todayCap?'cap-yes':'cap-no'}">${m.todayCap?'Yes':'No'}</div>
+      <div class="load-lbl">Capacity${m.streak>1?' · '+m.streak+'d':''}</div>
+    </div>
+  </div>`;
+}
 function toggleManualExpForm(){
   _manualExpOpen = !_manualExpOpen;
   const el = document.getElementById('manual-exp-form');
