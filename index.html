@@ -1300,11 +1300,6 @@ body.light .page-watermark { opacity: .2; }
     <div class="rc-slots" id="rc-slots"></div>
     <div class="rc-skill" id="rc-skill"></div>
     <div class="rc-dur" id="rc-dur"></div>
-    <div class="rc-rpe-row" id="rc-rpe-row" style="display:none">
-      <div class="rc-rpe-q">How hard was that? (1–10)</div>
-      <div class="rc-rpe-picker" id="rc-rpe-picker"></div>
-      <div class="rc-rpe-skip" onclick="saveEndRpe(null)">skip</div>
-    </div>
     <div class="rc-divider"></div>
     <div class="rc-quote" id="rc-quote"></div>
     <div class="rc-total" id="rc-total"></div>
@@ -2235,7 +2230,6 @@ function stopTimer(){
   const desc = activeTimer.isPomo ? activeTimer.desc+' · R'+activeTimer.round : activeTimer.desc;
   const session = {id:uid(),skillId:activeTimer.skillId,description:desc,startTime:tStart,endTime:Date.now(),duration:elapsed,mins,stop:new Date().toISOString(),start:new Date(tStart).toISOString(),duration_minutes:mins,end_rpe:null,peak_rpe:null,session_load:null};
   const all = getSess(); all.push(session); ls.set('sq_sessions',all); sessions=all;
-  _pendingRpeSessionId = mins >= 10 ? session.id : null;
   try{renderDaily();}catch(e){}
   const data=getData(), sid=activeTimer.skillId;
   if(!data[sid]) data[sid]={totalMins:0,rank:'Novice'};
@@ -2337,7 +2331,6 @@ function tickTimer(){
           if(rMins>=1){
             const rSess={id:uid(),skillId:activeTimer.skillId,description:activeTimer.desc+' · R'+activeTimer.round,startTime:activeTimer.phaseStart,endTime:Date.now(),duration:rEl,mins:rMins,stop:new Date().toISOString(),start:new Date(activeTimer.phaseStart).toISOString(),duration_minutes:rMins,end_rpe:null,peak_rpe:null,session_load:null};
             const rAll=getSess(); rAll.push(rSess); ls.set('sq_sessions',rAll); sessions=rAll;
-            _pendingRpeSessionId = rMins >= 10 ? rSess.id : null;
             const rData=getData(),rSid=activeTimer.skillId;
             if(!rData[rSid]) rData[rSid]={totalMins:0,rank:'Novice'};
             const rPrev=rData[rSid].rank;
@@ -2553,29 +2546,6 @@ function showRoundComplete(sk,mins){
   const flash=document.getElementById('round-flash');
   flash.style.background=`radial-gradient(circle at center,${rank.color} 0%,transparent 65%)`;
   flash.classList.remove('flash'); void flash.offsetWidth; flash.classList.add('flash');
-
-  // RPE row
-  const rpeRow = document.getElementById('rc-rpe-row');
-  if(rpeRow){
-    if(_pendingRpeSessionId){
-      rpeRow.style.display='';
-      const picker = document.getElementById('rc-rpe-picker');
-      if(picker){
-        picker.innerHTML = '';
-        for(let v=1;v<=10;v++){
-          const b=document.createElement('button');
-          b.className='rpe-btn'; b.dataset.v=v; b.textContent=v;
-          b.onclick=(()=>{const n=v;return()=>{
-            picker.querySelectorAll('.rpe-btn').forEach(x=>x.classList.toggle('sel',+x.dataset.v===n));
-            saveEndRpe(n);
-          }; })();
-          picker.appendChild(b);
-        }
-      }
-    } else {
-      rpeRow.style.display='none';
-    }
-  }
 
   document.getElementById('round-overlay').classList.add('on');
   const ids=['rc-num','rc-ordinal','rc-skill','rc-dur','rc-quote','rc-total','rc-next'];
