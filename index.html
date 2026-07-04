@@ -1499,6 +1499,18 @@ body.light .page-watermark { opacity: .2; }
   </div>
 </div>
 
+<!-- Opening Revision File Check -->
+<div class="btl-modal-ov" id="opening-check-ov">
+  <div class="btl-modal" style="max-width:340px">
+    <div class="btl-modal-title" style="color:var(--gold2)">OPENING FILE CHECK</div>
+    <div style="font-size:13px;color:var(--muted2);font-weight:600;margin-bottom:6px;line-height:1.5">Did you finish going over the opening file this session?</div>
+    <div class="btl-modal-row" style="gap:10px;margin-top:18px">
+      <button class="btl-cancel" style="flex:1;text-align:center" onclick="closeOpeningCheck(false)">Not yet</button>
+      <button class="btl-save" style="flex:1" onclick="closeOpeningCheck(true)">Yes ✓</button>
+    </div>
+  </div>
+</div>
+
 <!-- End-of-Session Checkpoint Check -->
 <div class="btl-modal-ov" id="cp-check-ov">
   <div class="btl-modal" style="max-width:420px">
@@ -2404,6 +2416,7 @@ function stopTimer(){
   const sk=skills.find(s=>s.id===sid);
   if(sk){ sk.totalMins=data[sid].totalMins; sk.rank=newRank; if(newRank!==prevRank) luQueue.push({skill:sk,newRank}); }
   if(activeTimer.eventId) trackedEvIds.add(activeTimer.eventId);
+  _lastSessionSkill=sk;
   cancelTimer();
   showRoundComplete(sk, mins);
   pushSync();
@@ -2771,7 +2784,7 @@ function closeRoundComplete(){
   document.getElementById('rc-num').style.textShadow='';
   _pendingRpeSessionId = null;
   renderApp(); drainLU(); checkCalBadge(); rotateWatermark();
-  startCheckpointChecks();
+  checkOpeningRevisionPrompt();
 }
 
 /* ── HABITS ─────────────────────────────────────────── */
@@ -3269,6 +3282,24 @@ function saveNewBottle(){
   closeCreateBottle();
   renderBottles();
   toast('Skill bottle created.',2000);
+}
+
+/* ── POST-SESSION PROMPTS ────────────────────────────── */
+let _lastSessionSkill=null;
+
+function checkOpeningRevisionPrompt(){
+  if(_lastSessionSkill && _lastSessionSkill.name.toLowerCase().includes('opening')){
+    document.getElementById('opening-check-ov').classList.add('on');
+  } else {
+    startCheckpointChecks();
+  }
+}
+
+function closeOpeningCheck(finished){
+  document.getElementById('opening-check-ov').classList.remove('on');
+  if(finished) toast('Opening file ✓',1800);
+  else toast('Continue the file next session.',2200);
+  startCheckpointChecks();
 }
 
 /* ── END-OF-SESSION CHECKPOINT CHECK ─────────────────── */
