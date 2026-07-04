@@ -478,12 +478,28 @@ body.light .page-watermark { opacity: .2; }
 .btl-modal-row{display:flex;gap:8px;justify-content:flex-end;}
 .btl-cancel{background:none;border:1px solid var(--b1);border-radius:7px;padding:7px 14px;color:var(--muted);font-size:11px;cursor:pointer;}
 .btl-save{background:var(--gold2);border:none;border-radius:7px;padding:7px 14px;color:#1a1608;font-size:11px;font-weight:700;cursor:pointer;}
-/* Mastered log */
+/* Mastered / archived log */
 .mastered-section{margin-top:4px;}
 .mastered-entry{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--b1);}
 .mastered-entry-name{font-size:12px;color:var(--muted2);font-weight:600;}
 .mastered-entry-sub{font-size:10px;color:var(--gold);margin-top:1px;}
 .mastered-entry-date{font-size:10px;color:var(--muted);text-align:right;}
+/* Expired state */
+.bottle-card.expired{border-color:#7a2020;background:rgba(122,32,32,.07);}
+.bottle-card.expired .bottle-vessel{border-color:#7a2020;}
+.bottle-card.expired .bottle-fill{background:linear-gradient(to top,rgba(180,40,40,.5) 0%,rgba(180,40,40,.18) 100%);}
+.bottle-card.expired .bottle-pct{color:#c05050;}
+.bottle-expired-badge{font-size:8px;background:#7a2020;color:#f0c0c0;padding:2px 7px;border-radius:10px;letter-spacing:1px;font-weight:700;white-space:nowrap;}
+.bottle-resolve-btn{background:#7a2020;border:none;border-radius:6px;padding:5px 0;color:#f0c0c0;font-size:10px;font-weight:700;cursor:pointer;letter-spacing:.5px;margin-top:8px;width:100%;transition:background .15s;}
+.bottle-resolve-btn:hover{background:#9a2828;}
+/* Expiry resolution modal */
+.btl-resolve-opts{display:flex;flex-direction:column;gap:8px;margin-top:4px;}
+.btl-resolve-opt{background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:10px 12px;text-align:left;cursor:pointer;transition:all .15s;color:var(--muted2);}
+.btl-resolve-opt:hover{border-color:var(--gold2);color:var(--gold2);}
+.btl-resolve-opt.danger{border-color:#5a1818;}
+.btl-resolve-opt.danger:hover{border-color:#9a2828;color:#c05050;}
+.btl-resolve-opt-title{font-size:12px;font-weight:700;margin-bottom:2px;}
+.btl-resolve-opt-desc{font-size:10px;color:var(--muted);line-height:1.4;}
 
 /* ── SESSION SLOTS (daily) ───────────────────────────── */
 .sess-slots-row{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
@@ -1397,6 +1413,36 @@ body.light .page-watermark { opacity: .2; }
       <button class="exp-swap-btn swap" onclick="swapExperimentTool()">Swap in a different tool</button>
     </div>
     <button class="exp-swap-cancel" onclick="closeSwapPrompt()">Cancel</button>
+  </div>
+</div>
+
+<!-- Expiry Resolution Modal (no outside-click dismiss — must choose) -->
+<div class="btl-modal-ov" id="btl-expire-ov">
+  <div class="btl-modal">
+    <div id="btl-expire-main">
+      <div class="btl-modal-title" style="color:#c05050;letter-spacing:2px">SKILL EXPIRED</div>
+      <div id="btl-expire-name" style="font-size:14px;font-weight:700;color:var(--muted2);margin-bottom:8px"></div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:16px;line-height:1.6">No checkpoint hit in the past week.<br>Do you still believe this is the right way to build this skill?</div>
+      <div class="btl-resolve-opts">
+        <button class="btl-resolve-opt" onclick="resolveExpiry('keep')">
+          <div class="btl-resolve-opt-title">Keep going</div>
+          <div class="btl-resolve-opt-desc">Still believe in this skill and these checkpoints — just need more time. Reset the window.</div>
+        </button>
+        <button class="btl-resolve-opt" onclick="resolveExpiry('redefine')">
+          <div class="btl-resolve-opt-title">Wrong checkpoints</div>
+          <div class="btl-resolve-opt-desc">The skill is right, but how I defined mastery is off. Redefine the checkpoints.</div>
+        </button>
+        <button class="btl-resolve-opt danger" onclick="resolveExpiry('wrong_skill')">
+          <div class="btl-resolve-opt-title">Wrong skill</div>
+          <div class="btl-resolve-opt-desc">This isn't actually the lever. Archive it and trace back to the original failure.</div>
+        </button>
+        <button class="btl-resolve-opt" onclick="resolveExpiry('wrong_method')">
+          <div class="btl-resolve-opt-title">Wrong method</div>
+          <div class="btl-resolve-opt-desc">Skill and checkpoints are right, but how I'm practicing isn't working. Describe a new approach.</div>
+        </button>
+      </div>
+    </div>
+    <div id="btl-expire-sub" style="display:none"></div>
   </div>
 </div>
 
@@ -3073,8 +3119,21 @@ function renderProteinHistory(){
 // ── End Protein ────────────────────────────────────────
 
 /* ── MASTERY BOTTLES ─────────────────────────────────── */
-function getBottles(){ return ls.get('sq_bottles',[]); }
+function getBottles(){
+  let arr=ls.get('sq_bottles',[]);
+  let dirty=false;
+  arr.forEach(b=>{
+    if(!b.windowStart){ b.windowStart=b.createdAt||new Date().toISOString(); dirty=true; }
+  });
+  if(dirty) ls.set('sq_bottles',arr);
+  return arr;
+}
 function saveBottles(b){ ls.set('sq_bottles',b); }
+function isExpired(b){
+  if(b.masteredAt||b.archived) return false;
+  const ws=b.windowStart||b.createdAt; if(!ws) return false;
+  return (Date.now()-new Date(ws).getTime()) > 7*24*60*60*1000;
+}
 
 let _verifyBtlId=null, _verifyCpId=null;
 
@@ -3119,8 +3178,9 @@ function saveNewBottle(){
   inputs.forEach(inp=>{ const t=inp.value.trim(); if(t) cps.push({id:uid(),text:t,done:false,evidence:'',ts:null}); });
   if(cps.length<2){ toast('Add at least 2 checkpoints',1800); return; }
   const linkedSkillId=document.getElementById('btl-skill-sel').value||null;
+  const now=new Date().toISOString();
   const bottles=getBottles();
-  bottles.push({id:uid(),name,checkpoints:cps,createdAt:new Date().toISOString(),masteredAt:null,linkedSkillId});
+  bottles.push({id:uid(),name,checkpoints:cps,createdAt:now,windowStart:now,masteredAt:null,linkedSkillId});
   saveBottles(bottles);
   closeCreateBottle();
   renderBottles();
@@ -3155,6 +3215,7 @@ function confirmCheckpoint(){
   const cp=b?.checkpoints.find(c=>c.id===_verifyCpId);
   if(!cp) return;
   cp.done=true; cp.evidence=evidence; cp.ts=new Date().toISOString();
+  b.windowStart=cp.ts; // progress resets the expiry clock
   const allDone=b.checkpoints.every(c=>c.done);
   if(allDone&&!b.masteredAt){
     b.masteredAt=new Date().toISOString();
@@ -3179,7 +3240,7 @@ function deleteBottle(id){
 function renderBottles(){
   const grid=document.getElementById('bottle-grid');
   if(!grid) return;
-  const active=getBottles().filter(b=>!b.masteredAt);
+  const active=getBottles().filter(b=>!b.masteredAt&&!b.archived);
   if(!active.length){
     grid.innerHTML='<div style="font-size:11px;color:var(--muted);padding:4px 0">No active skill bottles.</div>';
   } else {
@@ -3192,8 +3253,8 @@ function renderBottleCard(b){
   const total=b.checkpoints.length;
   const done=b.checkpoints.filter(c=>c.done).length;
   const pct=total?Math.round((done/total)*100):0;
+  const expired=isExpired(b);
 
-  // Hours from linked skill sessions
   let hoursLabel='—';
   if(b.linkedSkillId){
     const mins=(getSess()||[]).filter(s=>s.skillId===b.linkedSkillId).reduce((a,s)=>a+(s.mins||0),0);
@@ -3209,10 +3270,10 @@ function renderBottleCard(b){
         <div class="bottle-cp-text ${cp.done?'done':''}">${esc(cp.text)}</div>
         ${cp.evidence?`<div class="bottle-cp-evidence">"${esc(cp.evidence)}"</div>`:''}
       </div>
-      ${!cp.done?`<button class="bottle-cp-verify" onclick="openVerifyCp('${b.id}','${cp.id}')">Verify ✓</button>`:''}
+      ${!cp.done&&!expired?`<button class="bottle-cp-verify" onclick="openVerifyCp('${b.id}','${cp.id}')">Verify ✓</button>`:''}
     </div>`).join('');
 
-  return `<div class="bottle-card">
+  return `<div class="bottle-card${expired?' expired':''}">
     <div class="bottle-visual">
       <div class="bottle-vessel">
         <div class="bottle-fill" style="height:${pct}%"></div>
@@ -3223,11 +3284,13 @@ function renderBottleCard(b){
       <div class="bottle-name">
         <span>${esc(b.name)}</span>
         <div style="display:flex;gap:6px;align-items:center">
+          ${expired?'<span class="bottle-expired-badge">EXPIRED</span>':''}
           <span class="bottle-del" onclick="deleteBottle('${b.id}')">✕</span>
         </div>
       </div>
       <div class="bottle-cp-list">${cpsHtml}</div>
       <div class="bottle-hours">⏱ ${hoursLabel} logged · ${done}/${total} checkpoints</div>
+      ${expired?`<button class="bottle-resolve-btn" onclick="openExpiryModal('${b.id}')">Resolve → do we still believe in this?</button>`:''}
     </div>
   </div>`;
 }
@@ -3235,21 +3298,145 @@ function renderBottleCard(b){
 function renderMasteredLog(){
   const el=document.getElementById('mastered-log-area');
   if(!el) return;
-  const mastered=getBottles().filter(b=>b.masteredAt).sort((a,b)=>new Date(b.masteredAt)-new Date(a.masteredAt));
-  if(!mastered.length){ el.innerHTML=''; return; }
-  el.innerHTML=`<div class="sec-hdr" style="margin-top:10px">
-    <div class="sec-lbl">Mastered</div>
-    <div class="sec-kj">完了</div>
-    <div class="sec-line"></div>
-  </div>
-  <div class="mastered-section">`+
-  mastered.map(b=>`<div class="mastered-entry">
-    <div>
-      <div class="mastered-entry-name">🏆 ${esc(b.name)}</div>
-      <div class="mastered-entry-sub">${b.checkpoints.length} checkpoints · ${b.checkpoints.filter(c=>c.done).length} verified</div>
-    </div>
-    <div class="mastered-entry-date">${new Date(b.masteredAt).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</div>
-  </div>`).join('')+`</div>`;
+  const all=getBottles();
+  const mastered=all.filter(b=>b.masteredAt).sort((a,b)=>new Date(b.masteredAt)-new Date(a.masteredAt));
+  const archived=all.filter(b=>b.archived).sort((a,b)=>new Date(b.archivedAt)-new Date(a.archivedAt));
+  let html='';
+  if(mastered.length){
+    html+=`<div class="sec-hdr" style="margin-top:10px">
+      <div class="sec-lbl">Mastered</div><div class="sec-kj">完了</div><div class="sec-line"></div>
+    </div><div class="mastered-section">`+
+    mastered.map(b=>`<div class="mastered-entry">
+      <div>
+        <div class="mastered-entry-name">🏆 ${esc(b.name)}</div>
+        <div class="mastered-entry-sub">${b.checkpoints.length} checkpoints verified</div>
+      </div>
+      <div class="mastered-entry-date">${new Date(b.masteredAt).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</div>
+    </div>`).join('')+`</div>`;
+  }
+  if(archived.length){
+    html+=`<div class="sec-hdr" style="margin-top:10px">
+      <div class="sec-lbl">Archived</div><div class="sec-kj">保存</div><div class="sec-line"></div>
+    </div><div class="mastered-section">`+
+    archived.map(b=>`<div class="mastered-entry">
+      <div>
+        <div class="mastered-entry-name" style="color:var(--muted)">✕ ${esc(b.name)}</div>
+        <div class="mastered-entry-sub" style="color:var(--muted)">${esc(b.tracebackNote||'')}</div>
+      </div>
+      <div class="mastered-entry-date">${new Date(b.archivedAt).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</div>
+    </div>`).join('')+`</div>`;
+  }
+  el.innerHTML=html;
+}
+
+/* ── EXPIRY RESOLUTION ───────────────────────────────── */
+let _expireBtlId=null;
+
+function openExpiryModal(btlId){
+  _expireBtlId=btlId;
+  const b=getBottles().find(x=>x.id===btlId);
+  if(!b) return;
+  document.getElementById('btl-expire-name').textContent=b.name;
+  document.getElementById('btl-expire-main').style.display='';
+  document.getElementById('btl-expire-sub').style.display='none';
+  document.getElementById('btl-expire-ov').classList.add('on');
+}
+
+function resolveExpiry(action){
+  const bottles=getBottles();
+  const b=bottles.find(x=>x.id===_expireBtlId);
+  if(!b) return;
+  if(action==='keep'){
+    b.windowStart=new Date().toISOString();
+    saveBottles(bottles);
+    document.getElementById('btl-expire-ov').classList.remove('on');
+    renderBottles(); toast('Window reset — keep going.',2000);
+    return;
+  }
+  // All other paths show a sub-form
+  const main=document.getElementById('btl-expire-main');
+  const sub=document.getElementById('btl-expire-sub');
+  main.style.display='none'; sub.style.display='';
+  if(action==='redefine'){
+    sub.innerHTML=`<div class="btl-modal-title">REDEFINE CHECKPOINTS</div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:10px">Edit checkpoints — all progress will be cleared. Be more specific or more realistic.</div>
+      <div id="btl-redef-list">`+
+      b.checkpoints.map(cp=>`<div class="btl-cp-row">
+        <input class="btl-cp-field" value="${esc(cp.text)}" maxlength="140">
+        <span class="btl-cp-rm" onclick="this.parentNode.remove()">×</span>
+      </div>`).join('')+
+      `</div>
+      <button class="btl-add-cp" onclick="addBtlRedefField()">＋ Add checkpoint</button>
+      <div class="btl-modal-row">
+        <button class="btl-cancel" onclick="btlExpireBack()">← Back</button>
+        <button class="btl-save" onclick="saveRedefinedCps()">Save & Reset Window</button>
+      </div>`;
+  } else if(action==='wrong_skill'){
+    sub.innerHTML=`<div class="btl-modal-title" style="color:#c05050">WRONG SKILL — ARCHIVE</div>
+      <div style="font-size:11px;color:var(--muted2);margin-bottom:6px">What was the original problem this skill was trying to solve?</div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:8px">Trace back to the friction or failure that motivated creating this entry.</div>
+      <textarea class="btl-inp" id="btl-traceback-inp" placeholder="The original failure was…" rows="3" style="resize:none"
+        oninput="document.getElementById('btl-archive-btn').disabled=!this.value.trim()"></textarea>
+      <div class="btl-modal-row">
+        <button class="btl-cancel" onclick="btlExpireBack()">← Back</button>
+        <button class="btl-save" id="btl-archive-btn" style="background:#7a2020;color:#f0c0c0" onclick="archiveBottle()" disabled>Archive</button>
+      </div>`;
+  } else if(action==='wrong_method'){
+    sub.innerHTML=`<div class="btl-modal-title">WRONG METHOD</div>
+      <div style="font-size:11px;color:var(--muted2);margin-bottom:6px">Same checkpoints, different practice. What will you do differently?</div>
+      <textarea class="btl-inp" id="btl-method-inp" placeholder="New practice approach…" rows="3" style="resize:none"
+        oninput="document.getElementById('btl-method-btn').disabled=!this.value.trim()"></textarea>
+      <div class="btl-modal-row">
+        <button class="btl-cancel" onclick="btlExpireBack()">← Back</button>
+        <button class="btl-save" id="btl-method-btn" onclick="saveNewMethod()" disabled>Save & Reset Window</button>
+      </div>`;
+  }
+}
+
+function btlExpireBack(){
+  document.getElementById('btl-expire-main').style.display='';
+  document.getElementById('btl-expire-sub').style.display='none';
+}
+
+function addBtlRedefField(){
+  const list=document.getElementById('btl-redef-list');
+  if(!list) return;
+  if(list.querySelectorAll('.btl-cp-row').length>=6){ toast('Max 6 checkpoints',1500); return; }
+  const row=document.createElement('div'); row.className='btl-cp-row';
+  row.innerHTML=`<input class="btl-cp-field" placeholder="New checkpoint…" maxlength="140">
+    <span class="btl-cp-rm" onclick="this.parentNode.remove()">×</span>`;
+  list.appendChild(row);
+}
+
+function saveRedefinedCps(){
+  const inputs=document.querySelectorAll('#btl-redef-list .btl-cp-field');
+  const cps=[]; inputs.forEach(inp=>{ const t=inp.value.trim(); if(t) cps.push({id:uid(),text:t,done:false,evidence:'',ts:null}); });
+  if(cps.length<2){ toast('Add at least 2 checkpoints',1800); return; }
+  const bottles=getBottles(); const b=bottles.find(x=>x.id===_expireBtlId); if(!b) return;
+  b.checkpoints=cps; b.windowStart=new Date().toISOString();
+  saveBottles(bottles);
+  document.getElementById('btl-expire-ov').classList.remove('on');
+  renderBottles(); toast('Checkpoints redefined. New window started.',2500);
+}
+
+function archiveBottle(){
+  const note=document.getElementById('btl-traceback-inp').value.trim();
+  if(!note){ toast('Add a traceback note first',1800); return; }
+  const bottles=getBottles(); const b=bottles.find(x=>x.id===_expireBtlId); if(!b) return;
+  b.archived=true; b.archivedAt=new Date().toISOString(); b.tracebackNote=note;
+  saveBottles(bottles);
+  document.getElementById('btl-expire-ov').classList.remove('on');
+  renderBottles(); toast('Archived. Trace back to the original friction.',3000);
+}
+
+function saveNewMethod(){
+  const note=document.getElementById('btl-method-inp').value.trim();
+  if(!note) return;
+  const bottles=getBottles(); const b=bottles.find(x=>x.id===_expireBtlId); if(!b) return;
+  b.practiceNote=note; b.windowStart=new Date().toISOString();
+  saveBottles(bottles);
+  document.getElementById('btl-expire-ov').classList.remove('on');
+  renderBottles(); toast('New approach noted. Window reset.',2500);
 }
 // ── End Mastery Bottles ─────────────────────────────────
 
