@@ -1084,14 +1084,6 @@ body.light .page-watermark { opacity: .2; }
     </div>
     <div id="active-tools-list"></div>
 
-    <!-- Load -->
-    <div class="sec-hdr" style="margin-top:8px">
-      <div class="sec-lbl">Load</div>
-      <div class="sec-kj">負荷</div>
-      <div class="sec-line"></div>
-    </div>
-    <div class="load-card" id="load-card"></div>
-
     <!-- Protein tracker -->
     <div class="sec-hdr" style="margin-top:4px">
       <div class="sec-lbl">Protein</div>
@@ -2058,7 +2050,6 @@ function renderApp(){
   try { renderReport(); }   catch(e){ console.error('renderReport:', e); }
   try { renderJourneyGrid(); }    catch(e){ console.error('renderJourneyGrid:', e); }
   try { renderActiveTools(); }     catch(e){ console.error('renderActiveTools:', e); }
-  try { renderLoadCard(); }       catch(e){ console.error('renderLoadCard:', e); }
   try { renderProtein(); }        catch(e){ console.error('renderProtein:', e); }
 }
 
