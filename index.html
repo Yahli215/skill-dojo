@@ -435,6 +435,56 @@ body.light .page-watermark { opacity: .2; }
 .load-val.cap-no{color:var(--muted);}
 .load-lbl{font-size:10px;color:var(--muted);letter-spacing:.4px;text-align:center;}
 
+/* ── MASTERY BOTTLES ─────────────────────────────────── */
+.bottle-grid{display:flex;flex-direction:column;gap:12px;margin-bottom:8px;}
+.bottle-card{background:var(--s2);border:1px solid var(--b1);border-radius:12px;padding:14px;display:flex;gap:14px;position:relative;}
+.bottle-card.mastered{border-color:var(--gold2);opacity:.75;}
+.bottle-visual{display:flex;flex-direction:column;align-items:center;gap:5px;flex-shrink:0;}
+.bottle-vessel{width:44px;height:90px;border:1.5px solid var(--gold2);border-radius:6px 6px 10px 10px;position:relative;overflow:hidden;background:var(--s1);}
+.bottle-fill{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(200,144,10,.5) 0%,rgba(200,144,10,.18) 100%);transition:height .9s cubic-bezier(.34,1.56,.64,1);}
+.bottle-fill::after{content:'';position:absolute;top:-3px;left:0;right:0;height:6px;background:rgba(200,144,10,.25);border-radius:50%;}
+.bottle-pct{font-size:11px;font-weight:700;color:var(--gold2);font-family:var(--serif);}
+.bottle-content{flex:1;min-width:0;}
+.bottle-name{font-size:13px;font-weight:700;color:var(--muted2);margin-bottom:7px;display:flex;align-items:center;justify-content:space-between;gap:6px;}
+.bottle-mastered-badge{font-size:8px;background:var(--gold2);color:#1a1608;padding:2px 7px;border-radius:10px;letter-spacing:1px;font-weight:700;white-space:nowrap;}
+.bottle-del{font-size:12px;color:var(--muted);cursor:pointer;opacity:.5;transition:opacity .15s;flex-shrink:0;}
+.bottle-del:hover{opacity:1;}
+.bottle-cp-list{display:flex;flex-direction:column;gap:5px;margin-bottom:8px;}
+.bottle-cp{display:flex;align-items:flex-start;gap:8px;}
+.bottle-cp-check{width:15px;height:15px;border:1.5px solid var(--b1);border-radius:3px;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:9px;transition:all .15s;}
+.bottle-cp-check.done{background:var(--gold2);border-color:var(--gold2);color:#1a1608;}
+.bottle-cp-body{flex:1;min-width:0;}
+.bottle-cp-text{font-size:11px;color:var(--muted2);line-height:1.4;}
+.bottle-cp-text.done{color:var(--muted);text-decoration:line-through;}
+.bottle-cp-evidence{font-size:10px;color:var(--gold);margin-top:2px;font-style:italic;opacity:.85;}
+.bottle-cp-verify{font-size:9px;color:var(--gold2);cursor:pointer;border:1px solid var(--gold2);border-radius:3px;padding:1px 5px;margin-left:auto;flex-shrink:0;white-space:nowrap;background:none;transition:all .15s;}
+.bottle-cp-verify:hover{background:var(--gold2);color:#1a1608;}
+.bottle-hours{font-size:10px;color:var(--muted);}
+.bottle-add-btn{background:none;border:1px dashed var(--b1);border-radius:10px;padding:9px;color:var(--muted);font-size:11px;cursor:pointer;width:100%;text-align:center;transition:all .2s;margin-bottom:4px;}
+.bottle-add-btn:hover{border-color:var(--gold2);color:var(--gold2);}
+/* Create / verify modals */
+.btl-modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:920;display:none;align-items:center;justify-content:center;}
+.btl-modal-ov.on{display:flex;}
+.btl-modal{background:var(--card);border:1px solid var(--b1);border-radius:14px;padding:22px;width:90%;max-width:400px;max-height:88vh;overflow-y:auto;}
+.btl-modal-title{font-size:11px;letter-spacing:2px;color:var(--muted);margin-bottom:14px;}
+.btl-inp{width:100%;background:var(--s1);border:1px solid var(--b1);border-radius:8px;padding:9px 11px;color:var(--text);font-size:12px;box-sizing:border-box;margin-bottom:10px;font-family:inherit;}
+.btl-inp:focus{outline:none;border-color:var(--gold2);}
+.btl-cp-row{display:flex;gap:7px;margin-bottom:7px;align-items:center;}
+.btl-cp-field{flex:1;background:var(--s1);border:1px solid var(--b1);border-radius:7px;padding:7px 10px;color:var(--text);font-size:11px;font-family:inherit;}
+.btl-cp-field:focus{outline:none;border-color:var(--gold2);}
+.btl-cp-rm{color:var(--muted);cursor:pointer;font-size:16px;line-height:1;opacity:.6;flex-shrink:0;}
+.btl-cp-rm:hover{opacity:1;}
+.btl-add-cp{font-size:11px;color:var(--gold2);cursor:pointer;background:none;border:none;padding:0;margin-bottom:14px;display:block;}
+.btl-modal-row{display:flex;gap:8px;justify-content:flex-end;}
+.btl-cancel{background:none;border:1px solid var(--b1);border-radius:7px;padding:7px 14px;color:var(--muted);font-size:11px;cursor:pointer;}
+.btl-save{background:var(--gold2);border:none;border-radius:7px;padding:7px 14px;color:#1a1608;font-size:11px;font-weight:700;cursor:pointer;}
+/* Mastered log */
+.mastered-section{margin-top:4px;}
+.mastered-entry{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--b1);}
+.mastered-entry-name{font-size:12px;color:var(--muted2);font-weight:600;}
+.mastered-entry-sub{font-size:10px;color:var(--gold);margin-top:1px;}
+.mastered-entry-date{font-size:10px;color:var(--muted);text-align:right;}
+
 /* ── SESSION SLOTS (daily) ───────────────────────────── */
 .sess-slots-row{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
 .sess-slot{width:30px;height:30px;border-radius:50%;border:1px solid var(--b2);background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .4s cubic-bezier(.34,1.56,.64,1);}
@@ -1084,6 +1134,16 @@ body.light .page-watermark { opacity: .2; }
     </div>
     <div id="active-tools-list"></div>
 
+    <!-- Mastery Bottles -->
+    <div class="sec-hdr" style="margin-top:8px">
+      <div class="sec-lbl">Mastery</div>
+      <div class="sec-kj">習得</div>
+      <div class="sec-line"></div>
+    </div>
+    <div class="bottle-grid" id="bottle-grid"></div>
+    <button class="bottle-add-btn" onclick="openCreateBottle()">＋ New skill bottle</button>
+    <div id="mastered-log-area"></div>
+
     <!-- Protein tracker -->
     <div class="sec-hdr" style="margin-top:4px">
       <div class="sec-lbl">Protein</div>
@@ -1337,6 +1397,37 @@ body.light .page-watermark { opacity: .2; }
       <button class="exp-swap-btn swap" onclick="swapExperimentTool()">Swap in a different tool</button>
     </div>
     <button class="exp-swap-cancel" onclick="closeSwapPrompt()">Cancel</button>
+  </div>
+</div>
+
+<!-- Create Bottle Modal -->
+<div class="btl-modal-ov" id="btl-create-ov" onclick="if(event.target===this)closeCreateBottle()">
+  <div class="btl-modal">
+    <div class="btl-modal-title">NEW SKILL BOTTLE</div>
+    <input class="btl-inp" id="btl-name-inp" placeholder="Skill name…" maxlength="60">
+    <div style="font-size:10px;color:var(--muted);margin:-4px 0 10px">4–6 checkpoints — specific, verifiable claims only</div>
+    <div id="btl-cp-list"></div>
+    <button class="btl-add-cp" onclick="addBtlCpField()">＋ Add checkpoint</button>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:10px">Link to skill (for hours tracking)</div>
+    <select class="btl-inp" id="btl-skill-sel" style="margin-bottom:16px"></select>
+    <div class="btl-modal-row">
+      <button class="btl-cancel" onclick="closeCreateBottle()">Cancel</button>
+      <button class="btl-save" onclick="saveNewBottle()">Create Bottle</button>
+    </div>
+  </div>
+</div>
+
+<!-- Verify Checkpoint Modal -->
+<div class="btl-modal-ov" id="btl-verify-ov" onclick="if(event.target===this)closeVerifyCp()">
+  <div class="btl-modal">
+    <div class="btl-modal-title">VERIFY CHECKPOINT</div>
+    <div id="btl-verify-cp-text" style="font-size:13px;color:var(--muted2);margin-bottom:14px;line-height:1.5;font-weight:600;"></div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:6px">Evidence — what did you do? How do you know it's real?</div>
+    <textarea class="btl-inp" id="btl-verify-evidence" placeholder="Describe the concrete proof…" rows="3" style="resize:none" oninput="document.getElementById('btl-verify-confirm').disabled=!this.value.trim()"></textarea>
+    <div class="btl-modal-row">
+      <button class="btl-cancel" onclick="closeVerifyCp()">Cancel</button>
+      <button class="btl-save" id="btl-verify-confirm" onclick="confirmCheckpoint()" disabled>Confirm ✓</button>
+    </div>
   </div>
 </div>
 
@@ -2050,6 +2141,7 @@ function renderApp(){
   try { renderReport(); }   catch(e){ console.error('renderReport:', e); }
   try { renderJourneyGrid(); }    catch(e){ console.error('renderJourneyGrid:', e); }
   try { renderActiveTools(); }     catch(e){ console.error('renderActiveTools:', e); }
+  try { renderBottles(); }        catch(e){ console.error('renderBottles:', e); }
   try { renderProtein(); }        catch(e){ console.error('renderProtein:', e); }
 }
 
@@ -2979,6 +3071,187 @@ function renderProteinHistory(){
     </div>`;
 }
 // ── End Protein ────────────────────────────────────────
+
+/* ── MASTERY BOTTLES ─────────────────────────────────── */
+function getBottles(){ return ls.get('sq_bottles',[]); }
+function saveBottles(b){ ls.set('sq_bottles',b); }
+
+let _verifyBtlId=null, _verifyCpId=null;
+
+function openCreateBottle(){
+  const list=document.getElementById('btl-cp-list');
+  if(list) list.innerHTML='';
+  const inp=document.getElementById('btl-name-inp');
+  if(inp) inp.value='';
+  // Populate skill link select
+  const sel=document.getElementById('btl-skill-sel');
+  if(sel){
+    sel.innerHTML='<option value="">— No hours link —</option>';
+    skills.forEach(sk=>{ const o=document.createElement('option'); o.value=sk.id; o.textContent=sk.emoji+' '+sk.name; sel.appendChild(o); });
+  }
+  // Start with 4 checkpoint fields
+  for(let i=0;i<4;i++) addBtlCpField();
+  document.getElementById('btl-create-ov').classList.add('on');
+  setTimeout(()=>document.getElementById('btl-name-inp')?.focus(),60);
+}
+
+function closeCreateBottle(){
+  document.getElementById('btl-create-ov').classList.remove('on');
+}
+
+function addBtlCpField(){
+  const list=document.getElementById('btl-cp-list');
+  if(!list) return;
+  const n=list.querySelectorAll('.btl-cp-row').length;
+  if(n>=6){ toast('Max 6 checkpoints',1500); return; }
+  const row=document.createElement('div');
+  row.className='btl-cp-row';
+  row.innerHTML=`<input class="btl-cp-field" placeholder="Checkpoint ${n+1} — specific, verifiable claim…" maxlength="140">
+    <span class="btl-cp-rm" onclick="this.parentNode.remove()">×</span>`;
+  list.appendChild(row);
+}
+
+function saveNewBottle(){
+  const name=document.getElementById('btl-name-inp').value.trim();
+  if(!name){ toast('Add a skill name',1500); return; }
+  const inputs=document.querySelectorAll('#btl-cp-list .btl-cp-field');
+  const cps=[];
+  inputs.forEach(inp=>{ const t=inp.value.trim(); if(t) cps.push({id:uid(),text:t,done:false,evidence:'',ts:null}); });
+  if(cps.length<2){ toast('Add at least 2 checkpoints',1800); return; }
+  const linkedSkillId=document.getElementById('btl-skill-sel').value||null;
+  const bottles=getBottles();
+  bottles.push({id:uid(),name,checkpoints:cps,createdAt:new Date().toISOString(),masteredAt:null,linkedSkillId});
+  saveBottles(bottles);
+  closeCreateBottle();
+  renderBottles();
+  toast('Skill bottle created.',2000);
+}
+
+function openVerifyCp(btlId,cpId){
+  const b=getBottles().find(x=>x.id===btlId);
+  const cp=b?.checkpoints.find(c=>c.id===cpId);
+  if(!cp) return;
+  _verifyBtlId=btlId; _verifyCpId=cpId;
+  const textEl=document.getElementById('btl-verify-cp-text');
+  const evEl=document.getElementById('btl-verify-evidence');
+  const btn=document.getElementById('btl-verify-confirm');
+  if(textEl) textEl.textContent=cp.text;
+  if(evEl){ evEl.value=''; }
+  if(btn) btn.disabled=true;
+  document.getElementById('btl-verify-ov').classList.add('on');
+  setTimeout(()=>evEl?.focus(),60);
+}
+
+function closeVerifyCp(){
+  document.getElementById('btl-verify-ov').classList.remove('on');
+  _verifyBtlId=null; _verifyCpId=null;
+}
+
+function confirmCheckpoint(){
+  const evidence=document.getElementById('btl-verify-evidence').value.trim();
+  if(!evidence||!_verifyBtlId||!_verifyCpId) return;
+  const bottles=getBottles();
+  const b=bottles.find(x=>x.id===_verifyBtlId);
+  const cp=b?.checkpoints.find(c=>c.id===_verifyCpId);
+  if(!cp) return;
+  cp.done=true; cp.evidence=evidence; cp.ts=new Date().toISOString();
+  const allDone=b.checkpoints.every(c=>c.done);
+  if(allDone&&!b.masteredAt){
+    b.masteredAt=new Date().toISOString();
+    toast('🏆 Skill mastered!',3500);
+  } else {
+    const done=b.checkpoints.filter(c=>c.done).length;
+    const pct=Math.round((done/b.checkpoints.length)*100);
+    toast('✓ Checkpoint verified · '+pct+'% filled',2000);
+  }
+  saveBottles(bottles);
+  closeVerifyCp();
+  renderBottles();
+  pushSync();
+}
+
+function deleteBottle(id){
+  if(!confirm('Delete this skill bottle?')) return;
+  saveBottles(getBottles().filter(x=>x.id!==id));
+  renderBottles();
+}
+
+function renderBottles(){
+  const grid=document.getElementById('bottle-grid');
+  if(!grid) return;
+  const active=getBottles().filter(b=>!b.masteredAt);
+  if(!active.length){
+    grid.innerHTML='<div style="font-size:11px;color:var(--muted);padding:4px 0">No active skill bottles.</div>';
+  } else {
+    grid.innerHTML=active.map(renderBottleCard).join('');
+  }
+  renderMasteredLog();
+}
+
+function renderBottleCard(b){
+  const total=b.checkpoints.length;
+  const done=b.checkpoints.filter(c=>c.done).length;
+  const pct=total?Math.round((done/total)*100):0;
+
+  // Hours from linked skill sessions
+  let hoursLabel='—';
+  if(b.linkedSkillId){
+    const mins=(getSess()||[]).filter(s=>s.skillId===b.linkedSkillId).reduce((a,s)=>a+(s.mins||0),0);
+    if(mins) hoursLabel=fmtDur(mins*60);
+  }
+
+  const cpsHtml=b.checkpoints.map(cp=>`
+    <div class="bottle-cp">
+      <div class="bottle-cp-check ${cp.done?'done':''}">
+        ${cp.done?'✓':''}
+      </div>
+      <div class="bottle-cp-body">
+        <div class="bottle-cp-text ${cp.done?'done':''}">${esc(cp.text)}</div>
+        ${cp.evidence?`<div class="bottle-cp-evidence">"${esc(cp.evidence)}"</div>`:''}
+      </div>
+      ${!cp.done?`<button class="bottle-cp-verify" onclick="openVerifyCp('${b.id}','${cp.id}')">Verify ✓</button>`:''}
+    </div>`).join('');
+
+  return `<div class="bottle-card">
+    <div class="bottle-visual">
+      <div class="bottle-vessel">
+        <div class="bottle-fill" style="height:${pct}%"></div>
+      </div>
+      <div class="bottle-pct">${pct}%</div>
+    </div>
+    <div class="bottle-content">
+      <div class="bottle-name">
+        <span>${esc(b.name)}</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="bottle-del" onclick="deleteBottle('${b.id}')">✕</span>
+        </div>
+      </div>
+      <div class="bottle-cp-list">${cpsHtml}</div>
+      <div class="bottle-hours">⏱ ${hoursLabel} logged · ${done}/${total} checkpoints</div>
+    </div>
+  </div>`;
+}
+
+function renderMasteredLog(){
+  const el=document.getElementById('mastered-log-area');
+  if(!el) return;
+  const mastered=getBottles().filter(b=>b.masteredAt).sort((a,b)=>new Date(b.masteredAt)-new Date(a.masteredAt));
+  if(!mastered.length){ el.innerHTML=''; return; }
+  el.innerHTML=`<div class="sec-hdr" style="margin-top:10px">
+    <div class="sec-lbl">Mastered</div>
+    <div class="sec-kj">完了</div>
+    <div class="sec-line"></div>
+  </div>
+  <div class="mastered-section">`+
+  mastered.map(b=>`<div class="mastered-entry">
+    <div>
+      <div class="mastered-entry-name">🏆 ${esc(b.name)}</div>
+      <div class="mastered-entry-sub">${b.checkpoints.length} checkpoints · ${b.checkpoints.filter(c=>c.done).length} verified</div>
+    </div>
+    <div class="mastered-entry-date">${new Date(b.masteredAt).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</div>
+  </div>`).join('')+`</div>`;
+}
+// ── End Mastery Bottles ─────────────────────────────────
 
 function todayKey(){ return new Date().toISOString().slice(0,10); }
 
@@ -4603,7 +4876,7 @@ async function pushCloud(){
     conclusions: getConclusions(),
     pregame: getPregame(), opener: getOpener(), habitMgr: getHabitMgr(), archive: getArchive(),
     frictionLog: getFrictionLog(), frictionDismissed: getFrictionDismissed(),
-    provenTools: getProvenTools(),
+    provenTools: getProvenTools(), bottles: getBottles(),
     ...(timerToWrite !== undefined ? { activeTimer: timerToWrite } : {}),
   };
   try {
