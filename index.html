@@ -185,6 +185,9 @@ body.light::before { opacity: .06; }
 .t-right { text-align: right; flex-shrink: 0; }
 .t-time  { font-family: var(--serif); font-size: 28px; font-weight: 900; color: var(--green2); font-variant-numeric: tabular-nums; }
 .t-stop  { margin-top: 5px; background: var(--verm); border: none; padding: 5px 13px; color: #fff; font-family: var(--serif); font-size: 10px; font-weight: 700; cursor: pointer; letter-spacing: 2px; }
+.t-next-btn { display: none; margin-top: 5px; background: none; border: 1px solid rgba(200,144,10,.4); border-radius: 5px; padding: 4px 10px; color: var(--gold2); font-size: 9px; cursor: pointer; letter-spacing: 1px; transition: all .15s; }
+.t-next-btn:hover { background: rgba(200,144,10,.1); }
+.timer-bar.break .t-next-btn { display: block; }
 
 /* ── GOOGLE CALENDAR ────────────────────────────────── */
 .cal-section { margin-bottom: 32px; }
@@ -1035,6 +1038,7 @@ body.light .page-watermark { opacity: .2; }
       <div class="t-right">
         <div class="t-time" id="t-time">00:00</div>
         <button class="t-stop" onclick="stopTimer()">■ 止める</button>
+        <button class="t-next-btn" onclick="openNextRoundEdit()">✎ Next round</button>
       </div>
     </div>
 
@@ -1413,6 +1417,19 @@ body.light .page-watermark { opacity: .2; }
       <button class="exp-swap-btn swap" onclick="swapExperimentTool()">Swap in a different tool</button>
     </div>
     <button class="exp-swap-cancel" onclick="closeSwapPrompt()">Cancel</button>
+  </div>
+</div>
+
+<!-- Next Round Edit Modal -->
+<div class="btl-modal-ov" id="next-round-ov" onclick="if(event.target===this)closeNextRoundEdit()">
+  <div class="btl-modal" style="max-width:360px">
+    <div class="btl-modal-title">NEXT ROUND</div>
+    <div id="next-round-pills" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+    <input class="btl-inp" id="next-round-desc" placeholder="What will you work on?" maxlength="100">
+    <div class="btl-modal-row">
+      <button class="btl-cancel" onclick="closeNextRoundEdit()">Cancel</button>
+      <button class="btl-save" onclick="saveNextRoundEdit()">Set</button>
+    </div>
   </div>
 </div>
 
@@ -2382,6 +2399,43 @@ function cancelTimer(){
   resetTabIndicator();
 }
 
+let _nextRoundSelId=null;
+function openNextRoundEdit(){
+  if(!activeTimer) return;
+  _nextRoundSelId=activeTimer.skillId;
+  const pillsEl=document.getElementById('next-round-pills');
+  if(pillsEl){
+    pillsEl.innerHTML=skills.map(sk=>`
+      <button class="skill-pill${sk.id===_nextRoundSelId?' sel':''}" data-id="${sk.id}"
+        onclick="document.querySelectorAll('#next-round-pills .skill-pill').forEach(b=>b.classList.remove('sel'));this.classList.add('sel');_nextRoundSelId=this.dataset.id">
+        ${sk.emoji} ${esc(sk.name)}
+      </button>`).join('');
+  }
+  const descEl=document.getElementById('next-round-desc');
+  if(descEl) descEl.value=activeTimer.desc||'';
+  document.getElementById('next-round-ov').classList.add('on');
+  setTimeout(()=>descEl?.focus(),60);
+}
+function closeNextRoundEdit(){
+  document.getElementById('next-round-ov').classList.remove('on');
+}
+function saveNextRoundEdit(){
+  if(!activeTimer) return;
+  const desc=document.getElementById('next-round-desc').value.trim();
+  if(_nextRoundSelId) activeTimer.skillId=_nextRoundSelId;
+  if(desc) activeTimer.desc=desc;
+  ls.set('sq_active_timer',activeTimer);
+  // Update the timer bar display immediately
+  const sk=skills.find(s=>s.id===activeTimer.skillId);
+  if(sk){
+    const skEl=document.getElementById('t-skill'); if(skEl) skEl.textContent=sk.emoji+' '+sk.name;
+    const icEl=document.getElementById('t-icon'); if(icEl) icEl.textContent=sk.emoji;
+  }
+  const dEl=document.getElementById('t-desc'); if(dEl) dEl.textContent=activeTimer.desc;
+  closeNextRoundEdit();
+  toast('Next round updated.',1800);
+}
+
 function resetTabIndicator(){
   document.title='道場 Skill Dojo';
   if('clearAppBadge' in navigator) navigator.clearAppBadge().catch(()=>{});
@@ -3120,7 +3174,7 @@ function renderProteinHistory(){
 
 /* ── MASTERY BOTTLES ─────────────────────────────────── */
 function getBottles(){
-  let arr=ls.get('sq_bottles',[]);
+  let arr=ls.get('sq_bottles','[]');
   let dirty=false;
   arr.forEach(b=>{
     if(!b.windowStart){ b.windowStart=b.createdAt||new Date().toISOString(); dirty=true; }
