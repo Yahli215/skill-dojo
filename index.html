@@ -1027,6 +1027,7 @@ body.light .page-watermark { opacity: .2; }
     <!-- View Nav -->
     <div class="view-nav">
       <button class="view-nav-btn on" id="vnav-training" onclick="switchView('training')">稽古 Training</button>
+      <button class="view-nav-btn"    id="vnav-habits"   onclick="switchView('habits')">習慣 Habits</button>
       <button class="view-nav-btn"    id="vnav-tasks"    onclick="switchView('tasks')">課題 Tasks</button>
       <button class="view-nav-btn"    id="vnav-insights" onclick="switchView('insights')">洞察 Insights</button>
     </div>
@@ -1141,23 +1142,6 @@ body.light .page-watermark { opacity: .2; }
       </div>
     </div>
 
-    <!-- Habits -->
-    <div class="sec-hdr" style="margin-top:8px">
-      <div class="sec-lbl">Habits</div>
-      <div class="sec-kj">習慣</div>
-      <div class="sec-line"></div>
-    </div>
-    <div id="habit-active-area"></div>
-    <button class="manual-exp-toggle" onclick="toggleManualExpForm()">＋ Add experiment ▾</button>
-    <div id="manual-exp-form" style="display:none">
-      <div class="exp-add-box">
-        <input class="proven-add-inp" id="exp-problem-inp" placeholder="Problem you're trying to fix…">
-        <input class="proven-add-inp" id="exp-tool-inp" placeholder="Tool / technique / cue being tried…">
-        <button class="proven-add-btn" onclick="addExperimentDirect()">+ Start Experiment</button>
-      </div>
-    </div>
-    <div id="habit-completed-area"></div>
-
     <!-- Mastery Bottles -->
     <div class="sec-hdr" style="margin-top:8px">
       <div class="sec-lbl">Mastery</div>
@@ -1197,6 +1181,25 @@ body.light .page-watermark { opacity: .2; }
     </div>
 
     </div><!-- /training-view -->
+
+    <!-- Habits view -->
+    <div id="habits-view" style="display:none">
+      <div class="sec-hdr" style="margin-top:8px">
+        <div class="sec-lbl">Habits</div>
+        <div class="sec-kj">習慣</div>
+        <div class="sec-line"></div>
+      </div>
+      <div id="habit-active-area"></div>
+      <button class="manual-exp-toggle" onclick="toggleManualExpForm()">＋ Add experiment ▾</button>
+      <div id="manual-exp-form" style="display:none">
+        <div class="exp-add-box">
+          <input class="proven-add-inp" id="exp-problem-inp" placeholder="Problem you're trying to fix…">
+          <input class="proven-add-inp" id="exp-tool-inp" placeholder="Tool / technique / cue being tried…">
+          <button class="proven-add-btn" onclick="addExperimentDirect()">+ Start Experiment</button>
+        </div>
+      </div>
+      <div id="habit-completed-area"></div>
+    </div><!-- /habits-view -->
 
     <!-- Insights / Conclusions -->
     <div id="insights-view" style="display:none">
@@ -4507,12 +4510,13 @@ function findBorrowedCandidate(problemText, discarded){
 let _insightTab = 'friction';
 
 function switchView(view){
-  ['training','tasks','insights'].forEach(v => {
+  ['training','habits','tasks','insights'].forEach(v => {
     document.getElementById(`${v}-view`).style.display = v === view ? '' : 'none';
     document.getElementById(`vnav-${v}`).classList.toggle('on', v === view);
   });
   if(view === 'insights') renderInsights();
   if(view === 'tasks') renderTasks();
+  if(view === 'habits') renderHabitMgr();
 }
 
 function renderInsights(){ switchInsight(_insightTab); }
