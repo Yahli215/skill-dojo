@@ -800,6 +800,13 @@ body.light .page-watermark { opacity: .2; }
 .habit-queue-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;opacity:0;padding:1px 4px;transition:opacity .15s;flex-shrink:0;}
 .habit-queue-item:hover .habit-queue-del{opacity:.45;}
 .habit-queue-del:hover{opacity:1!important;color:var(--verm);}
+.habit-simple-item{display:flex;align-items:center;gap:8px;background:var(--s1);border:1px solid var(--b1);border-radius:8px;padding:10px 12px;margin-bottom:6px;}
+.habit-simple-text{flex:1;font-size:13px;color:var(--text);line-height:1.4;}
+.habit-simple-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:2px 4px;flex-shrink:0;}
+.habit-simple-del:hover{color:var(--verm);}
+.habit-add-inp{flex:1;background:var(--s1);border:1px solid var(--b1);border-radius:8px;padding:10px 12px;color:var(--text);font-size:12px;font-family:inherit;}
+.habit-add-inp:focus{outline:none;border-color:var(--gold2);}
+.habit-add-btn{background:var(--gold2);color:#1a1608;border:none;border-radius:8px;padding:10px 16px;font-size:16px;font-weight:700;cursor:pointer;}
 .habit-arch-toggle{background:none;border:none;color:var(--muted2);font-size:11px;cursor:pointer;padding:4px 0;font-family:inherit;letter-spacing:.05em;transition:color .15s;display:block;margin-top:8px;}
 .habit-arch-toggle:hover{color:var(--gold2);}
 .habit-arch-pick{background:var(--s1);border:1px solid var(--b1);border-radius:8px;padding:10px 12px;margin-top:6px;}
@@ -1152,34 +1159,11 @@ body.light .page-watermark { opacity: .2; }
       <div class="sec-kj">習慣</div>
       <div class="sec-line"></div>
     </div>
-    <div id="habit-friction-candidates"></div>
-    <div id="habit-active-area"></div>
-    <div id="habit-layer-area"></div>
-    <div class="habit-queue-hdr" style="margin-top:4px">Queue</div>
-    <div id="habit-queue-list"></div>
-    <button class="manual-exp-toggle" onclick="toggleManualExpForm()">＋ Add manually ▾</button>
-    <div id="manual-exp-form" style="display:none">
-    <div class="exp-add-box">
-      <input class="proven-add-inp" id="exp-problem-inp" placeholder="Problem you're trying to fix…">
-      <button class="habit-arch-toggle" style="margin:0 0 8px" onclick="toggleExpProblemPick()">📥 Pull from Friction Log ▾</button>
-      <div id="exp-problem-pick" class="habit-arch-pick" style="display:none">
-        <input class="habit-arch-search" id="exp-problem-search" placeholder="Search friction log…" oninput="renderExpProblemPick()">
-        <div class="habit-arch-results" id="exp-problem-results"></div>
-      </div>
-      <input class="proven-add-inp" id="exp-tool-inp" placeholder="Tool / technique / cue being tried…">
-      <div class="proven-domain-chips">
-        <button class="proven-domain-chip exp-origin-chip sel" data-origin="new" onclick="pickExpOrigin('new',this)">new</button>
-        <button class="proven-domain-chip exp-origin-chip" data-origin="borrowed" onclick="pickExpOrigin('borrowed',this)">borrowed from Proven Tools</button>
-      </div>
-      <div id="exp-proven-pick" class="habit-arch-pick" style="display:none">
-        <input class="habit-arch-search" id="exp-proven-search" placeholder="Search proven tools…" oninput="renderExpProvenPick()">
-        <div class="habit-arch-results" id="exp-proven-results"></div>
-      </div>
-      <button class="proven-add-btn" onclick="addExperiment()">+ Start Experiment</button>
+    <div id="habit-simple-list"></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <input id="habit-add-inp" class="habit-add-inp" placeholder="Add habit…" maxlength="140" onkeydown="if(event.key==='Enter')addSimpleHabit()">
+      <button class="habit-add-btn" onclick="addSimpleHabit()">＋</button>
     </div>
-    </div><!-- /manual-exp-form -->
-    <div id="habit-completed-area"></div>
-    <div id="habit-discarded-area"></div>
 
     <!-- Journey Grid -->
     <div class="sec-hdr">
@@ -4754,67 +4738,39 @@ function renderExperimentCard(h, idx){
   </div>`;
 }
 
-function renderHabitMgr(){
-  renderActiveTools();
-  const d = getHabitMgr();
-  const activeEl    = document.getElementById('habit-active-area');
-  const layerEl     = document.getElementById('habit-layer-area');
-  const queueEl     = document.getElementById('habit-queue-list');
-  const completedEl = document.getElementById('habit-completed-area');
-  if(!activeEl) return;
+function getSimpleHabits(){ return ls.get('sq_simple_habits','[]'); }
+function saveSimpleHabits(arr){ ls.set('sq_simple_habits', arr); pushSync(); }
 
-  renderFrictionCandidates();
-
-  // Active experiments
-  activeEl.innerHTML = d.active.length
-    ? d.active.map((h,i) => renderExperimentCard(h,i)).join('')
-    : `<div class="habit-mgr-empty">No active experiment.<br>Add a problem + tool below to start one.</div>`;
-
-  // Layer-in button (appears once primary is confirmed working + Consistent, and queue non-empty)
-  if(layerEl){
-    const primary = d.active[0];
-    const canLayer = primary && primary.outcome === 'working' && primary.status === 'consistent' && d.active.length < 2 && d.queue.length > 0;
-    layerEl.innerHTML = canLayer
-      ? `<button class="habit-layer-btn" onclick="layerNextHabit()">+ Layer in next: "${esc((d.queue[0].tool||'').slice(0,48))}"</button>`
-      : '';
-  }
-
-  // Queue
-  queueEl.innerHTML = !d.queue.length
-    ? `<div style="color:var(--muted);font-size:11px;padding:10px 0;letter-spacing:.05em">Queue is empty.</div>`
-    : d.queue.map((h,i) => `
-      <div class="habit-queue-item" draggable="true"
-        ondragstart="queueDragStart(event,${i})"
-        ondragover="queueDragOver(event,${i})"
-        ondragleave="queueDragLeave(event)"
-        ondrop="queueDrop(event,${i})"
-        ondragend="queueDragEnd(event)">
-        <span class="habit-queue-handle">⠿</span>
-        <span class="habit-queue-num">${i+1}</span>
-        <span class="habit-queue-text">
-          <span class="exp-queue-problem">${esc(h.problem||'(no problem set)')}</span>
-          <span class="exp-queue-tool">${esc(h.tool)} <span class="exp-origin-badge ${h.toolOrigin}">${h.toolOrigin==='borrowed'?'BORROWED':'NEW'}</span></span>
-        </span>
-        <button class="habit-queue-del" onclick="delHabitQueue('${h.id}')">✕</button>
+function renderSimpleHabits(){
+  const el = document.getElementById('habit-simple-list');
+  if(!el) return;
+  const habits = getSimpleHabits();
+  el.innerHTML = !habits.length
+    ? `<div style="color:var(--muted);font-size:11px;padding:8px 0;letter-spacing:.04em">No habits yet.</div>`
+    : habits.map(h=>`
+      <div class="habit-simple-item">
+        <span class="habit-simple-text">${esc(h.text)}</span>
+        <button class="habit-simple-del" onclick="delSimpleHabit('${h.id}')">✕</button>
       </div>`).join('');
-
-  // Completed (reached Automatic)
-  if(completedEl){
-    const comp = d.completed||[];
-    completedEl.innerHTML = comp.length
-      ? `<div class="habit-completed-section">
-          <div class="habit-completed-hdr">Completed (${comp.length})</div>
-          ${comp.slice().reverse().map(h=>`
-            <div class="habit-completed-item">
-              <span class="habit-completed-text"><b>${esc(h.tool)}</b> — ${esc(h.problem||'')}</span>
-              <span class="habit-completed-date">${new Date(h.completedAt).toLocaleDateString([],{month:'short',day:'numeric',year:'2-digit'})}</span>
-            </div>`).join('')}
-        </div>`
-      : '';
-  }
-
-  renderDiscarded();
 }
+
+function addSimpleHabit(){
+  const inp = document.getElementById('habit-add-inp');
+  const text = (inp?.value||'').trim();
+  if(!text) return;
+  const habits = getSimpleHabits();
+  habits.push({id:uid(), text, addedAt:new Date().toISOString()});
+  saveSimpleHabits(habits);
+  inp.value = '';
+  renderSimpleHabits();
+}
+
+function delSimpleHabit(id){
+  saveSimpleHabits(getSimpleHabits().filter(h=>h.id!==id));
+  renderSimpleHabits();
+}
+
+function renderHabitMgr(){ renderSimpleHabits(); }
 
 let _notesDebounce = {};
 function schedSaveHabitNotes(idx, text){
