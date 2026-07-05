@@ -1159,11 +1159,16 @@ body.light .page-watermark { opacity: .2; }
       <div class="sec-kj">習慣</div>
       <div class="sec-line"></div>
     </div>
-    <div id="habit-simple-list"></div>
-    <div style="display:flex;gap:8px;margin-top:8px">
-      <input id="habit-add-inp" class="habit-add-inp" placeholder="Add habit…" maxlength="140" onkeydown="if(event.key==='Enter')addSimpleHabit()">
-      <button class="habit-add-btn" onclick="addSimpleHabit()">＋</button>
+    <div id="habit-active-area"></div>
+    <button class="manual-exp-toggle" onclick="toggleManualExpForm()">＋ Add experiment ▾</button>
+    <div id="manual-exp-form" style="display:none">
+      <div class="exp-add-box">
+        <input class="proven-add-inp" id="exp-problem-inp" placeholder="Problem you're trying to fix…">
+        <input class="proven-add-inp" id="exp-tool-inp" placeholder="Tool / technique / cue being tried…">
+        <button class="proven-add-btn" onclick="addExperimentDirect()">+ Start Experiment</button>
+      </div>
     </div>
+    <div id="habit-completed-area"></div>
 
     <!-- Journey Grid -->
     <div class="sec-hdr">
@@ -4770,7 +4775,49 @@ function delSimpleHabit(id){
   renderSimpleHabits();
 }
 
-function renderHabitMgr(){ renderSimpleHabits(); }
+function addExperimentDirect(){
+  const probInp = document.getElementById('exp-problem-inp');
+  const toolInp = document.getElementById('exp-tool-inp');
+  const problem = (probInp?.value||'').trim();
+  const tool    = (toolInp?.value||'').trim();
+  if(!tool){ toast('Enter a tool / technique to try.', 2500); return; }
+  const d = getHabitMgr();
+  if(!d.discarded) d.discarded = [];
+  const dupe = d.discarded.find(x => normalize(x.problem)===normalize(problem) && normalize(x.tool)===normalize(tool));
+  if(dupe && !confirm(`"${tool}" already failed for this problem on ${new Date(dupe.discardedAt).toLocaleDateString()}. Try again?`)) return;
+  d.active.push(newExperiment(problem, tool, 'new', null));
+  saveHabitMgr(d);
+  if(probInp) probInp.value = '';
+  if(toolInp) toolInp.value = '';
+  document.getElementById('manual-exp-form').style.display = 'none';
+  toast('Experiment started.', 2000);
+  renderHabitMgr();
+}
+
+function renderHabitMgr(){
+  const activeEl    = document.getElementById('habit-active-area');
+  const completedEl = document.getElementById('habit-completed-area');
+  if(!activeEl) return;
+  const d = getHabitMgr();
+
+  activeEl.innerHTML = d.active.length
+    ? d.active.map((h,i) => renderExperimentCard(h,i)).join('')
+    : `<div class="habit-mgr-empty" style="margin-bottom:10px">No active experiment — add one below.</div>`;
+
+  if(completedEl){
+    const comp = d.completed||[];
+    completedEl.innerHTML = comp.length
+      ? `<div class="habit-completed-section">
+          <div class="habit-completed-hdr">Completed (${comp.length})</div>
+          ${comp.slice().reverse().map(h=>`
+            <div class="habit-completed-item">
+              <span class="habit-completed-text"><b>${esc(h.tool)}</b>${h.problem?' — '+esc(h.problem):''}</span>
+              <span class="habit-completed-date">${new Date(h.completedAt||h.startedAt).toLocaleDateString([],{month:'short',day:'numeric',year:'2-digit'})}</span>
+            </div>`).join('')}
+        </div>`
+      : '';
+  }
+}
 
 let _notesDebounce = {};
 function schedSaveHabitNotes(idx, text){
