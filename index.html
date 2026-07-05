@@ -1146,13 +1146,40 @@ body.light .page-watermark { opacity: .2; }
       </div>
     </div>
 
-    <!-- Skills -->
+    <!-- Habits -->
     <div class="sec-hdr" style="margin-top:8px">
-      <div class="sec-lbl">Skills</div>
-      <div class="sec-kj">技術</div>
+      <div class="sec-lbl">Habits</div>
+      <div class="sec-kj">習慣</div>
       <div class="sec-line"></div>
     </div>
-    <div class="skills-list" id="skills-list"></div>
+    <div id="habit-friction-candidates"></div>
+    <div id="habit-active-area"></div>
+    <div id="habit-layer-area"></div>
+    <div class="habit-queue-hdr" style="margin-top:4px">Queue</div>
+    <div id="habit-queue-list"></div>
+    <button class="manual-exp-toggle" onclick="toggleManualExpForm()">＋ Add manually ▾</button>
+    <div id="manual-exp-form" style="display:none">
+    <div class="exp-add-box">
+      <input class="proven-add-inp" id="exp-problem-inp" placeholder="Problem you're trying to fix…">
+      <button class="habit-arch-toggle" style="margin:0 0 8px" onclick="toggleExpProblemPick()">📥 Pull from Friction Log ▾</button>
+      <div id="exp-problem-pick" class="habit-arch-pick" style="display:none">
+        <input class="habit-arch-search" id="exp-problem-search" placeholder="Search friction log…" oninput="renderExpProblemPick()">
+        <div class="habit-arch-results" id="exp-problem-results"></div>
+      </div>
+      <input class="proven-add-inp" id="exp-tool-inp" placeholder="Tool / technique / cue being tried…">
+      <div class="proven-domain-chips">
+        <button class="proven-domain-chip exp-origin-chip sel" data-origin="new" onclick="pickExpOrigin('new',this)">new</button>
+        <button class="proven-domain-chip exp-origin-chip" data-origin="borrowed" onclick="pickExpOrigin('borrowed',this)">borrowed from Proven Tools</button>
+      </div>
+      <div id="exp-proven-pick" class="habit-arch-pick" style="display:none">
+        <input class="habit-arch-search" id="exp-proven-search" placeholder="Search proven tools…" oninput="renderExpProvenPick()">
+        <div class="habit-arch-results" id="exp-proven-results"></div>
+      </div>
+      <button class="proven-add-btn" onclick="addExperiment()">+ Start Experiment</button>
+    </div>
+    </div><!-- /manual-exp-form -->
+    <div id="habit-completed-area"></div>
+    <div id="habit-discarded-area"></div>
 
     <!-- Journey Grid -->
     <div class="sec-hdr">
@@ -1164,14 +1191,6 @@ body.light .page-watermark { opacity: .2; }
       <div class="jg-grid" id="jg-grid"></div>
       <div class="jg-legend" id="jg-legend"></div>
     </div>
-
-    <!-- Active Tools -->
-    <div class="sec-hdr">
-      <div class="sec-lbl">Active Tools</div>
-      <div class="sec-kj">習慣</div>
-      <div class="sec-line"></div>
-    </div>
-    <div id="active-tools-list"></div>
 
     <!-- Mastery Bottles -->
     <div class="sec-hdr" style="margin-top:8px">
@@ -1223,7 +1242,6 @@ body.light .page-watermark { opacity: .2; }
       <div class="ins-nav">
         <button class="ins-nav-btn on" id="ins-tab-friction" onclick="switchInsight('friction')">💢 Friction</button>
         <button class="ins-nav-btn"    id="ins-tab-proven"   onclick="switchInsight('proven')"  >🛠 Proven</button>
-        <button class="ins-nav-btn"    id="ins-tab-habit"    onclick="switchInsight('habit')"   >🔄 Habit</button>
         <button class="ins-nav-btn"    id="ins-tab-archive"  onclick="switchInsight('archive')" >🗂 Archive</button>
       </div>
 
@@ -1255,42 +1273,6 @@ body.light .page-watermark { opacity: .2; }
         <div id="proven-list"></div>
       </div>
 
-      <!-- Current Habit -->
-      <div class="ins-section" id="ins-habit">
-        <p class="ins-caption">When friction repeats 3× in 7 days the system proposes a fix. Tap ✓ Start or ✗ Skip — nothing else needed.</p>
-        <div id="habit-friction-candidates"></div>
-        <div id="habit-active-area"></div>
-        <div id="habit-layer-area"></div>
-        <div class="habit-queue-hdr" style="margin-top:4px">Queue</div>
-        <div id="habit-queue-list"></div>
-
-        <button class="manual-exp-toggle" onclick="toggleManualExpForm()">＋ Add manually ▾</button>
-        <div id="manual-exp-form" style="display:none">
-        <div class="exp-add-box">
-          <input class="proven-add-inp" id="exp-problem-inp" placeholder="Problem you're trying to fix…">
-          <button class="habit-arch-toggle" style="margin:0 0 8px" onclick="toggleExpProblemPick()">📥 Pull from Friction Log ▾</button>
-          <div id="exp-problem-pick" class="habit-arch-pick" style="display:none">
-            <input class="habit-arch-search" id="exp-problem-search" placeholder="Search friction log…" oninput="renderExpProblemPick()">
-            <div class="habit-arch-results" id="exp-problem-results"></div>
-          </div>
-
-          <input class="proven-add-inp" id="exp-tool-inp" placeholder="Tool / technique / cue being tried…">
-          <div class="proven-domain-chips">
-            <button class="proven-domain-chip exp-origin-chip sel" data-origin="new" onclick="pickExpOrigin('new',this)">new</button>
-            <button class="proven-domain-chip exp-origin-chip" data-origin="borrowed" onclick="pickExpOrigin('borrowed',this)">borrowed from Proven Tools</button>
-          </div>
-          <div id="exp-proven-pick" class="habit-arch-pick" style="display:none">
-            <input class="habit-arch-search" id="exp-proven-search" placeholder="Search proven tools…" oninput="renderExpProvenPick()">
-            <div class="habit-arch-results" id="exp-proven-results"></div>
-          </div>
-
-          <button class="proven-add-btn" onclick="addExperiment()">+ Start Experiment</button>
-        </div>
-        </div><!-- /manual-exp-form -->
-
-        <div id="habit-completed-area"></div>
-        <div id="habit-discarded-area"></div>
-      </div>
 
       <!-- Chess Archive -->
       <div class="ins-section" id="ins-archive">
@@ -2228,12 +2210,11 @@ async function manualSync(){
 /* ── RENDER ─────────────────────────────────────────── */
 function renderApp(){
   try { renderPills(); }    catch(e){ console.error('renderPills:', e); }
-  try { renderSkills(); }   catch(e){ console.error('renderSkills:', e); }
   try { renderDaily(); }    catch(e){ console.error('renderDaily:', e); }
   try { renderWeekBars(); } catch(e){ console.error('renderWeekBars:', e); }
   try { renderReport(); }   catch(e){ console.error('renderReport:', e); }
+  try { renderHabitMgr(); } catch(e){ console.error('renderHabitMgr:', e); }
   try { renderJourneyGrid(); }    catch(e){ console.error('renderJourneyGrid:', e); }
-  try { renderActiveTools(); }     catch(e){ console.error('renderActiveTools:', e); }
   try { renderBottles(); }        catch(e){ console.error('renderBottles:', e); }
   try { renderProtein(); }        catch(e){ console.error('renderProtein:', e); }
 }
@@ -4633,17 +4614,14 @@ function renderInsights(){ switchInsight(_insightTab); }
 
 function switchInsight(tab){
   _insightTab = tab;
-  ['friction','proven','habit','archive'].forEach(t => {
+  ['friction','proven','archive'].forEach(t => {
     const s = document.getElementById('ins-'+t);
     const b = document.getElementById('ins-tab-'+t);
     if(s) s.classList.toggle('on', t===tab);
     if(b) b.classList.toggle('on', t===tab);
   });
-  if(tab==='pregame') renderPregame();
-  else if(tab==='opener') renderOpener();
-  else if(tab==='friction') renderFrictionLog();
+  if(tab==='friction') renderFrictionLog();
   else if(tab==='proven') renderProvenTools();
-  else if(tab==='habit') renderHabitMgr();
   else if(tab==='archive') renderArchive();
 }
 
