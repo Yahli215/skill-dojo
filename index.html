@@ -529,18 +529,6 @@ body.light .page-watermark { opacity: .2; }
 .sess-slot.filled{border-color:transparent;box-shadow:0 0 10px rgba(200,144,10,.2);}
 .sess-slot.empty-future{opacity:.2;}
 
-/* ── JOURNEY GRID ────────────────────────────────────── */
-.journey-wrap{background:var(--s1);border:1px solid var(--b1);padding:16px 16px 12px;margin-bottom:32px;overflow-x:auto;}
-.jg-grid{display:flex;flex-direction:column;gap:2px;}
-.jg-row{display:flex;align-items:center;}
-.jg-week-lbl{font-size:7px;color:var(--muted);width:28px;flex-shrink:0;text-align:right;padding-right:6px;}
-.jg-days{display:flex;gap:1px;}
-.jg-cell{width:8px;height:8px;border:1px solid var(--b1);background:var(--s2);flex-shrink:0;}
-.jg-cell.filled{border-color:transparent;}
-.jg-cell.today-border{border-color:var(--gold) !important;}
-.jg-legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
-.jg-legend-item{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--muted);}
-.jg-legend-dot{width:8px;height:8px;flex-shrink:0;}
 /* ── HABITS ─────────────────────────────────────────── */
 .habit-grid{display:flex;flex-direction:column;gap:0;margin-bottom:28px;border:1px solid var(--b1);border-radius:10px;overflow:hidden;}
 .habit-card{background:var(--s1);border-bottom:1px solid var(--b1);padding:14px 16px;display:flex;align-items:center;gap:14px;border-left:3px solid transparent;transition:background .15s,border-left-color .2s;}
@@ -1169,17 +1157,6 @@ body.light .page-watermark { opacity: .2; }
       </div>
     </div>
     <div id="habit-completed-area"></div>
-
-    <!-- Journey Grid -->
-    <div class="sec-hdr">
-      <div class="sec-lbl">Journey</div>
-      <div class="sec-kj">道のり</div>
-      <div class="sec-line"></div>
-    </div>
-    <div class="journey-wrap">
-      <div class="jg-grid" id="jg-grid"></div>
-      <div class="jg-legend" id="jg-legend"></div>
-    </div>
 
     <!-- Mastery Bottles -->
     <div class="sec-hdr" style="margin-top:8px">
@@ -2203,7 +2180,6 @@ function renderApp(){
   try { renderWeekBars(); } catch(e){ console.error('renderWeekBars:', e); }
   try { renderReport(); }   catch(e){ console.error('renderReport:', e); }
   try { renderHabitMgr(); } catch(e){ console.error('renderHabitMgr:', e); }
-  try { renderJourneyGrid(); }    catch(e){ console.error('renderJourneyGrid:', e); }
   try { renderBottles(); }        catch(e){ console.error('renderBottles:', e); }
   try { renderProtein(); }        catch(e){ console.error('renderProtein:', e); }
 }
@@ -3858,66 +3834,6 @@ function _satRenderResults(){
 
 function closeSaturdayReview(){
   document.getElementById('sat-overlay').classList.remove('on');
-}
-
-/* ── JOURNEY GRID ────────────────────────────────────── */
-function renderJourneyGrid(){
-  const el=document.getElementById('jg-grid');
-  if(!el) return;
-  const numDays=28;
-  const byDay={};
-  sessions.forEach(s=>{
-    if(!s.stop) return;
-    const k=dayKey(new Date(s.stop));
-    if(!byDay[k]) byDay[k]=[];
-    byDay[k].push(s);
-  });
-  const days=[];
-  for(let i=numDays-1;i>=0;i--){
-    const d=new Date(); d.setDate(d.getDate()-i);
-    days.push({d,k:dayKey(d),isToday:i===0,sessions:byDay[dayKey(d)]||[]});
-  }
-  el.innerHTML='';
-  for(let slot=0;slot<SESSIONS_PER_DAY;slot++){
-    const row=document.createElement('div');
-    row.className='jg-row';
-    const lbl=document.createElement('div');
-    lbl.className='jg-week-lbl';
-    lbl.textContent=slot===0?'#1':slot===SESSIONS_PER_DAY-1?'#'+SESSIONS_PER_DAY:'';
-    row.appendChild(lbl);
-    const daysWrap=document.createElement('div');
-    daysWrap.className='jg-days';
-    days.forEach(day=>{
-      const cell=document.createElement('div');
-      cell.className='jg-cell'+(day.isToday?' today-border':'');
-      if(slot<day.sessions.length){
-        cell.classList.add('filled');
-        const s=day.sessions[slot];
-        const sk=skills.find(x=>x.id===s.skillId);
-        const rank=sk?getRank(sk.totalMins):RANKS[0];
-        cell.style.background=rank.color;
-        cell.title=(sk?.name||'')+' · '+day.k;
-      }
-      daysWrap.appendChild(cell);
-    });
-    row.appendChild(daysWrap);
-    el.appendChild(row);
-  }
-  // Day labels
-  const lblRow=document.createElement('div');
-  lblRow.style.cssText='display:flex;gap:1px;padding-left:28px;margin-top:4px';
-  days.forEach(day=>{
-    const lbl=document.createElement('div');
-    lbl.style.cssText=`width:8px;font-size:6px;color:${day.isToday?'var(--gold)':'var(--muted)'};text-align:center;overflow:hidden;white-space:nowrap`;
-    if(day.d.getDay()===1||day.isToday) lbl.textContent=day.isToday?'▲':day.d.getDate();
-    lblRow.appendChild(lbl);
-  });
-  el.appendChild(lblRow);
-  const legendEl=document.getElementById('jg-legend');
-  if(legendEl) legendEl.innerHTML=skills.map(sk=>{
-    const rank=getRank(sk.totalMins);
-    return`<div class="jg-legend-item"><div class="jg-legend-dot" style="background:${rank.color}"></div>${esc(sk.emoji+' '+sk.name)}</div>`;
-  }).join('');
 }
 
 /* ── QUOTE ──────────────────────────────────────────── */
