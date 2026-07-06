@@ -833,6 +833,57 @@ body.light .page-watermark { opacity: .2; }
 .exp-week-rollup{font-size:9px;color:var(--green2);letter-spacing:.04em;margin-left:8px;font-weight:normal;}
 .exp-retire-btn{margin-top:14px;background:none;border:1px solid var(--b2);color:var(--muted2);border-radius:6px;padding:6px 12px;font-size:10px;cursor:pointer;font-family:var(--mono);letter-spacing:.04em;transition:all .15s;width:100%;}
 .exp-retire-btn:hover{border-color:var(--verm);color:var(--verm);}
+/* ── HABIT TYPE SYSTEM v46 ───────────────────────────────────── */
+.habit-cap-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--s1);border:1px solid var(--b1);border-radius:8px;margin-bottom:12px;font-size:10px;color:var(--muted2);letter-spacing:.04em;}
+.cap-slots{display:flex;gap:3px;align-items:center;}
+.cap-slot{width:11px;height:5px;border-radius:2px;background:var(--b2);}
+.cap-slot.used{background:var(--gold2);}
+.cap-slot.full{background:var(--verm);}
+.cap-edit-btn{margin-left:auto;background:none;border:none;color:var(--muted);font-size:10px;cursor:pointer;font-family:inherit;letter-spacing:.04em;padding:2px 6px;}
+.cap-edit-btn:hover{color:var(--gold2);}
+.habit-milestone-alert{background:rgba(104,120,192,.1);border:1px solid var(--indigo);border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.milestone-alert-hdr{font-size:9px;letter-spacing:.06em;color:var(--indigo);text-transform:uppercase;margin-right:4px;flex-shrink:0;}
+.milestone-alert-name{flex:1;font-size:12px;font-weight:600;color:var(--text);}
+.milestone-alert-btn{background:var(--indigo);border:none;color:#fff;border-radius:6px;padding:6px 12px;font-size:10px;cursor:pointer;font-family:inherit;letter-spacing:.04em;white-space:nowrap;}
+.milestone-alert-skip{background:none;border:1px solid var(--b2);color:var(--muted2);border-radius:6px;padding:6px 10px;font-size:10px;cursor:pointer;font-family:inherit;white-space:nowrap;}
+.habit-anchor-group{margin-bottom:16px;}
+.habit-anchor-hdr{font-size:9px;letter-spacing:4px;color:var(--muted);text-transform:uppercase;padding:5px 0 7px;border-bottom:1px solid var(--b1);margin-bottom:7px;}
+.hab-type-badge{font-size:8px;letter-spacing:.05em;padding:2px 5px;border-radius:3px;text-transform:uppercase;font-weight:600;flex-shrink:0;line-height:1.4;}
+.hab-type-tr{background:rgba(200,144,10,.12);color:var(--gold2);}
+.hab-type-lh{background:rgba(104,120,192,.12);color:var(--indigo);}
+.hab-type-rc{background:rgba(112,184,128,.12);color:var(--green2);}
+.hdc-routine{background:var(--s1);border:1px solid var(--b1);border-radius:8px;padding:9px 14px;margin-bottom:6px;display:flex;align-items:center;gap:10px;border-left:3px solid transparent;transition:border-left-color .2s;}
+.hdc-routine.done-today{border-left-color:var(--green2);}
+.hdc-routine-name{flex:1;font-size:12px;color:var(--text);line-height:1.4;}
+.hdc-routine-check{width:30px;height:30px;border-radius:50%;border:2px solid var(--b2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;color:transparent;transition:all .22s cubic-bezier(.34,1.56,.64,1);flex-shrink:0;}
+.hdc-routine-check.checked{background:var(--green2);border-color:var(--green2);color:#fff;}
+.exp-type-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.exp-type-chip{background:none;border:1px solid var(--b2);color:var(--muted2);border-radius:6px;padding:5px 10px;font-size:10px;cursor:pointer;font-family:inherit;letter-spacing:.03em;transition:all .15s;white-space:nowrap;}
+.exp-type-chip.sel{border-color:var(--gold2);color:var(--gold2);background:rgba(232,184,64,.08);}
+.exp-anchor-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.exp-anchor-chip{background:none;border:1px solid var(--b2);color:var(--muted2);border-radius:6px;padding:5px 10px;font-size:10px;cursor:pointer;font-family:inherit;letter-spacing:.03em;transition:all .15s;white-space:nowrap;}
+.exp-anchor-chip.sel{border-color:var(--indigo);color:var(--indigo);background:rgba(104,120,192,.08);}
+.exp-milestone-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:11px;color:var(--muted2);}
+.exp-milestone-inp{background:var(--bg);border:1px solid var(--b1);border-radius:6px;padding:5px 10px;color:var(--text);font-size:11px;font-family:inherit;outline:none;flex:1;}
+.exp-milestone-inp:focus{border-color:var(--indigo);}
+.habit-backlog-section{margin-top:18px;border-top:1px solid var(--b1);padding-top:14px;}
+.habit-backlog-hdr{font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:10px;}
+.habit-backlog-item{display:flex;align-items:center;gap:8px;background:var(--s1);border:1px solid var(--b1);border-radius:8px;padding:9px 11px;margin-bottom:5px;}
+.habit-backlog-info{flex:1;min-width:0;}
+.habit-backlog-type{font-size:8px;letter-spacing:.05em;color:var(--muted2);text-transform:uppercase;margin-bottom:2px;}
+.habit-backlog-text{font-size:11px;color:var(--text);line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.habit-backlog-promote{background:none;border:1px solid var(--b2);color:var(--muted2);border-radius:5px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:inherit;transition:all .15s;flex-shrink:0;}
+.habit-backlog-promote:hover{border-color:var(--green2);color:var(--green2);}
+.habit-backlog-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:2px 4px;flex-shrink:0;}
+.habit-backlog-del:hover{color:var(--verm);}
+.habit-grad-banner{background:rgba(112,184,128,.1);border:1px solid var(--green2);border-radius:8px;padding:10px 14px;margin-top:10px;display:flex;align-items:center;gap:10px;justify-content:space-between;}
+.grad-banner-txt{font-size:11px;color:var(--green2);line-height:1.4;flex:1;}
+.grad-banner-btn{background:var(--green2);border:none;color:#000;border-radius:6px;padding:6px 12px;font-size:10px;cursor:pointer;font-family:inherit;letter-spacing:.04em;white-space:nowrap;flex-shrink:0;}
+.milestone-review-box{background:rgba(104,120,192,.08);border:1px solid var(--indigo);border-radius:8px;padding:12px;margin-top:12px;}
+.milestone-review-hdr{font-size:10px;color:var(--indigo);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;}
+.milestone-review-inp{width:100%;background:var(--bg);border:1px solid var(--b1);border-radius:6px;padding:7px 10px;color:var(--text);font-size:11px;font-family:inherit;min-height:58px;outline:none;box-sizing:border-box;margin-bottom:8px;resize:vertical;}
+.milestone-review-inp:focus{border-color:var(--indigo);}
+.milestone-review-btn{background:var(--indigo);border:none;color:#fff;border-radius:6px;padding:7px 14px;font-size:11px;cursor:pointer;font-family:inherit;letter-spacing:.04em;}
 .habit-completed-text{font-size:12px;color:var(--muted2);flex:1;line-height:1.4;}
 .habit-completed-date{font-size:10px;color:var(--muted);white-space:nowrap;flex-shrink:0;}
 /* archive */
@@ -1215,16 +1266,29 @@ body.light .page-watermark { opacity: .2; }
         <div class="sec-kj">習慣</div>
         <div class="sec-line"></div>
       </div>
+      <div id="habit-cap-bar"></div>
+      <div id="habit-milestone-alerts"></div>
       <div id="habit-active-area"></div>
-      <button class="manual-exp-toggle" onclick="toggleManualExpForm()">＋ Add experiment ▾</button>
+      <button class="manual-exp-toggle" onclick="toggleManualExpForm()">＋ Add habit ▾</button>
       <div id="manual-exp-form" style="display:none">
         <div class="exp-add-box">
+          <div class="exp-type-row" id="exp-type-row">
+            <button class="exp-type-chip sel" data-type="trigger-replacement" onclick="pickHabitType('trigger-replacement',this)">Trigger-replacement</button>
+            <button class="exp-type-chip" data-type="long-horizon" onclick="pickHabitType('long-horizon',this)">Long-horizon</button>
+            <button class="exp-type-chip" data-type="routine-checklist" onclick="pickHabitType('routine-checklist',this)">Routine-checklist</button>
+          </div>
+          <div class="exp-anchor-row" id="exp-anchor-row"></div>
           <input class="proven-add-inp" id="exp-problem-inp" placeholder="Problem you're trying to fix…">
-          <input class="proven-add-inp" id="exp-tool-inp" placeholder="Tool / technique / cue being tried…">
+          <input class="proven-add-inp" id="exp-tool-inp" placeholder="Habit / tool / behavior name…">
           <input class="proven-add-inp" id="exp-behavior-inp" placeholder="Specific behavior I'm building (optional)…">
-          <button class="proven-add-btn" onclick="addExperimentDirect()">+ Start Experiment</button>
+          <div class="exp-milestone-row" id="exp-milestone-row" style="display:none">
+            <span>Milestone review date:</span>
+            <input type="date" class="exp-milestone-inp" id="exp-milestone-inp">
+          </div>
+          <button class="proven-add-btn" onclick="addHabitDirect()">+ Add Habit</button>
         </div>
       </div>
+      <div id="habit-backlog-area"></div>
       <div id="habit-completed-area"></div>
     </div><!-- /habits-view -->
 
@@ -4008,30 +4072,40 @@ function saveOpener(a) { ls.set('sq_opener',a); pushSync(); }
 // Experiment tracker: the unit is problem + tool + duration + outcome, not a
 // static habit name. Old data (plain {id,text,...}) is migrated on read.
 function _migrateExperiment(item){
-  if(item.tool !== undefined) return item; // already new schema
-  return {
-    id: item.id || uid(),
-    problem: item.problem || '',
-    tool: item.text || '',
-    toolOrigin: 'new',
-    provenId: null,
-    startedAt: item.startedAt || new Date().toISOString(),
-    outcome: (item.status === 'automatic' || item.status === 'consistent') ? 'working' : 'unclear',
-    outcomeNote: '',
-    toolStatus: 'using',
-    status: item.status || 'remembering',
-    notes: item.notes || item.behavior || '',
-    consistentAt: item.consistentAt,
-    completedAt: item.completedAt,
-  };
+  let out = item;
+  if(item.tool === undefined){
+    out = {
+      id: item.id || uid(),
+      problem: item.problem || '',
+      tool: item.text || '',
+      toolOrigin: 'new',
+      provenId: null,
+      startedAt: item.startedAt || new Date().toISOString(),
+      outcome: (item.status === 'automatic' || item.status === 'consistent') ? 'working' : 'unclear',
+      outcomeNote: '',
+      toolStatus: 'using',
+      status: item.status || 'remembering',
+      notes: item.notes || item.behavior || '',
+      consistentAt: item.consistentAt,
+      completedAt: item.completedAt,
+      dailyChecks: item.dailyChecks || [],
+    };
+  }
+  // v46 field additions
+  if(!out.type)          out.type          = 'trigger-replacement';
+  if(!out.anchor)        out.anchor        = 'Wake-up';
+  if(!out.weeklyReviews) out.weeklyReviews = [];
+  if(!out.dailyChecks)   out.dailyChecks   = [];
+  return out;
 }
 function _migrateQueueItem(item){
   if(item.tool !== undefined) return item;
   return {id:item.id||uid(), problem:'', tool:item.text||'', toolOrigin:'new', provenId:null};
 }
+const DEFAULT_ANCHORS = ['Wake-up', 'Chess ends (22:30)', 'Pre-sleep'];
 function getHabitMgr(){
   const raw = ls.get('sq_habit_mgr', null);
-  if(!raw) return {active:[], queue:[], completed:[], discarded:[]};
+  if(!raw) return {active:[], queue:[], completed:[], discarded:[], cap:6, anchors:[...DEFAULT_ANCHORS]};
   let active = raw.active;
   if(!Array.isArray(active)) active = active ? [active] : [];
   return {
@@ -4039,15 +4113,50 @@ function getHabitMgr(){
     queue:     (raw.queue||[]).map(_migrateQueueItem),
     completed: (raw.completed||[]).map(_migrateExperiment),
     discarded: raw.discarded||[],
+    cap:       raw.cap ?? 6,
+    anchors:   raw.anchors || [...DEFAULT_ANCHORS],
   };
 }
 function saveHabitMgr(d){ d._updatedAt = Date.now(); ls.set('sq_habit_mgr',d); pushSync(); }
+function newHabit(type, anchor, problem, tool, behavior, milestoneDate){
+  const base = {
+    id:uid(), type:type||'trigger-replacement', anchor:anchor||'Wake-up',
+    problem:problem||'', tool:tool||'', toolOrigin:'new', provenId:null,
+    startedAt:new Date().toISOString(), notes:behavior||'', dailyChecks:[],
+  };
+  if(!type || type==='trigger-replacement'){
+    base.outcome='unclear'; base.outcomeNote=''; base.weeklyReviews=[];
+    base.toolStatus='using'; base.status='remembering';
+  } else if(type==='long-horizon'){
+    const def = new Date(); def.setDate(def.getDate()+90);
+    base.milestoneDate = milestoneDate || def.toISOString().slice(0,10);
+    base.milestoneReviewed=false; base.milestoneNote=''; base.weeklyReviews=[];
+  } else {
+    // routine-checklist — no review fields
+  }
+  return base;
+}
 function newExperiment(problem, tool, origin, provenId, behavior){
-  return {id:uid(), problem:problem||'', tool:tool||'', toolOrigin:origin||'new', provenId:provenId||null,
-    startedAt:new Date().toISOString(), outcome:'unclear', outcomeNote:'',
-    toolStatus:'using', status:'remembering', notes:behavior||'', dailyChecks:[]};
+  const h = newHabit('trigger-replacement', DEFAULT_ANCHORS[0], problem, tool, behavior, null);
+  h.toolOrigin = origin||'new'; h.provenId = provenId||null;
+  return h;
 }
 function todayKey(){ return new Date().toISOString().slice(0,10); }
+function isoWeekKey(d){
+  const dt = d ? new Date(d) : new Date();
+  dt.setHours(0,0,0,0); dt.setDate(dt.getDate()+4-(dt.getDay()||7));
+  const ys = new Date(dt.getFullYear(),0,1);
+  return dt.getFullYear()+'-W'+Math.ceil(((dt-ys)/86400000+1)/7);
+}
+function habitCapCount(d){ return (d.active||[]).filter(h=>h.type!=='routine-checklist').length; }
+function isOverCap(d){ return habitCapCount(d) >= (d.cap||6); }
+function checkTriggerGraduation(h){
+  const reviews = h.weeklyReviews||[];
+  if(reviews.length < 4) return false;
+  const last5 = reviews.slice(-5);
+  return last5.filter(r=>r.outcome==='working').length >= 4;
+}
+function isLongHorizonMilestone(h){ return h.type==='long-horizon' && h.milestoneDate && !h.milestoneReviewed && h.milestoneDate<=todayKey(); }
 function habitLast7Keys(){
   const keys=[];
   for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);keys.push(d.toISOString().slice(0,10));}
@@ -4179,12 +4288,13 @@ function addFrictionCandidateToQueue(tag, provenId){
   const problem = FRICTION_TAG_TO_PROBLEM[tag] || FRICTION_TAG_TO_PROBLEM.other;
   const d = getHabitMgr();
   if(!d.queue) d.queue = [];
-  if(d.active.length === 0){
+  const anchor = (d.anchors||DEFAULT_ANCHORS)[0];
+  if(!isOverCap(d)){
     d.active.push(newExperiment(problem, tool, origin, proven?proven.id:null));
     toast('Set as active experiment.', 2500);
   } else {
-    d.queue.unshift({id:uid(), problem, tool, toolOrigin:origin, provenId: proven?proven.id:null}); // friction-evidenced candidates jump the queue
-    toast(`Queued: "${tool.slice(0,40)}"`, 2500);
+    d.queue.unshift({id:uid(), type:'trigger-replacement', anchor, problem, tool, toolOrigin:origin, provenId:proven?proven.id:null});
+    toast(`Cap full — queued: "${tool.slice(0,40)}"`, 2500);
   }
   saveHabitMgr(d);
   // Auto-suppress this exact evidence snapshot now that it's been acted on
@@ -4317,13 +4427,14 @@ function approveProposal(tag, provenId){
   const origin = proven ? 'borrowed' : 'new';
   const problem = FRICTION_TAG_TO_PROBLEM[tag] || FRICTION_TAG_TO_PROBLEM.other;
   const d = getHabitMgr();
-  if(d.active.length === 0){
+  const anchor = (d.anchors||DEFAULT_ANCHORS)[0];
+  if(!isOverCap(d)){
     d.active.push(newExperiment(problem, tool, origin, proven?proven.id:null));
     toast('Experiment started.', 2500);
   } else {
     if(!d.queue) d.queue = [];
-    d.queue.unshift({id:uid(), problem, tool, toolOrigin:origin, provenId:proven?proven.id:null});
-    toast(`Queued: "${tool.slice(0,40)}"`, 2500);
+    d.queue.unshift({id:uid(), type:'trigger-replacement', anchor, problem, tool, toolOrigin:origin, provenId:proven?proven.id:null});
+    toast(`Cap full — queued: "${tool.slice(0,40)}"`, 2500);
   }
   saveHabitMgr(d);
   const dl = getFrictionDismissed();
@@ -4416,7 +4527,8 @@ function toggleManualExpForm(){
   const el = document.getElementById('manual-exp-form');
   const btn = document.querySelector('.manual-exp-toggle');
   if(el) el.style.display = _manualExpOpen ? '' : 'none';
-  if(btn) btn.textContent = _manualExpOpen ? '− Add manually ▴' : '＋ Add manually ▾';
+  if(btn) btn.textContent = _manualExpOpen ? '− Add habit ▴' : '＋ Add habit ▾';
+  if(_manualExpOpen) renderExpAnchorRow();
 }
 
 // ── PROVEN TOOLS ───────────────────────────────────────────────────────
@@ -4631,51 +4743,49 @@ function renderExperimentCard(h, idx){
   const days = daysSince(h.startedAt);
   const startedLbl = new Date(h.startedAt).toLocaleDateString([],{month:'short',day:'numeric',year:'2-digit'});
   const weekCount = expWeekCount(h);
+  const reviews = h.weeklyReviews||[];
 
-  const outcomeChips = ['working','unclear','not working'].map(o =>
-    `<button class="exp-outcome-chip ${o.replace(' ','-')} ${h.outcome===o?'sel':''}" onclick="setExperimentOutcome(${idx},'${o}')">${o}</button>`
-  ).join('');
-
-  const statusChips = `
-    <button class="exp-status-chip ${h.toolStatus!=='needs_replacing'?'sel':''}" onclick="setToolStatus(${idx},'using')">Still using</button>
-    <button class="exp-status-chip warn ${h.toolStatus==='needs_replacing'?'sel':''}" onclick="setToolStatus(${idx},'needs_replacing')">Needs replacing</button>`;
-
-  let trackHtml;
-  if(h.outcome === 'working'){
-    const si = HABIT_STATUS_ORDER.indexOf(h.status||'remembering');
-    const statusHtml = HABIT_STATUS_ORDER.map((s,i) => {
-      const isDone   = i < si;
-      const isActive = i === si;
-      const bar = i < 2 ? `<div class="habit-status-bar${i < si ? ' done' : ''}"></div>` : '';
-      return `<div class="habit-status-step">
-        <div class="habit-status-circle ${isDone?'done':isActive?'active':''}">${isDone ? '✓' : (i+1)}</div>
-        <div class="habit-status-lbl ${isDone?'done':isActive?'active':''}">${HABIT_STATUS_LABEL[s]}</div>
-      </div>${bar}`;
-    }).join('');
-    const advClass = h.status === 'consistent' ? 'to-auto' : '';
-    const advLabel = h.status === 'consistent'
-      ? "✓ Mark Automatic — it's effortless now"
-      : '→ Mark Consistent';
-    trackHtml = `<div class="habit-status-track">${statusHtml}</div>
-      <button class="habit-advance-btn ${advClass}" onclick="advanceHabitStatus(${idx})">${advLabel}</button>`;
-  } else {
-    trackHtml = `<div class="exp-track-locked">Status track unlocks once confirmed working.</div>`;
-  }
-
-  return `<div class="exp-meta-row" style="margin-bottom:12px"><span>Started ${startedLbl}</span><span>·</span><span>${fmtDuration(days)}</span></div>
+  let html = `<div class="exp-meta-row" style="margin-bottom:12px"><span>Started ${startedLbl}</span><span>·</span><span>${fmtDuration(days)}</span></div>
     <div class="habit-notes-lbl">Specific behavior I'm building:</div>
     <textarea class="habit-notes-inp" id="habit-notes-${idx}"
       placeholder="Describe the exact trigger, action, and reward…"
-      oninput="schedSaveHabitNotes(${idx},this.value)">${esc(h.notes||'')}</textarea>
-    <div class="exp-section-lbl" style="margin-top:12px">Outcome so far <span class="exp-week-rollup">${weekCount}/7 this week</span></div>
-    <div class="exp-outcome-row">${outcomeChips}</div>
-    <textarea class="habit-notes-inp exp-outcome-note" id="exp-outcome-note-${idx}"
-      placeholder="Brief running note on how it's going…"
-      oninput="schedSaveOutcomeNote(${idx},this.value)">${esc(h.outcomeNote||'')}</textarea>
-    <div class="exp-section-lbl" style="margin-top:12px">Status</div>
-    <div class="exp-status-row">${statusChips}</div>
-    ${trackHtml}
-    <button class="exp-retire-btn" onclick="retireExperiment(${idx})">✕ Retire experiment</button>`;
+      oninput="schedSaveHabitNotes(${idx},this.value)">${esc(h.notes||'')}</textarea>`;
+
+  if(h.type === 'trigger-replacement' || !h.type){
+    const outcomeChips = ['working','unclear','not working'].map(o =>
+      `<button class="exp-outcome-chip ${o.replace(' ','-')} ${h.outcome===o?'sel':''}" onclick="setExperimentOutcome(${idx},'${o}')">${o}</button>`
+    ).join('');
+    const workingCount = reviews.filter(r=>r.outcome==='working').length;
+    const reviewSummary = reviews.length ? ` · ${workingCount}/${reviews.length} reviews working` : '';
+    const isGrad = checkTriggerGraduation(h);
+    const gradBanner = isGrad ? `<div class="habit-grad-banner">
+      <span class="grad-banner-txt">4/5 reviews working — ready to graduate?</span>
+      <button class="grad-banner-btn" onclick="graduateHabit(${idx})">✓ Graduate</button>
+    </div>` : '';
+    html += `<div class="exp-section-lbl" style="margin-top:12px">Weekly outcome <span class="exp-week-rollup">${weekCount}/7 days${reviewSummary}</span></div>
+      <div class="exp-outcome-row">${outcomeChips}</div>
+      <textarea class="habit-notes-inp exp-outcome-note" id="exp-outcome-note-${idx}"
+        placeholder="Running note on how it's going…"
+        oninput="schedSaveOutcomeNote(${idx},this.value)">${esc(h.outcomeNote||'')}</textarea>
+      ${gradBanner}`;
+  } else if(h.type === 'long-horizon'){
+    const msDue = isLongHorizonMilestone(h);
+    const msDateFmt = h.milestoneDate
+      ? new Date(h.milestoneDate+'T12:00:00').toLocaleDateString([],{month:'short',day:'numeric',year:'2-digit'})
+      : '—';
+    html += `<div class="exp-section-lbl" style="margin-top:12px">Milestone review: <span style="color:${msDue?'var(--indigo)':'var(--muted2)'}">${msDateFmt}${msDue?' (due now)':''}</span></div>
+      <div class="exp-week-rollup" style="margin-bottom:8px">${weekCount}/7 days checked this week</div>`;
+    if(msDue){
+      html += `<div class="milestone-review-box">
+        <div class="milestone-review-hdr">Milestone Review</div>
+        <textarea class="milestone-review-inp" id="milestone-note-${idx}" placeholder="Did it work? Any data? Continuing or stopping?…"></textarea>
+        <button class="milestone-review-btn" onclick="completeMilestoneReview(${idx})">✓ Complete → Graduate</button>
+      </div>`;
+    }
+  }
+
+  html += `<button class="exp-retire-btn" onclick="retireExperiment(${idx})">✕ Retire habit</button>`;
+  return html;
 }
 
 function getSimpleHabits(){ return ls.get('sq_simple_habits','[]'); }
@@ -4710,27 +4820,68 @@ function delSimpleHabit(id){
   renderSimpleHabits();
 }
 
-function addExperimentDirect(){
+let _habitType = 'trigger-replacement';
+let _habitAnchor = null;
+
+function pickHabitType(type, btn){
+  _habitType = type;
+  document.querySelectorAll('.exp-type-chip').forEach(c=>c.classList.remove('sel'));
+  if(btn) btn.classList.add('sel');
+  const probInp = document.getElementById('exp-problem-inp');
+  if(probInp) probInp.style.display = type==='routine-checklist' ? 'none' : '';
+  const msRow = document.getElementById('exp-milestone-row');
+  if(msRow) msRow.style.display = type==='long-horizon' ? '' : 'none';
+  if(type==='long-horizon'){
+    const msInp = document.getElementById('exp-milestone-inp');
+    if(msInp && !msInp.value){ const def=new Date(); def.setDate(def.getDate()+90); msInp.value=def.toISOString().slice(0,10); }
+  }
+}
+function renderExpAnchorRow(){
+  const d = getHabitMgr();
+  const anchors = d.anchors || [...DEFAULT_ANCHORS];
+  if(!_habitAnchor || !anchors.includes(_habitAnchor)) _habitAnchor = anchors[0];
+  const el = document.getElementById('exp-anchor-row');
+  if(!el) return;
+  el.innerHTML = anchors.map(a=>
+    `<button class="exp-anchor-chip${_habitAnchor===a?' sel':''}" onclick="pickHabitAnchor('${a.replace(/'/g,"\\'").replace(/"/g,'&quot;')}',this)">${esc(a)}</button>`
+  ).join('');
+}
+function pickHabitAnchor(anchor, btn){
+  _habitAnchor = anchor;
+  document.querySelectorAll('.exp-anchor-chip').forEach(c=>c.classList.remove('sel'));
+  if(btn) btn.classList.add('sel');
+}
+function addHabitDirect(){
   const probInp = document.getElementById('exp-problem-inp');
   const toolInp = document.getElementById('exp-tool-inp');
   const behInp  = document.getElementById('exp-behavior-inp');
+  const msInp   = document.getElementById('exp-milestone-inp');
   const problem  = (probInp?.value||'').trim();
   const tool     = (toolInp?.value||'').trim();
   const behavior = (behInp?.value||'').trim();
-  if(!tool){ toast('Enter a tool / technique to try.', 2500); return; }
+  const msDate   = msInp?.value || null;
+  if(!tool){ toast('Enter a habit name.', 2500); return; }
   const d = getHabitMgr();
-  if(!d.discarded) d.discarded = [];
-  const dupe = d.discarded.find(x => normalize(x.problem)===normalize(problem) && normalize(x.tool)===normalize(tool));
-  if(dupe && !confirm(`"${tool}" already failed for this problem on ${new Date(dupe.discardedAt).toLocaleDateString()}. Try again?`)) return;
-  d.active.push(newExperiment(problem, tool, 'new', null, behavior));
+  const type = _habitType || 'trigger-replacement';
+  const anchor = _habitAnchor || (d.anchors||DEFAULT_ANCHORS)[0];
+  if(type!=='routine-checklist' && isOverCap(d)){
+    if(!d.queue) d.queue = [];
+    d.queue.push({id:uid(), type, anchor, problem, tool, notes:behavior, milestoneDate:msDate||null, toolOrigin:'new', provenId:null});
+    saveHabitMgr(d);
+    [probInp,toolInp,behInp].forEach(el=>{if(el)el.value='';});
+    document.getElementById('manual-exp-form').style.display='none';
+    toast(`Cap full — "${tool.slice(0,40)}" added to backlog.`, 3000);
+    renderHabitMgr(); return;
+  }
+  d.active.push(newHabit(type, anchor, problem, tool, behavior, msDate));
   saveHabitMgr(d);
-  if(probInp) probInp.value = '';
-  if(toolInp) toolInp.value = '';
-  if(behInp)  behInp.value = '';
-  document.getElementById('manual-exp-form').style.display = 'none';
-  toast('Experiment started.', 2000);
+  [probInp,toolInp,behInp].forEach(el=>{if(el)el.value='';});
+  document.getElementById('manual-exp-form').style.display='none';
+  toast('Habit added.', 2000);
   renderHabitMgr();
 }
+// Keep old name as alias for any external callers
+function addExperimentDirect(){ addHabitDirect(); }
 
 let _expandedReviews = new Set();
 function toggleHabitReview(idx){
@@ -4759,49 +4910,136 @@ function schedSaveDailyNote(idx,text){
   },700);
 }
 
+function renderHabitCard(h, i, last7){
+  if(h.type === 'routine-checklist'){
+    const checked = expCheckedToday(h);
+    return `<div class="hdc-routine${checked?' done-today':''}">
+      <div class="hdc-routine-name">${esc(h.tool||'(untitled)')}</div>
+      <span class="hab-type-badge hab-type-rc">routine</span>
+      <button class="hdc-routine-check${checked?' checked':''}" onclick="toggleDailyCheck(${i})">✓</button>
+    </div>`;
+  }
+  const checked = expCheckedToday(h);
+  const todayNote = expTodayNote(h);
+  const reviewOpen = _expandedReviews.has(i);
+  const noReviewClass = reviewOpen ? '' : ' no-review';
+  const dots = last7.map((k,di) => {
+    const hit = (h.dailyChecks||[]).some(c=>c.date===k&&c.done);
+    const isToday = di===6;
+    return `<div class="hdc-dot${hit?' hit':''}${isToday?' today':''}"></div>`;
+  }).join('');
+  const badge = h.type==='long-horizon'
+    ? `<span class="hab-type-badge hab-type-lh">long-horizon</span>`
+    : `<span class="hab-type-badge hab-type-tr">experiment</span>`;
+  return `<div class="hdc-wrap">
+    <div class="habit-daily-card${checked?' done-today':''}${noReviewClass}">
+      <div class="hdc-left">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+          <div class="hdc-problem">${esc(h.problem||h.tool||'(untitled)')}</div>${badge}
+        </div>
+        ${h.tool && h.problem ? `<div class="hdc-tool">→ ${esc(h.tool)}</div>` : ''}
+        <div class="hdc-dots">${dots}</div>
+        <input class="hdc-note-inp" placeholder="Note (optional)…" value="${esc(todayNote)}"
+          oninput="schedSaveDailyNote(${i},this.value)">
+      </div>
+      <div class="hdc-right">
+        <button class="hdc-check${checked?' checked':''}" onclick="toggleDailyCheck(${i})">✓</button>
+        <button class="hdc-review-btn${reviewOpen?' open':''}" onclick="toggleHabitReview(${i})">⚙ Review</button>
+      </div>
+    </div>
+    ${reviewOpen ? `<div class="hdc-review-panel">${renderExperimentCard(h,i)}</div>` : ''}
+  </div>`;
+}
+
 function renderHabitMgr(){
   const activeEl    = document.getElementById('habit-active-area');
   const completedEl = document.getElementById('habit-completed-area');
+  const capEl       = document.getElementById('habit-cap-bar');
+  const milestoneEl = document.getElementById('habit-milestone-alerts');
+  const backlogEl   = document.getElementById('habit-backlog-area');
   if(!activeEl) return;
   const d = getHabitMgr();
+  const anchors = d.anchors || [...DEFAULT_ANCHORS];
+  const cap = d.cap || 6;
+  const capCount = habitCapCount(d);
 
-  if(!d.active.length){
-    activeEl.innerHTML = '<div class="habit-mgr-empty" style="margin-bottom:10px">No active habit — add one below.</div>';
-  } else {
-    const last7 = habitLast7Keys();
-    activeEl.innerHTML = d.active.map((h,i) => {
-      const checked = expCheckedToday(h);
-      const todayNote = expTodayNote(h);
-      const reviewOpen = _expandedReviews.has(i);
-      const dots = last7.map((k,di) => {
-        const hit = (h.dailyChecks||[]).some(c=>c.date===k&&c.done);
-        const isToday = di===6;
-        return `<div class="hdc-dot${hit?' hit':''}${isToday?' today':''}"></div>`;
-      }).join('');
-      const noReviewClass = reviewOpen ? '' : ' no-review';
-      return `<div class="hdc-wrap">
-        <div class="habit-daily-card${checked?' done-today':''}${noReviewClass}">
-          <div class="hdc-left">
-            <div class="hdc-problem">${esc(h.problem||h.tool||'(untitled)')}</div>
-            ${h.tool && h.problem ? `<div class="hdc-tool">→ ${esc(h.tool)}</div>` : ''}
-            <div class="hdc-dots">${dots}</div>
-            <input class="hdc-note-inp" placeholder="Note (optional)…" value="${esc(todayNote)}"
-              oninput="schedSaveDailyNote(${i},this.value)">
-          </div>
-          <div class="hdc-right">
-            <button class="hdc-check${checked?' checked':''}" onclick="toggleDailyCheck(${i})">✓</button>
-            <button class="hdc-review-btn${reviewOpen?' open':''}" onclick="toggleHabitReview(${i})">⚙ Review</button>
-          </div>
-        </div>
-        ${reviewOpen ? `<div class="hdc-review-panel">${renderExperimentCard(h,i)}</div>` : ''}
-      </div>`;
+  // Cap bar
+  if(capEl){
+    const full = capCount >= cap;
+    const slots = Array.from({length:cap}, (_,i) => {
+      const cls = i < capCount ? (full ? 'used full' : 'used') : '';
+      return `<div class="cap-slot ${cls}"></div>`;
     }).join('');
+    capEl.innerHTML = `<div class="habit-cap-bar"><span>Active slots</span><div class="cap-slots">${slots}</div><span style="color:${full?'var(--verm)':'var(--muted2)'}">${capCount}/${cap}</span><button class="cap-edit-btn" onclick="editHabitCap()">edit cap</button></div>`;
   }
 
+  // Milestone alerts
+  if(milestoneEl){
+    milestoneEl.innerHTML = d.active
+      .map((h,i) => ({h,i}))
+      .filter(({h}) => isLongHorizonMilestone(h))
+      .map(({h,i}) => `<div class="habit-milestone-alert">
+        <span class="milestone-alert-hdr">⏱ Milestone due</span>
+        <span class="milestone-alert-name">${esc(h.tool||h.problem||'(untitled)')}</span>
+        <button class="milestone-alert-btn" onclick="toggleHabitReview(${i})">Open Review</button>
+        <button class="milestone-alert-skip" onclick="skipMilestone(${i})">+7 days</button>
+      </div>`).join('');
+  }
+
+  // Active habits grouped by anchor
+  if(!d.active.length){
+    activeEl.innerHTML = '<div class="habit-mgr-empty" style="margin-bottom:10px">No active habits — add one below.</div>';
+  } else {
+    const last7 = habitLast7Keys();
+    const grouped = {};
+    anchors.forEach(a => grouped[a] = []);
+    const other = [];
+    d.active.forEach((h,i) => {
+      if(anchors.includes(h.anchor)) grouped[h.anchor].push({h,i});
+      else other.push({h,i});
+    });
+    let html = '';
+    for(const anchor of anchors){
+      const items = grouped[anchor];
+      if(!items.length) continue;
+      html += `<div class="habit-anchor-group">
+        <div class="habit-anchor-hdr">${esc(anchor)}</div>
+        ${items.map(({h,i}) => renderHabitCard(h,i,last7)).join('')}
+      </div>`;
+    }
+    if(other.length){
+      html += `<div class="habit-anchor-group">
+        <div class="habit-anchor-hdr">Other</div>
+        ${other.map(({h,i}) => renderHabitCard(h,i,last7)).join('')}
+      </div>`;
+    }
+    activeEl.innerHTML = html;
+  }
+
+  // Backlog
+  if(backlogEl){
+    const queue = d.queue||[];
+    if(!queue.length){ backlogEl.innerHTML=''; }
+    else {
+      backlogEl.innerHTML = `<div class="habit-backlog-section">
+        <div class="habit-backlog-hdr">Backlog (${queue.length})</div>
+        ${queue.map((h,i) => `<div class="habit-backlog-item">
+          <div class="habit-backlog-info">
+            <div class="habit-backlog-type">${esc(h.type||'trigger-replacement')} · ${esc(h.anchor||'')}</div>
+            <div class="habit-backlog-text"><b>${esc(h.tool||'(untitled)')}</b>${h.problem?' — '+esc(h.problem):''}</div>
+          </div>
+          ${h.type!=='routine-checklist'&&!isOverCap(d)?`<button class="habit-backlog-promote" onclick="promoteFromBacklog(${i})">↑ Promote</button>`:''}
+          <button class="habit-backlog-del" onclick="delBacklogItem(${i})">✕</button>
+        </div>`).join('')}
+      </div>`;
+    }
+  }
+
+  // Completed
   if(completedEl){
     const comp = d.completed||[];
-    const autoList    = comp.filter(h => !h.archiveType || h.archiveType === 'automatic');
-    const retiredList = comp.filter(h => h.archiveType === 'retired');
+    const autoList    = comp.filter(h => !h.archiveType || h.archiveType==='automatic');
+    const retiredList = comp.filter(h => h.archiveType==='retired');
     const mkSection = (items, label) => !items.length ? '' : `
       <div class="habit-completed-section">
         <div class="habit-completed-hdr">${label} (${items.length})</div>
@@ -4811,7 +5049,7 @@ function renderHabitMgr(){
             <span class="habit-completed-date">${new Date(h.completedAt||h.startedAt).toLocaleDateString([],{month:'short',day:'numeric',year:'2-digit'})}</span>
           </div>`).join('')}
       </div>`;
-    completedEl.innerHTML = mkSection(autoList, 'Automatic') + mkSection(retiredList, 'Retired');
+    completedEl.innerHTML = mkSection(autoList,'Automatic') + mkSection(retiredList,'Retired');
   }
 }
 
@@ -4867,6 +5105,11 @@ function setToolStatus(idx, status){
 function setExperimentOutcome(idx, outcome){
   const d = getHabitMgr(); const h = d.active[idx]; if(!h) return;
   h.outcome = outcome;
+  // Log one entry per ISO week to weeklyReviews[]
+  if(!h.weeklyReviews) h.weeklyReviews = [];
+  const wk = isoWeekKey();
+  const ex = h.weeklyReviews.find(r=>r.week===wk);
+  if(ex) ex.outcome = outcome; else h.weeklyReviews.push({week:wk, outcome, date:todayKey()});
   saveHabitMgr(d);
   renderHabitMgr();
   if(outcome === 'not working'){
@@ -4924,38 +5167,51 @@ function swapExperimentTool(){
   renderHabitMgr();
 }
 
-function advanceHabitStatus(idx){
-  const d = getHabitMgr();
-  const h = d.active[idx];
-  if(!h || h.outcome !== 'working') return;
-
-  if(h.status === 'remembering'){
-    h.status = 'consistent';
-    h.consistentAt = new Date().toISOString();
-    saveHabitMgr(d);
-    renderHabitMgr();
-    toast('Marked Consistent ✓', 2500);
-
-  } else if(h.status === 'consistent'){
-    // Flush notes textarea before completing
-    const notesEl = document.getElementById(`habit-notes-${idx}`);
-    if(notesEl) h.notes = notesEl.value;
-    h.completedAt = new Date().toISOString();
-    if(!d.completed) d.completed = [];
-    d.completed.push({...h, archiveType: 'automatic'});
-    d.active.splice(idx, 1);
-    // Auto-promote from queue only if active list is now empty
-    if(d.active.length === 0 && d.queue.length > 0){
-      const next = d.queue.shift();
-      d.active.push(newExperiment(next.problem, next.tool, next.toolOrigin, next.provenId));
-      toast(`🎉 Automatic! Next up: "${(next.tool||'').slice(0,40)}"`, 4000);
-    } else {
-      const hint = h.toolOrigin === 'new' ? ' — worth logging it to Proven Tools.' : '';
-      toast(`🎉 Automatic — fully internalized!${hint}`, 3500);
+function _promoteBacklog(d){
+  const cap = d.cap||6;
+  const backlog = d.queue||[];
+  // Promote first non-routine item if under cap
+  if(habitCapCount(d) < cap){
+    const idx = backlog.findIndex(b=>b.type!=='routine-checklist');
+    if(idx >= 0){
+      const next = backlog.splice(idx,1)[0];
+      d.active.push(newHabit(next.type||'trigger-replacement', next.anchor||DEFAULT_ANCHORS[0], next.problem, next.tool, next.notes, next.milestoneDate));
+      return next.tool||'(untitled)';
     }
-    saveHabitMgr(d);
-    renderHabitMgr();
   }
+  return null;
+}
+function graduateHabit(idx){
+  const d = getHabitMgr();
+  const h = d.active[idx]; if(!h) return;
+  const notesEl = document.getElementById(`habit-notes-${idx}`);
+  if(notesEl) h.notes = notesEl.value;
+  h.completedAt = new Date().toISOString();
+  if(!d.completed) d.completed = [];
+  d.completed.push({...h, archiveType:'automatic'});
+  d.active.splice(idx, 1);
+  _expandedReviews.delete(idx);
+  const promoted = _promoteBacklog(d);
+  saveHabitMgr(d);
+  renderHabitMgr();
+  const hint = h.toolOrigin==='new' ? ' — log it to Proven Tools.' : '';
+  toast(promoted ? `🎉 Graduated! Next: "${promoted.slice(0,40)}"` : `🎉 Graduated — automatic!${hint}`, 3500);
+}
+function completeMilestoneReview(idx){
+  const d = getHabitMgr();
+  const h = d.active[idx]; if(!h || h.type!=='long-horizon') return;
+  const noteEl = document.getElementById(`milestone-note-${idx}`);
+  h.milestoneNote = noteEl ? noteEl.value.trim() : '';
+  h.milestoneReviewed = true;
+  h.completedAt = new Date().toISOString();
+  if(!d.completed) d.completed = [];
+  d.completed.push({...h, archiveType:'automatic'});
+  d.active.splice(idx, 1);
+  _expandedReviews.delete(idx);
+  const promoted = _promoteBacklog(d);
+  saveHabitMgr(d);
+  renderHabitMgr();
+  toast(promoted ? `Milestone done! Next: "${promoted.slice(0,40)}"` : 'Milestone reviewed — graduated.', 3500);
 }
 
 function retireExperiment(idx){
@@ -4965,30 +5221,46 @@ function retireExperiment(idx){
   if(notesEl) h.notes = notesEl.value;
   h.completedAt = new Date().toISOString();
   if(!d.completed) d.completed = [];
-  d.completed.push({...h, archiveType: 'retired'});
+  d.completed.push({...h, archiveType:'retired'});
   d.active.splice(idx, 1);
   _expandedReviews.delete(idx);
-  if(d.active.length === 0 && d.queue.length > 0){
-    const next = d.queue.shift();
-    d.active.push(newExperiment(next.problem, next.tool, next.toolOrigin, next.provenId));
-    toast(`Retired. Next up: "${(next.tool||'').slice(0,40)}"`, 3500);
-  } else {
-    toast('Experiment retired.', 2500);
-  }
+  const promoted = (h.type!=='routine-checklist') ? _promoteBacklog(d) : null;
   saveHabitMgr(d);
   renderHabitMgr();
+  toast(promoted ? `Retired. Next: "${promoted.slice(0,40)}"` : 'Habit retired.', 2500);
 }
 
-function layerNextHabit(){
+function promoteFromBacklog(i){
   const d = getHabitMgr();
-  if(!d.queue.length){ toast('Queue is empty.', 2500); return; }
-  if(d.active.length >= 2){ toast('Already have 2 active experiments.', 2500); return; }
-  const next = d.queue.shift();
-  d.active.push(newExperiment(next.problem, next.tool, next.toolOrigin, next.provenId));
-  saveHabitMgr(d);
-  renderHabitMgr();
-  toast(`Layered in: "${(next.tool||'').slice(0,50)}"`, 3000);
+  if(!d.queue||!d.queue[i]){ toast('Item not found.', 2000); return; }
+  const item = d.queue[i];
+  if(item.type!=='routine-checklist' && isOverCap(d)){
+    toast(`Cap full (${d.cap||6} slots). Graduate or retire a habit first.`, 3000); return;
+  }
+  d.queue.splice(i, 1);
+  d.active.push(newHabit(item.type||'trigger-replacement', item.anchor||DEFAULT_ANCHORS[0], item.problem, item.tool, item.notes, item.milestoneDate));
+  saveHabitMgr(d); renderHabitMgr();
+  toast(`Promoted: "${(item.tool||'').slice(0,50)}"`, 2500);
 }
+function delBacklogItem(i){
+  const d = getHabitMgr();
+  if(d.queue) d.queue.splice(i, 1);
+  saveHabitMgr(d); renderHabitMgr();
+}
+function editHabitCap(){
+  const d = getHabitMgr();
+  const cur = d.cap||6;
+  const n = parseInt(prompt(`Active slot cap (current: ${cur}). Routine-checklist habits are uncapped.`, cur));
+  if(!isNaN(n) && n>=1 && n<=20){ d.cap=n; saveHabitMgr(d); renderHabitMgr(); toast(`Cap set to ${n}.`, 2000); }
+}
+function skipMilestone(idx){
+  const d = getHabitMgr(); const h = d.active[idx]; if(!h) return;
+  const snooze = new Date(); snooze.setDate(snooze.getDate()+7);
+  h.milestoneDate = snooze.toISOString().slice(0,10);
+  saveHabitMgr(d); renderHabitMgr(); toast('Milestone snoozed 7 days.', 2000);
+}
+// legacy alias used by friction candidate flow
+function layerNextHabit(){ promoteFromBacklog(0); }
 
 // New-experiment add form state
 let _expOrigin = 'new';
