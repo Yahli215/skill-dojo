@@ -807,6 +807,30 @@ body.light .page-watermark { opacity: .2; }
 .habit-completed-hdr{font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:10px;}
 .habit-completed-item{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--b1);}
 .habit-completed-item:last-child{border-bottom:none;}
+/* ── HABIT DAILY CHECK CARDS ────────────────────────────── */
+.habit-daily-card{background:var(--s1);border:1px solid var(--b1);border-radius:10px 10px 0 0;padding:14px 16px;margin-bottom:0;margin-top:10px;display:flex;align-items:flex-start;gap:14px;border-left:3px solid transparent;transition:border-left-color .2s;}
+.habit-daily-card.done-today{border-left-color:var(--green2);}
+.habit-daily-card.no-review{border-radius:10px;margin-bottom:0;}
+.hdc-left{flex:1;min-width:0;}
+.hdc-problem{font-size:13px;font-weight:600;color:var(--text);line-height:1.4;margin-bottom:2px;}
+.hdc-tool{font-size:11px;color:var(--muted2);margin-bottom:8px;}
+.hdc-dots{display:flex;gap:3px;margin-bottom:8px;align-items:center;}
+.hdc-dot{width:8px;height:8px;border-radius:2px;background:var(--b2);flex-shrink:0;transition:background .15s;}
+.hdc-dot.hit{background:var(--green2);}
+.hdc-dot.today{box-shadow:0 0 0 1.5px var(--gold2);}
+.hdc-note-inp{width:100%;background:var(--bg);border:1px solid var(--b1);border-radius:6px;padding:6px 10px;color:var(--text);font-size:11px;font-family:inherit;outline:none;box-sizing:border-box;}
+.hdc-note-inp:focus{border-color:var(--gold2);}
+.hdc-note-inp::placeholder{color:var(--muted);}
+.hdc-right{display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0;}
+.hdc-check{width:44px;height:44px;border-radius:50%;border:2px solid var(--b2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;color:transparent;transition:all .22s cubic-bezier(.34,1.56,.64,1);-webkit-tap-highlight-color:transparent;}
+.hdc-check:active{transform:scale(.9);}
+.hdc-check.checked{background:var(--green2);border-color:var(--green2);box-shadow:0 0 16px rgba(80,200,120,.3);color:#fff;}
+.hdc-review-btn{background:none;border:1px solid var(--b2);color:var(--muted2);border-radius:6px;padding:4px 8px;font-size:10px;cursor:pointer;font-family:inherit;letter-spacing:.04em;transition:all .15s;white-space:nowrap;}
+.hdc-review-btn:hover{border-color:var(--gold2);color:var(--gold2);}
+.hdc-review-btn.open{border-color:var(--gold2);color:var(--gold2);}
+.hdc-review-panel{background:var(--s2);border:1px solid var(--b1);border-top:none;border-radius:0 0 10px 10px;margin-bottom:0;padding:16px;margin-top:0;}
+.hdc-wrap{margin-bottom:10px;}
+.exp-week-rollup{font-size:9px;color:var(--green2);letter-spacing:.04em;margin-left:8px;font-weight:normal;}
 .habit-completed-text{font-size:12px;color:var(--muted2);flex:1;line-height:1.4;}
 .habit-completed-date{font-size:10px;color:var(--muted);white-space:nowrap;flex-shrink:0;}
 /* archive */
@@ -1195,6 +1219,7 @@ body.light .page-watermark { opacity: .2; }
         <div class="exp-add-box">
           <input class="proven-add-inp" id="exp-problem-inp" placeholder="Problem you're trying to fix…">
           <input class="proven-add-inp" id="exp-tool-inp" placeholder="Tool / technique / cue being tried…">
+          <input class="proven-add-inp" id="exp-behavior-inp" placeholder="Specific behavior I'm building (optional)…">
           <button class="proven-add-btn" onclick="addExperimentDirect()">+ Start Experiment</button>
         </div>
       </div>
@@ -4015,11 +4040,20 @@ function getHabitMgr(){
   };
 }
 function saveHabitMgr(d){ d._updatedAt = Date.now(); ls.set('sq_habit_mgr',d); pushSync(); }
-function newExperiment(problem, tool, origin, provenId){
+function newExperiment(problem, tool, origin, provenId, behavior){
   return {id:uid(), problem:problem||'', tool:tool||'', toolOrigin:origin||'new', provenId:provenId||null,
     startedAt:new Date().toISOString(), outcome:'unclear', outcomeNote:'',
-    toolStatus:'using', status:'remembering', notes:''};
+    toolStatus:'using', status:'remembering', notes:behavior||'', dailyChecks:[]};
 }
+function todayKey(){ return new Date().toISOString().slice(0,10); }
+function habitLast7Keys(){
+  const keys=[];
+  for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);keys.push(d.toISOString().slice(0,10));}
+  return keys;
+}
+function expCheckedToday(h){ return (h.dailyChecks||[]).some(c=>c.date===todayKey()&&c.done); }
+function expWeekCount(h){ const k=habitLast7Keys(); return (h.dailyChecks||[]).filter(c=>k.includes(c.date)&&c.done).length; }
+function expTodayNote(h){ return ((h.dailyChecks||[]).find(c=>c.date===todayKey())||{}).note||''; }
 function daysSince(iso){ return Math.max(0, Math.floor((Date.now()-new Date(iso).getTime())/86400000)); }
 function fmtDuration(days){ return days===0 ? 'started today' : days===1 ? '1 day' : days+' days'; }
 function normalize(s){ return (s||'').toLowerCase().trim(); }
@@ -4592,26 +4626,9 @@ const HABIT_STATUS_ORDER = ['remembering','consistent','automatic'];
 const HABIT_STATUS_LABEL = {remembering:'Remembering', consistent:'Consistent', automatic:'Automatic'};
 
 function renderExperimentCard(h, idx){
-  const isLayered = idx > 0;
   const days = daysSince(h.startedAt);
   const startedLbl = new Date(h.startedAt).toLocaleDateString([],{month:'short',day:'numeric',year:'2-digit'});
-
-  const problemRow = h.problem
-    ? `<div class="exp-problem-text">${esc(h.problem)}</div>`
-    : `<div class="exp-tool-empty-row">
-         <input class="exp-tool-empty-inp" id="exp-problem-fill-${idx}" placeholder="What problem is this tool for?">
-         <button class="exp-tool-empty-btn" onclick="fillEmptyProblem(${idx})">Set</button>
-       </div>`;
-
-  const originBadge = h.toolOrigin === 'borrowed'
-    ? '<span class="exp-origin-badge borrowed">BORROWED</span>'
-    : '<span class="exp-origin-badge new">NEW</span>';
-  const toolRow = h.tool
-    ? `<div class="exp-tool-text">${esc(h.tool)} ${originBadge}</div>`
-    : `<div class="exp-tool-empty-row">
-         <input class="exp-tool-empty-inp" id="exp-tool-fill-${idx}" placeholder="Enter the new tool to try…">
-         <button class="exp-tool-empty-btn" onclick="fillEmptyTool(${idx})">Set</button>
-       </div>`;
+  const weekCount = expWeekCount(h);
 
   const outcomeChips = ['working','unclear','not working'].map(o =>
     `<button class="exp-outcome-chip ${o.replace(' ','-')} ${h.outcome===o?'sel':''}" onclick="setExperimentOutcome(${idx},'${o}')">${o}</button>`
@@ -4640,27 +4657,22 @@ function renderExperimentCard(h, idx){
     trackHtml = `<div class="habit-status-track">${statusHtml}</div>
       <button class="habit-advance-btn ${advClass}" onclick="advanceHabitStatus(${idx})">${advLabel}</button>`;
   } else {
-    trackHtml = `<div class="exp-track-locked">Status track unlocks once this is confirmed working.</div>`;
+    trackHtml = `<div class="exp-track-locked">Status track unlocks once confirmed working.</div>`;
   }
 
-  return `<div class="habit-active-card exp-card ${isLayered?'layered':''}">
-    <div class="habit-active-label">${isLayered ? '◎ Layered' : '▶ Primary'}</div>
-    ${problemRow}
-    ${toolRow}
-    <div class="exp-meta-row"><span>Started ${startedLbl}</span><span>·</span><span>${fmtDuration(days)}</span></div>
-    <div class="exp-section-lbl">Outcome so far</div>
+  return `<div class="exp-meta-row" style="margin-bottom:12px"><span>Started ${startedLbl}</span><span>·</span><span>${fmtDuration(days)}</span></div>
+    <div class="habit-notes-lbl">Specific behavior I'm building:</div>
+    <textarea class="habit-notes-inp" id="habit-notes-${idx}"
+      placeholder="Describe the exact trigger, action, and reward…"
+      oninput="schedSaveHabitNotes(${idx},this.value)">${esc(h.notes||'')}</textarea>
+    <div class="exp-section-lbl" style="margin-top:12px">Outcome so far <span class="exp-week-rollup">${weekCount}/7 this week</span></div>
     <div class="exp-outcome-row">${outcomeChips}</div>
     <textarea class="habit-notes-inp exp-outcome-note" id="exp-outcome-note-${idx}"
       placeholder="Brief running note on how it's going…"
       oninput="schedSaveOutcomeNote(${idx},this.value)">${esc(h.outcomeNote||'')}</textarea>
-    <div class="exp-section-lbl">Status</div>
+    <div class="exp-section-lbl" style="margin-top:12px">Status</div>
     <div class="exp-status-row">${statusChips}</div>
-    <div class="habit-notes-lbl" style="margin-top:14px">Specific behavior I'm building:</div>
-    <textarea class="habit-notes-inp" id="habit-notes-${idx}"
-      placeholder="Describe the exact trigger, action, and reward…"
-      oninput="schedSaveHabitNotes(${idx},this.value)">${esc(h.notes||'')}</textarea>
-    ${trackHtml}
-  </div>`;
+    ${trackHtml}`;
 }
 
 function getSimpleHabits(){ return ls.get('sq_simple_habits','[]'); }
@@ -4698,20 +4710,50 @@ function delSimpleHabit(id){
 function addExperimentDirect(){
   const probInp = document.getElementById('exp-problem-inp');
   const toolInp = document.getElementById('exp-tool-inp');
-  const problem = (probInp?.value||'').trim();
-  const tool    = (toolInp?.value||'').trim();
+  const behInp  = document.getElementById('exp-behavior-inp');
+  const problem  = (probInp?.value||'').trim();
+  const tool     = (toolInp?.value||'').trim();
+  const behavior = (behInp?.value||'').trim();
   if(!tool){ toast('Enter a tool / technique to try.', 2500); return; }
   const d = getHabitMgr();
   if(!d.discarded) d.discarded = [];
   const dupe = d.discarded.find(x => normalize(x.problem)===normalize(problem) && normalize(x.tool)===normalize(tool));
   if(dupe && !confirm(`"${tool}" already failed for this problem on ${new Date(dupe.discardedAt).toLocaleDateString()}. Try again?`)) return;
-  d.active.push(newExperiment(problem, tool, 'new', null));
+  d.active.push(newExperiment(problem, tool, 'new', null, behavior));
   saveHabitMgr(d);
   if(probInp) probInp.value = '';
   if(toolInp) toolInp.value = '';
+  if(behInp)  behInp.value = '';
   document.getElementById('manual-exp-form').style.display = 'none';
   toast('Experiment started.', 2000);
   renderHabitMgr();
+}
+
+let _expandedReviews = new Set();
+function toggleHabitReview(idx){
+  if(_expandedReviews.has(idx)) _expandedReviews.delete(idx);
+  else _expandedReviews.add(idx);
+  renderHabitMgr();
+}
+function toggleDailyCheck(idx){
+  const d=getHabitMgr();const h=d.active[idx];if(!h)return;
+  if(!h.dailyChecks)h.dailyChecks=[];
+  const today=todayKey();
+  const ex=h.dailyChecks.find(c=>c.date===today);
+  if(ex)ex.done=!ex.done;else h.dailyChecks.push({date:today,done:true,note:''});
+  saveHabitMgr(d);renderHabitMgr();
+}
+let _dnDebounce={};
+function schedSaveDailyNote(idx,text){
+  if(_dnDebounce[idx])clearTimeout(_dnDebounce[idx]);
+  _dnDebounce[idx]=setTimeout(()=>{
+    const d=getHabitMgr();const h=d.active[idx];if(!h)return;
+    if(!h.dailyChecks)h.dailyChecks=[];
+    const today=todayKey();
+    const ex=h.dailyChecks.find(c=>c.date===today);
+    if(ex)ex.note=text;else h.dailyChecks.push({date:today,done:false,note:text});
+    saveHabitMgr(d);
+  },700);
 }
 
 function renderHabitMgr(){
@@ -4720,9 +4762,38 @@ function renderHabitMgr(){
   if(!activeEl) return;
   const d = getHabitMgr();
 
-  activeEl.innerHTML = d.active.length
-    ? d.active.map((h,i) => renderExperimentCard(h,i)).join('')
-    : `<div class="habit-mgr-empty" style="margin-bottom:10px">No active experiment — add one below.</div>`;
+  if(!d.active.length){
+    activeEl.innerHTML = '<div class="habit-mgr-empty" style="margin-bottom:10px">No active habit — add one below.</div>';
+  } else {
+    const last7 = habitLast7Keys();
+    activeEl.innerHTML = d.active.map((h,i) => {
+      const checked = expCheckedToday(h);
+      const todayNote = expTodayNote(h);
+      const reviewOpen = _expandedReviews.has(i);
+      const dots = last7.map((k,di) => {
+        const hit = (h.dailyChecks||[]).some(c=>c.date===k&&c.done);
+        const isToday = di===6;
+        return `<div class="hdc-dot${hit?' hit':''}${isToday?' today':''}"></div>`;
+      }).join('');
+      const noReviewClass = reviewOpen ? '' : ' no-review';
+      return `<div class="hdc-wrap">
+        <div class="habit-daily-card${checked?' done-today':''}${noReviewClass}">
+          <div class="hdc-left">
+            <div class="hdc-problem">${esc(h.problem||h.tool||'(untitled)')}</div>
+            ${h.tool && h.problem ? `<div class="hdc-tool">→ ${esc(h.tool)}</div>` : ''}
+            <div class="hdc-dots">${dots}</div>
+            <input class="hdc-note-inp" placeholder="Note (optional)…" value="${esc(todayNote)}"
+              oninput="schedSaveDailyNote(${i},this.value)">
+          </div>
+          <div class="hdc-right">
+            <button class="hdc-check${checked?' checked':''}" onclick="toggleDailyCheck(${i})">✓</button>
+            <button class="hdc-review-btn${reviewOpen?' open':''}" onclick="toggleHabitReview(${i})">⚙ Review</button>
+          </div>
+        </div>
+        ${reviewOpen ? `<div class="hdc-review-panel">${renderExperimentCard(h,i)}</div>` : ''}
+      </div>`;
+    }).join('');
+  }
 
   if(completedEl){
     const comp = d.completed||[];
