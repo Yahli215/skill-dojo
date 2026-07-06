@@ -831,6 +831,8 @@ body.light .page-watermark { opacity: .2; }
 .hdc-review-panel{background:var(--s2);border:1px solid var(--b1);border-top:none;border-radius:0 0 10px 10px;margin-bottom:0;padding:16px;margin-top:0;}
 .hdc-wrap{margin-bottom:10px;}
 .exp-week-rollup{font-size:9px;color:var(--green2);letter-spacing:.04em;margin-left:8px;font-weight:normal;}
+.exp-retire-btn{margin-top:14px;background:none;border:1px solid var(--b2);color:var(--muted2);border-radius:6px;padding:6px 12px;font-size:10px;cursor:pointer;font-family:var(--mono);letter-spacing:.04em;transition:all .15s;width:100%;}
+.exp-retire-btn:hover{border-color:var(--verm);color:var(--verm);}
 .habit-completed-text{font-size:12px;color:var(--muted2);flex:1;line-height:1.4;}
 .habit-completed-date{font-size:10px;color:var(--muted);white-space:nowrap;flex-shrink:0;}
 /* archive */
@@ -4672,7 +4674,8 @@ function renderExperimentCard(h, idx){
       oninput="schedSaveOutcomeNote(${idx},this.value)">${esc(h.outcomeNote||'')}</textarea>
     <div class="exp-section-lbl" style="margin-top:12px">Status</div>
     <div class="exp-status-row">${statusChips}</div>
-    ${trackHtml}`;
+    ${trackHtml}
+    <button class="exp-retire-btn" onclick="retireExperiment(${idx})">✕ Retire experiment</button>`;
 }
 
 function getSimpleHabits(){ return ls.get('sq_simple_habits','[]'); }
@@ -4797,16 +4800,18 @@ function renderHabitMgr(){
 
   if(completedEl){
     const comp = d.completed||[];
-    completedEl.innerHTML = comp.length
-      ? `<div class="habit-completed-section">
-          <div class="habit-completed-hdr">Completed (${comp.length})</div>
-          ${comp.slice().reverse().map(h=>`
-            <div class="habit-completed-item">
-              <span class="habit-completed-text"><b>${esc(h.tool)}</b>${h.problem?' — '+esc(h.problem):''}</span>
-              <span class="habit-completed-date">${new Date(h.completedAt||h.startedAt).toLocaleDateString([],{month:'short',day:'numeric',year:'2-digit'})}</span>
-            </div>`).join('')}
-        </div>`
-      : '';
+    const autoList    = comp.filter(h => !h.archiveType || h.archiveType === 'automatic');
+    const retiredList = comp.filter(h => h.archiveType === 'retired');
+    const mkSection = (items, label) => !items.length ? '' : `
+      <div class="habit-completed-section">
+        <div class="habit-completed-hdr">${label} (${items.length})</div>
+        ${items.slice().reverse().map(h=>`
+          <div class="habit-completed-item">
+            <span class="habit-completed-text"><b>${esc(h.tool)}</b>${h.problem?' — '+esc(h.problem):''}</span>
+            <span class="habit-completed-date">${new Date(h.completedAt||h.startedAt).toLocaleDateString([],{month:'short',day:'numeric',year:'2-digit'})}</span>
+          </div>`).join('')}
+      </div>`;
+    completedEl.innerHTML = mkSection(autoList, 'Automatic') + mkSection(retiredList, 'Retired');
   }
 }
 
@@ -4937,7 +4942,7 @@ function advanceHabitStatus(idx){
     if(notesEl) h.notes = notesEl.value;
     h.completedAt = new Date().toISOString();
     if(!d.completed) d.completed = [];
-    d.completed.push({...h});
+    d.completed.push({...h, archiveType: 'automatic'});
     d.active.splice(idx, 1);
     // Auto-promote from queue only if active list is now empty
     if(d.active.length === 0 && d.queue.length > 0){
@@ -4951,6 +4956,27 @@ function advanceHabitStatus(idx){
     saveHabitMgr(d);
     renderHabitMgr();
   }
+}
+
+function retireExperiment(idx){
+  const d = getHabitMgr();
+  const h = d.active[idx]; if(!h) return;
+  const notesEl = document.getElementById(`habit-notes-${idx}`);
+  if(notesEl) h.notes = notesEl.value;
+  h.completedAt = new Date().toISOString();
+  if(!d.completed) d.completed = [];
+  d.completed.push({...h, archiveType: 'retired'});
+  d.active.splice(idx, 1);
+  _expandedReviews.delete(idx);
+  if(d.active.length === 0 && d.queue.length > 0){
+    const next = d.queue.shift();
+    d.active.push(newExperiment(next.problem, next.tool, next.toolOrigin, next.provenId));
+    toast(`Retired. Next up: "${(next.tool||'').slice(0,40)}"`, 3500);
+  } else {
+    toast('Experiment retired.', 2500);
+  }
+  saveHabitMgr(d);
+  renderHabitMgr();
 }
 
 function layerNextHabit(){
