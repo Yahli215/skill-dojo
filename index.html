@@ -828,6 +828,8 @@ body.light .page-watermark { opacity: .2; }
 .hdc-review-btn{background:none;border:1px solid var(--b2);color:var(--muted2);border-radius:6px;padding:4px 8px;font-size:10px;cursor:pointer;font-family:inherit;letter-spacing:.04em;transition:all .15s;white-space:nowrap;}
 .hdc-review-btn:hover{border-color:var(--gold2);color:var(--gold2);}
 .hdc-review-btn.open{border-color:var(--gold2);color:var(--gold2);}
+.hdc-backlog-btn{background:none;border:1px solid var(--b1);color:var(--muted);border-radius:6px;padding:3px 7px;font-size:9px;cursor:pointer;font-family:inherit;letter-spacing:.04em;transition:all .15s;white-space:nowrap;}
+.hdc-backlog-btn:hover{border-color:var(--indigo);color:var(--indigo);}
 .hdc-review-panel{background:var(--s2);border:1px solid var(--b1);border-top:none;border-radius:0 0 10px 10px;margin-bottom:0;padding:16px;margin-top:0;}
 .hdc-wrap{margin-bottom:10px;}
 .exp-week-rollup{font-size:9px;color:var(--green2);letter-spacing:.04em;margin-left:8px;font-weight:normal;}
@@ -4916,6 +4918,7 @@ function renderHabitCard(h, i, last7){
     return `<div class="hdc-routine${checked?' done-today':''}">
       <div class="hdc-routine-name">${esc(h.tool||'(untitled)')}</div>
       <span class="hab-type-badge hab-type-rc">routine</span>
+      <button class="hdc-backlog-btn" onclick="sendToBacklog(${i})" title="Move to backlog">↓</button>
       <button class="hdc-routine-check${checked?' checked':''}" onclick="toggleDailyCheck(${i})">✓</button>
     </div>`;
   }
@@ -4945,6 +4948,7 @@ function renderHabitCard(h, i, last7){
       <div class="hdc-right">
         <button class="hdc-check${checked?' checked':''}" onclick="toggleDailyCheck(${i})">✓</button>
         <button class="hdc-review-btn${reviewOpen?' open':''}" onclick="toggleHabitReview(${i})">⚙ Review</button>
+        <button class="hdc-backlog-btn" onclick="sendToBacklog(${i})" title="Move to backlog">↓ Backlog</button>
       </div>
     </div>
     ${reviewOpen ? `<div class="hdc-review-panel">${renderExperimentCard(h,i)}</div>` : ''}
@@ -5212,6 +5216,18 @@ function completeMilestoneReview(idx){
   saveHabitMgr(d);
   renderHabitMgr();
   toast(promoted ? `Milestone done! Next: "${promoted.slice(0,40)}"` : 'Milestone reviewed — graduated.', 3500);
+}
+
+function sendToBacklog(idx){
+  const d = getHabitMgr();
+  const h = d.active[idx]; if(!h) return;
+  if(!d.queue) d.queue = [];
+  d.queue.unshift({id:h.id||uid(), type:h.type, anchor:h.anchor, problem:h.problem, tool:h.tool, notes:h.notes||h.behavior||'', milestoneDate:h.milestoneDate||null, toolOrigin:h.toolOrigin||'new', provenId:h.provenId||null});
+  d.active.splice(idx, 1);
+  _expandedReviews.delete(idx);
+  saveHabitMgr(d);
+  renderHabitMgr();
+  toast(`"${(h.tool||'Habit').slice(0,40)}" moved to backlog.`, 2500);
 }
 
 function retireExperiment(idx){
