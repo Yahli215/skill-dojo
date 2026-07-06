@@ -4105,7 +4105,7 @@ function _migrateQueueItem(item){
 const DEFAULT_ANCHORS = ['Wake-up', 'Chess ends (22:30)', 'Pre-sleep'];
 function getHabitMgr(){
   const raw = ls.get('sq_habit_mgr', null);
-  if(!raw) return {active:[], queue:[], completed:[], discarded:[], cap:6, anchors:[...DEFAULT_ANCHORS]};
+  if(!raw) return {active:[], queue:[], completed:[], discarded:[], cap:7, anchors:[...DEFAULT_ANCHORS]};
   let active = raw.active;
   if(!Array.isArray(active)) active = active ? [active] : [];
   return {
@@ -4113,7 +4113,7 @@ function getHabitMgr(){
     queue:     (raw.queue||[]).map(_migrateQueueItem),
     completed: (raw.completed||[]).map(_migrateExperiment),
     discarded: raw.discarded||[],
-    cap:       raw.cap ?? 6,
+    cap:       raw.cap === 6 ? 7 : (raw.cap ?? 7),
     anchors:   raw.anchors || [...DEFAULT_ANCHORS],
   };
 }
@@ -4149,7 +4149,7 @@ function isoWeekKey(d){
   return dt.getFullYear()+'-W'+Math.ceil(((dt-ys)/86400000+1)/7);
 }
 function habitCapCount(d){ return (d.active||[]).filter(h=>h.type!=='routine-checklist').length; }
-function isOverCap(d){ return habitCapCount(d) >= (d.cap||6); }
+function isOverCap(d){ return habitCapCount(d) >= (d.cap||7); }
 function checkTriggerGraduation(h){
   const reviews = h.weeklyReviews||[];
   if(reviews.length < 4) return false;
@@ -4960,7 +4960,7 @@ function renderHabitMgr(){
   if(!activeEl) return;
   const d = getHabitMgr();
   const anchors = d.anchors || [...DEFAULT_ANCHORS];
-  const cap = d.cap || 6;
+  const cap = d.cap || 7;
   const capCount = habitCapCount(d);
 
   // Cap bar
@@ -5168,7 +5168,7 @@ function swapExperimentTool(){
 }
 
 function _promoteBacklog(d){
-  const cap = d.cap||6;
+  const cap = d.cap||7;
   const backlog = d.queue||[];
   // Promote first non-routine item if under cap
   if(habitCapCount(d) < cap){
@@ -5235,7 +5235,7 @@ function promoteFromBacklog(i){
   if(!d.queue||!d.queue[i]){ toast('Item not found.', 2000); return; }
   const item = d.queue[i];
   if(item.type!=='routine-checklist' && isOverCap(d)){
-    toast(`Cap full (${d.cap||6} slots). Graduate or retire a habit first.`, 3000); return;
+    toast(`Cap full (${d.cap||7} slots). Graduate or retire a habit first.`, 3000); return;
   }
   d.queue.splice(i, 1);
   d.active.push(newHabit(item.type||'trigger-replacement', item.anchor||DEFAULT_ANCHORS[0], item.problem, item.tool, item.notes, item.milestoneDate));
@@ -5249,7 +5249,7 @@ function delBacklogItem(i){
 }
 function editHabitCap(){
   const d = getHabitMgr();
-  const cur = d.cap||6;
+  const cur = d.cap||7;
   const n = parseInt(prompt(`Active slot cap (current: ${cur}). Routine-checklist habits are uncapped.`, cur));
   if(!isNaN(n) && n>=1 && n<=20){ d.cap=n; saveHabitMgr(d); renderHabitMgr(); toast(`Cap set to ${n}.`, 2000); }
 }
