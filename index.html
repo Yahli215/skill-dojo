@@ -808,26 +808,35 @@ body.light .page-watermark { opacity: .2; }
 .habit-completed-item{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--b1);}
 .habit-completed-item:last-child{border-bottom:none;}
 /* ── HABIT DAILY CHECK CARDS ────────────────────────────── */
-.habit-daily-card{background:var(--s1);border:1px solid var(--b1);border-radius:10px 10px 0 0;padding:14px 16px;margin-bottom:0;margin-top:10px;display:flex;align-items:flex-start;gap:14px;border-left:3px solid transparent;transition:border-left-color .2s;}
-.habit-daily-card.done-today{border-left-color:var(--green2);}
+.habit-daily-card{background:var(--s1);border:1px solid var(--b1);border-radius:10px 10px 0 0;padding:14px 16px 12px;margin-bottom:0;margin-top:10px;border-left:3px solid transparent;transition:border-left-color .2s,opacity .2s;}
+.habit-daily-card.done-today{border-left-color:var(--green2);opacity:.82;}
 .habit-daily-card.no-review{border-radius:10px;margin-bottom:0;}
-.hdc-left{flex:1;min-width:0;}
+.hdc-head{display:flex;align-items:flex-start;gap:10px;}
+.hdc-info{flex:1;min-width:0;}
 .hdc-problem{font-size:13px;font-weight:600;color:var(--text);line-height:1.4;margin-bottom:2px;}
 .hdc-tool{font-size:11px;color:var(--muted2);margin-bottom:8px;}
-.hdc-dots{display:flex;gap:3px;margin-bottom:8px;align-items:center;}
-.hdc-dot{width:8px;height:8px;border-radius:2px;background:var(--b2);flex-shrink:0;transition:background .15s;}
+.hdc-dots{display:flex;gap:3px;margin-bottom:6px;align-items:center;}
+.hdc-dot{width:9px;height:9px;border-radius:2px;background:var(--b2);flex-shrink:0;transition:background .15s;}
 .hdc-dot.hit{background:var(--green2);}
 .hdc-dot.today{box-shadow:0 0 0 1.5px var(--gold2);}
-.hdc-note-inp{width:100%;background:var(--bg);border:1px solid var(--b1);border-radius:6px;padding:6px 10px;color:var(--text);font-size:11px;font-family:inherit;outline:none;box-sizing:border-box;}
-.hdc-note-inp:focus{border-color:var(--gold2);}
+.hdc-meta-btns{display:flex;flex-direction:column;gap:4px;flex-shrink:0;}
+.hdc-meta-btn{background:none;border:1px solid var(--b1);color:var(--muted);border-radius:6px;padding:5px 8px;font-size:12px;line-height:1;cursor:pointer;font-family:inherit;transition:all .15s;}
+.hdc-meta-btn:hover{border-color:var(--gold2);color:var(--gold2);}
+.hdc-meta-btn.active{border-color:var(--gold);color:var(--gold);}
+.hdc-check-bar{width:100%;margin-top:11px;padding:11px 14px;border-radius:8px;border:1.5px dashed var(--b2);background:transparent;color:var(--muted2);font-family:var(--mono);font-size:12px;letter-spacing:.05em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;transition:all .22s cubic-bezier(.34,1.56,.64,1);-webkit-tap-highlight-color:transparent;user-select:none;}
+.hdc-check-bar:hover:not(.checked){border-color:var(--green);color:var(--green2);border-style:solid;background:rgba(74,144,96,.06);}
+.hdc-check-bar:active{transform:scale(.98);}
+.hdc-check-bar.checked{background:rgba(70,184,128,.13);border:1.5px solid var(--green2);color:var(--green2);letter-spacing:.07em;}
+.hdc-check-bar.checked:hover{background:rgba(200,72,40,.08);border-color:var(--verm);color:var(--verm);}
+.hdc-check-bar-icon{font-size:15px;transition:transform .22s cubic-bezier(.34,1.56,.64,1);}
+.hdc-check-bar.checked .hdc-check-bar-icon{transform:scale(1.3);}
+.hdc-note-inp{width:100%;background:transparent;border:none;border-top:1px solid var(--b1);padding:7px 2px 2px;color:var(--muted2);font-size:10px;font-family:inherit;outline:none;box-sizing:border-box;margin-top:8px;}
+.hdc-note-inp:focus{color:var(--text);}
 .hdc-note-inp::placeholder{color:var(--muted);}
-.hdc-right{display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0;}
-.hdc-check{width:44px;height:44px;border-radius:50%;border:2px solid var(--b2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;color:transparent;transition:all .22s cubic-bezier(.34,1.56,.64,1);-webkit-tap-highlight-color:transparent;}
-.hdc-check:active{transform:scale(.9);}
-.hdc-check.checked{background:var(--green2);border-color:var(--green2);box-shadow:0 0 16px rgba(80,200,120,.3);color:#fff;}
-.hdc-review-btn{background:none;border:1px solid var(--b2);color:var(--muted2);border-radius:6px;padding:4px 8px;font-size:10px;cursor:pointer;font-family:inherit;letter-spacing:.04em;transition:all .15s;white-space:nowrap;}
-.hdc-review-btn:hover{border-color:var(--gold2);color:var(--gold2);}
-.hdc-review-btn.open{border-color:var(--gold2);color:var(--gold2);}
+.hdc-note-display{font-size:10px;color:var(--muted2);margin-top:8px;font-style:italic;padding-top:7px;border-top:1px solid var(--b1);}
+.hdc-right{display:none;}/* legacy */
+.hdc-check{display:none;}/* legacy */
+.hdc-review-btn{display:none;}/* legacy */
 .hdc-backlog-btn{background:none;border:1px solid var(--b1);color:var(--muted);border-radius:6px;padding:3px 7px;font-size:9px;cursor:pointer;font-family:inherit;letter-spacing:.04em;transition:all .15s;white-space:nowrap;}
 .hdc-backlog-btn:hover{border-color:var(--indigo);color:var(--indigo);}
 .hdc-review-panel{background:var(--s2);border:1px solid var(--b1);border-top:none;border-radius:0 0 10px 10px;margin-bottom:0;padding:16px;margin-top:0;}
@@ -4915,11 +4924,11 @@ function schedSaveDailyNote(idx,text){
 function renderHabitCard(h, i, last7){
   if(h.type === 'routine-checklist'){
     const checked = expCheckedToday(h);
-    return `<div class="hdc-routine${checked?' done-today':''}">
+    return `<div class="hdc-routine${checked?' done-today':''}" onclick="toggleDailyCheck(${i})" style="cursor:pointer">
+      <button class="hdc-routine-check${checked?' checked':''}" onclick="event.stopPropagation();toggleDailyCheck(${i})">${checked?'✓':''}</button>
       <div class="hdc-routine-name">${esc(h.tool||'(untitled)')}</div>
       <span class="hab-type-badge hab-type-rc">routine</span>
-      <button class="hdc-backlog-btn" onclick="sendToBacklog(${i})" title="Move to backlog">↓</button>
-      <button class="hdc-routine-check${checked?' checked':''}" onclick="toggleDailyCheck(${i})">✓</button>
+      <button class="hdc-backlog-btn" onclick="event.stopPropagation();sendToBacklog(${i})" title="Move to backlog">↓</button>
     </div>`;
   }
   const checked = expCheckedToday(h);
@@ -4934,22 +4943,29 @@ function renderHabitCard(h, i, last7){
   const badge = h.type==='long-horizon'
     ? `<span class="hab-type-badge hab-type-lh">long-horizon</span>`
     : `<span class="hab-type-badge hab-type-tr">experiment</span>`;
+  const noteHtml = checked
+    ? (todayNote ? `<div class="hdc-note-display">${esc(todayNote)}</div>` : '')
+    : `<input class="hdc-note-inp" placeholder="Note (optional)…" value="${esc(todayNote)}" oninput="schedSaveDailyNote(${i},this.value)">`;
   return `<div class="hdc-wrap">
     <div class="habit-daily-card${checked?' done-today':''}${noReviewClass}">
-      <div class="hdc-left">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
-          <div class="hdc-problem">${esc(h.problem||h.tool||'(untitled)')}</div>${badge}
+      <div class="hdc-head">
+        <div class="hdc-info">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px">
+            <div class="hdc-problem">${esc(h.problem||h.tool||'(untitled)')}</div>${badge}
+          </div>
+          ${h.tool && h.problem ? `<div class="hdc-tool">→ ${esc(h.tool)}</div>` : ''}
+          <div class="hdc-dots">${dots}</div>
         </div>
-        ${h.tool && h.problem ? `<div class="hdc-tool">→ ${esc(h.tool)}</div>` : ''}
-        <div class="hdc-dots">${dots}</div>
-        <input class="hdc-note-inp" placeholder="Note (optional)…" value="${esc(todayNote)}"
-          oninput="schedSaveDailyNote(${i},this.value)">
+        <div class="hdc-meta-btns">
+          <button class="hdc-meta-btn${reviewOpen?' active':''}" onclick="toggleHabitReview(${i})" title="Review">⚙</button>
+          <button class="hdc-meta-btn" onclick="sendToBacklog(${i})" title="Move to backlog">↓</button>
+        </div>
       </div>
-      <div class="hdc-right">
-        <button class="hdc-check${checked?' checked':''}" onclick="toggleDailyCheck(${i})">✓</button>
-        <button class="hdc-review-btn${reviewOpen?' open':''}" onclick="toggleHabitReview(${i})">⚙ Review</button>
-        <button class="hdc-backlog-btn" onclick="sendToBacklog(${i})" title="Move to backlog">↓ Backlog</button>
-      </div>
+      <button class="hdc-check-bar${checked?' checked':''}" onclick="toggleDailyCheck(${i})">
+        <span class="hdc-check-bar-icon">${checked ? '✓' : '○'}</span>
+        <span>${checked ? 'Done today' : 'Mark done today'}</span>
+      </button>
+      ${noteHtml}
     </div>
     ${reviewOpen ? `<div class="hdc-review-panel">${renderExperimentCard(h,i)}</div>` : ''}
   </div>`;
