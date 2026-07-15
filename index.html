@@ -1459,7 +1459,7 @@ body.light .page-watermark { opacity: .2; }
 <div class="friction-overlay" id="friction-overlay" onclick="if(event.target===this)closeFrictionModal()">
   <div class="friction-box">
     <div class="friction-box-title">💢 Log Friction</div>
-    <div class="friction-box-sub">Pick a tag — description is optional.</div>
+    <div class="friction-box-sub">Both tag and description are optional.</div>
     <div class="friction-tags">
       <button class="friction-tag-chip" onclick="pickFrictionTag('opening prep',this)">opening prep</button>
       <button class="friction-tag-chip" onclick="pickFrictionTag('calculation',this)">calculation</button>
@@ -1474,7 +1474,7 @@ body.light .page-watermark { opacity: .2; }
       onkeydown="if(event.key==='Enter'&&(event.metaKey||event.ctrlKey)){event.preventDefault();saveFrictionEntry();} if(event.key==='Escape'){closeFrictionModal();}"></textarea>
     <div class="friction-box-row">
       <button class="friction-cancel-btn" onclick="closeFrictionModal()">Cancel</button>
-      <button class="friction-save-btn" id="friction-save-btn" disabled onclick="saveFrictionEntry()">Log it</button>
+      <button class="friction-save-btn" id="friction-save-btn" onclick="saveFrictionEntry()">Log it</button>
     </div>
   </div>
 </div>
@@ -4323,7 +4323,6 @@ function openFrictionModal(){
   if(inp) inp.value = '';
   document.querySelectorAll('.friction-tag-chip').forEach(c => c.classList.remove('sel','suggested'));
   const btn = document.getElementById('friction-save-btn');
-  if(btn) btn.disabled = true;
   document.getElementById('friction-overlay').classList.add('on');
 }
 function closeFrictionModal(){
@@ -4334,14 +4333,13 @@ function pickFrictionTag(tag, btn){
   document.querySelectorAll('.friction-tag-chip').forEach(c => c.classList.remove('sel'));
   if(_frictionTag) btn.classList.add('sel');
   const saveBtn = document.getElementById('friction-save-btn');
-  if(saveBtn) saveBtn.disabled = !_frictionTag;
+  // tag is optional — button stays enabled
   // Focus textarea after tag pick so description is easy to add
   if(_frictionTag) setTimeout(() => document.getElementById('friction-modal-inp')?.focus(), 50);
 }
 function saveFrictionEntry(){
-  if(!_frictionTag) return;
   const inp = document.getElementById('friction-modal-inp');
-  const text = (inp ? inp.value.trim() : '') || _frictionTag; // tag name as fallback text
+  const text = (inp ? inp.value.trim() : '') || _frictionTag || 'friction'; // fallback text
   const all = getFrictionLog();
   all.unshift({id:uid(), text, tag:_frictionTag, ts:new Date().toISOString()});
   saveFrictionLog(all);
