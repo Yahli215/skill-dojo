@@ -918,6 +918,41 @@ body.light .page-watermark { opacity: .2; }
 .archive-add-btn:hover{filter:brightness(1.1);}
 .archive-empty{text-align:center;color:var(--muted);font-size:11px;padding:28px 0;letter-spacing:.08em;}
 
+/* ── THOUGHT SPACE ─────────────────────────────────────── */
+.thought-fab{position:fixed;bottom:84px;right:20px;width:44px;height:44px;border-radius:50%;background:var(--indigo);color:#fff;border:none;font-size:17px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.4);z-index:550;transition:transform .15s,filter .15s;}
+.thought-fab:hover{filter:brightness(1.15);transform:scale(1.06);}
+.thought-fab:active{transform:scale(.93);}
+.thought-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:900;align-items:center;justify-content:center;}
+.thought-overlay.on{display:flex;}
+.thought-box{background:var(--s1);border:1px solid var(--b2);border-radius:12px;padding:22px;width:90%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.6);box-sizing:border-box;}
+.thought-box-title{font-size:13px;font-weight:700;letter-spacing:.04em;margin-bottom:3px;color:var(--text);}
+.thought-box-sub{font-size:10px;color:var(--muted2);letter-spacing:.04em;margin-bottom:14px;}
+.thought-inp{width:100%;background:var(--bg);border:1px solid var(--b2);border-radius:8px;padding:10px 12px;color:var(--text);font-family:inherit;font-size:13px;outline:none;resize:none;box-sizing:border-box;min-height:80px;line-height:1.5;}
+.thought-inp:focus{border-color:var(--indigo);}
+.thought-box-row{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;}
+.thought-cancel-btn{background:none;border:1px solid var(--b1);color:var(--muted);border-radius:8px;padding:8px 16px;font-size:11px;cursor:pointer;font-family:inherit;}
+.thought-save-btn{background:var(--indigo);border:none;color:#fff;border-radius:8px;padding:8px 18px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;letter-spacing:.04em;}
+/* Insights tab */
+.thought-section-hdr{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted2);margin-bottom:8px;margin-top:2px;}
+.thought-captures{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.thought-capture-item{background:var(--s2);border-left:2px solid var(--indigo);border-radius:4px;padding:7px 10px;font-size:11px;color:var(--text);line-height:1.4;}
+.thought-capture-time{font-size:9px;color:var(--muted);margin-top:3px;letter-spacing:.04em;}
+.thought-none{font-size:11px;color:var(--muted);font-style:italic;margin-bottom:14px;}
+.thought-notes-inp{width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:12px;color:var(--text);font-family:inherit;font-size:12px;line-height:1.6;resize:vertical;min-height:120px;box-sizing:border-box;outline:none;}
+.thought-notes-inp:focus{border-color:var(--indigo);}
+.thought-held-row{display:flex;align-items:center;gap:10px;margin-top:14px;}
+.thought-held-label{font-size:11px;color:var(--muted2);flex:1;}
+.thought-held-btn{border:1px solid var(--b2);background:none;color:var(--muted);border-radius:8px;padding:7px 16px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s;}
+.thought-held-btn.yes.active{background:rgba(70,184,128,.18);border-color:var(--green2);color:var(--green2);}
+.thought-held-btn.no.active{background:rgba(200,72,40,.12);border-color:var(--verm);color:var(--verm);}
+.thought-history-hdr{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted2);margin:20px 0 10px;border-top:1px solid var(--b1);padding-top:16px;}
+.thought-history-item{background:var(--s1);border:1px solid var(--b1);border-radius:8px;padding:10px 12px;margin-bottom:8px;}
+.thought-history-meta{font-size:10px;color:var(--muted2);letter-spacing:.04em;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+.thought-held-badge{font-size:9px;padding:2px 7px;border-radius:10px;letter-spacing:.04em;}
+.thought-held-badge.yes{background:rgba(70,184,128,.15);color:var(--green2);}
+.thought-held-badge.no{background:rgba(200,72,40,.1);color:var(--verm);}
+.thought-history-notes{font-size:11px;color:var(--muted2);line-height:1.5;white-space:pre-wrap;}
+
 /* ── FRICTION LOG ──────────────────────────────────────── */
 .friction-fab{position:fixed;bottom:24px;right:20px;width:52px;height:52px;border-radius:50%;background:var(--verm);color:#fff;border:none;font-size:21px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.45);z-index:550;transition:transform .15s,filter .15s;}
 .friction-fab:hover{filter:brightness(1.12);transform:scale(1.06);}
@@ -1313,6 +1348,7 @@ body.light .page-watermark { opacity: .2; }
       <div class="ins-nav">
         <button class="ins-nav-btn on" id="ins-tab-friction" onclick="switchInsight('friction')">💢 Friction</button>
         <button class="ins-nav-btn"    id="ins-tab-proven"   onclick="switchInsight('proven')"  >🛠 Proven</button>
+        <button class="ins-nav-btn"    id="ins-tab-thoughts" onclick="switchInsight('thoughts')" >🧠 Mind</button>
         <button class="ins-nav-btn"    id="ins-tab-archive"  onclick="switchInsight('archive')" >🗂 Archive</button>
       </div>
 
@@ -1344,6 +1380,25 @@ body.light .page-watermark { opacity: .2; }
         <div id="proven-list"></div>
       </div>
 
+
+      <!-- Disturbing Thoughts Challenge Space -->
+      <div class="ins-section" id="ins-thoughts">
+        <p class="ins-caption">End-of-day space. Thoughts logged mid-day get their hearing here — freeform, no protocol. Real-time rule: log it, don't engage with it in the moment.</p>
+        <div class="thought-section-hdr">Today's captures</div>
+        <div id="thought-today-captures"></div>
+        <div class="thought-section-hdr" style="margin-top:14px">Challenge session</div>
+        <textarea class="thought-notes-inp" id="thought-notes-inp"
+          placeholder="What came up. What you noticed. Whatever feels true right now…"
+          oninput="schedSaveThoughtNotes(this.value)"
+          onkeydown="if(event.key==='Escape')this.blur()"></textarea>
+        <div class="thought-held-row">
+          <span class="thought-held-label">Held the space today?</span>
+          <button class="thought-held-btn yes" id="thought-held-yes" onclick="setThoughtHeld(true)">✓ Yes</button>
+          <button class="thought-held-btn no"  id="thought-held-no"  onclick="setThoughtHeld(false)">✗ No</button>
+        </div>
+        <div class="thought-history-hdr">Past sessions</div>
+        <div id="thought-history-list"></div>
+      </div>
 
       <!-- Chess Archive -->
       <div class="ins-section" id="ins-archive">
@@ -1453,6 +1508,22 @@ body.light .page-watermark { opacity: .2; }
 
 
 <div class="toast" id="toast"><span id="toast-msg"></span></div>
+
+<!-- Thought quick-capture -->
+<button class="thought-fab" onclick="openThoughtCapture()" title="Log a disturbing thought">🧠</button>
+<div class="thought-overlay" id="thought-capture-overlay" onclick="if(event.target===this)closeThoughtCapture()">
+  <div class="thought-box">
+    <div class="thought-box-title">🧠 Log thought</div>
+    <div class="thought-box-sub">Log it now — don't engage. It gets its hearing tonight.</div>
+    <textarea class="thought-inp" id="thought-capture-inp"
+      placeholder="The thought, as it is…"
+      onkeydown="if(event.key==='Enter'&&(event.metaKey||event.ctrlKey)){event.preventDefault();saveThoughtCapture();} if(event.key==='Escape'){closeThoughtCapture();}"></textarea>
+    <div class="thought-box-row">
+      <button class="thought-cancel-btn" onclick="closeThoughtCapture()">Cancel</button>
+      <button class="thought-save-btn" onclick="saveThoughtCapture()">Log it</button>
+    </div>
+  </div>
+</div>
 
 <!-- Friction Log quick-add -->
 <button class="friction-fab" onclick="openFrictionModal()" title="Log friction">💢</button>
@@ -2015,6 +2086,19 @@ async function bootFromCloud(){
         const cloudIds = new Set(d.provenTools.map(p=>p.id));
         const extra = local.filter(p=>!cloudIds.has(p.id));
         ls.set('sq_proven_tools', extra.length ? [...d.provenTools,...extra] : d.provenTools);
+      }
+      if(d.thoughtMgr){ const local=ls.get('sq_thought_mgr',null);
+        if(!local){ ls.set('sq_thought_mgr',d.thoughtMgr); }
+        else {
+          const capIds = new Set((local.captures||[]).map(c=>c.id));
+          const extraCap = (d.thoughtMgr.captures||[]).filter(c=>!capIds.has(c.id));
+          const localSessDates = new Set((local.sessions||[]).map(s=>s.date));
+          const extraSess = (d.thoughtMgr.sessions||[]).filter(s=>!localSessDates.has(s.date));
+          ls.set('sq_thought_mgr',{
+            captures:[...(local.captures||[]),...extraCap],
+            sessions:[...(local.sessions||[]),...extraSess]
+          });
+        }
       }
       if(d.tasks){
         const localT = ls.get('sq_tasks','[]');
@@ -4664,6 +4748,112 @@ function findBorrowedCandidate(problemText, discarded){
   return bestScore > 0 ? best : null;
 }
 
+/* ── THOUGHT SPACE ──────────────────────────────────── */
+function getThoughtMgr(){ return ls.get('sq_thought_mgr', {captures:[], sessions:[]}); }
+function saveThoughtMgr(d){ ls.set('sq_thought_mgr', d); pushSync(); }
+
+function todayKey(){ return new Date().toISOString().slice(0,10); }
+
+function getTodaySession(){
+  const d = getThoughtMgr();
+  const today = todayKey();
+  return d.sessions.find(s => s.date === today) || null;
+}
+
+function upsertTodaySession(patch){
+  const d = getThoughtMgr();
+  const today = todayKey();
+  const idx = d.sessions.findIndex(s => s.date === today);
+  if(idx >= 0) Object.assign(d.sessions[idx], patch);
+  else d.sessions.unshift({ date: today, notes: '', held: null, ...patch });
+  saveThoughtMgr(d);
+}
+
+// Quick capture modal
+function openThoughtCapture(){
+  const inp = document.getElementById('thought-capture-inp');
+  if(inp){ inp.value = ''; setTimeout(() => inp.focus(), 80); }
+  document.getElementById('thought-capture-overlay').classList.add('on');
+}
+function closeThoughtCapture(){
+  document.getElementById('thought-capture-overlay').classList.remove('on');
+}
+function saveThoughtCapture(){
+  const inp = document.getElementById('thought-capture-inp');
+  const text = inp ? inp.value.trim() : '';
+  if(!text){ closeThoughtCapture(); return; }
+  const d = getThoughtMgr();
+  d.captures.unshift({ id: uid(), text, ts: new Date().toISOString() });
+  saveThoughtMgr(d);
+  closeThoughtCapture();
+  toast('Thought logged. It gets its hearing tonight.', 2200);
+}
+
+// Auto-save notes with debounce
+let _thoughtNoteTimer = null;
+function schedSaveThoughtNotes(val){
+  clearTimeout(_thoughtNoteTimer);
+  _thoughtNoteTimer = setTimeout(() => { upsertTodaySession({ notes: val }); }, 900);
+}
+
+function setThoughtHeld(held){
+  upsertTodaySession({ held });
+  renderThoughtSpace();
+}
+
+function renderThoughtSpace(){
+  const today = todayKey();
+  const d = getThoughtMgr();
+  const todayCaptures = d.captures.filter(c => c.ts.slice(0,10) === today);
+  const sess = getTodaySession();
+
+  // Today's captures
+  const capEl = document.getElementById('thought-today-captures');
+  if(capEl){
+    if(todayCaptures.length){
+      capEl.innerHTML = `<div class="thought-captures">${todayCaptures.map(c => {
+        const t = new Date(c.ts);
+        const timeStr = t.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+        return `<div class="thought-capture-item">${esc(c.text)}<div class="thought-capture-time">${timeStr}</div></div>`;
+      }).join('')}</div>`;
+    } else {
+      capEl.innerHTML = `<div class="thought-none">No captures today yet.</div>`;
+    }
+  }
+
+  // Notes textarea
+  const noteEl = document.getElementById('thought-notes-inp');
+  if(noteEl && noteEl !== document.activeElement){
+    noteEl.value = sess ? (sess.notes || '') : '';
+  }
+
+  // Held buttons
+  const heldVal = sess ? sess.held : null;
+  const yesBtn = document.getElementById('thought-held-yes');
+  const noBtn  = document.getElementById('thought-held-no');
+  if(yesBtn) yesBtn.classList.toggle('active', heldVal === true);
+  if(noBtn)  noBtn.classList.toggle('active', heldVal === false);
+
+  // Past sessions (exclude today)
+  const histEl = document.getElementById('thought-history-list');
+  if(histEl){
+    const past = d.sessions.filter(s => s.date !== today).sort((a,b) => b.date.localeCompare(a.date));
+    if(!past.length){ histEl.innerHTML = `<div class="thought-none">No past sessions yet.</div>`; return; }
+    histEl.innerHTML = past.map(s => {
+      const heldBadge = s.held === true
+        ? `<span class="thought-held-badge yes">held</span>`
+        : s.held === false
+          ? `<span class="thought-held-badge no">skipped</span>`
+          : '';
+      const notesHtml = s.notes ? `<div class="thought-history-notes">${esc(s.notes)}</div>` : '';
+      return `<div class="thought-history-item">
+        <div class="thought-history-meta">${s.date}${heldBadge}</div>
+        ${notesHtml}
+      </div>`;
+    }).join('');
+  }
+}
+
 let _insightTab = 'friction';
 
 function switchView(view){
@@ -4680,7 +4870,7 @@ function renderInsights(){ switchInsight(_insightTab); }
 
 function switchInsight(tab){
   _insightTab = tab;
-  ['friction','proven','archive'].forEach(t => {
+  ['friction','proven','thoughts','archive'].forEach(t => {
     const s = document.getElementById('ins-'+t);
     const b = document.getElementById('ins-tab-'+t);
     if(s) s.classList.toggle('on', t===tab);
@@ -4688,6 +4878,7 @@ function switchInsight(tab){
   });
   if(tab==='friction') renderFrictionLog();
   else if(tab==='proven') renderProvenTools();
+  else if(tab==='thoughts') renderThoughtSpace();
   else if(tab==='archive') renderArchive();
 }
 
@@ -5517,6 +5708,7 @@ async function pushCloud(){
     pregame: getPregame(), opener: getOpener(), habitMgr: getHabitMgr(), archive: getArchive(),
     frictionLog: getFrictionLog(), frictionDismissed: getFrictionDismissed(),
     provenTools: getProvenTools(), bottles: getBottles(),
+    thoughtMgr: getThoughtMgr(),
     ...(timerToWrite !== undefined ? { activeTimer: timerToWrite } : {}),
   };
   try {
