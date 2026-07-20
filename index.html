@@ -2069,7 +2069,12 @@ async function bootFromCloud(){
       if(d.pregame)  ls.set('sq_pregame',   d.pregame);
       if(d.opener)   ls.set('sq_opener',    d.opener);
       if(d.habitMgr){ const localHM=ls.get('sq_habit_mgr',null); if(!localHM||((d.habitMgr._updatedAt||0)>=(localHM._updatedAt||0))) ls.set('sq_habit_mgr',d.habitMgr); }
-      if(d.archive)  ls.set('sq_archive',   d.archive);
+      if(d.archive){ // Union by id — never drop a locally-added insight
+        const localA = ls.get('sq_archive','[]');
+        const cloudAIds = new Set(d.archive.map(i=>i.id));
+        const extraA = localA.filter(i=>!cloudAIds.has(i.id));
+        ls.set('sq_archive', extraA.length ? [...d.archive,...extraA] : d.archive);
+      }
       if(d.frictionLog){
         // Union by id — friction entries are append-only quick logs, never drop one
         const local = ls.get('sq_friction_log','[]');
@@ -2237,7 +2242,12 @@ async function refreshFromCloud(){
       if(d.pregame)  ls.set('sq_pregame',   d.pregame);
       if(d.opener)   ls.set('sq_opener',    d.opener);
       if(d.habitMgr){ const localHM=ls.get('sq_habit_mgr',null); if(!localHM||((d.habitMgr._updatedAt||0)>=(localHM._updatedAt||0))) ls.set('sq_habit_mgr',d.habitMgr); }
-      if(d.archive)  ls.set('sq_archive',   d.archive);
+      if(d.archive){ // Union by id — never drop a locally-added insight
+        const localA = ls.get('sq_archive','[]');
+        const cloudAIds = new Set(d.archive.map(i=>i.id));
+        const extraA = localA.filter(i=>!cloudAIds.has(i.id));
+        ls.set('sq_archive', extraA.length ? [...d.archive,...extraA] : d.archive);
+      }
       if(d.frictionLog){
         // Union by id — friction entries are append-only quick logs, never drop one
         const local = ls.get('sq_friction_log','[]');
