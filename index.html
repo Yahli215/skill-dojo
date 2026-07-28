@@ -918,6 +918,19 @@ body.light .page-watermark { opacity: .2; }
 .archive-add-btn:hover{filter:brightness(1.1);}
 .archive-empty{text-align:center;color:var(--muted);font-size:11px;padding:28px 0;letter-spacing:.08em;}
 
+/* ── PROBLEMS MAP ──────────────────────────────────────── */
+.pmap-section-hdr{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--b1);}
+.pmap-section-hdr:first-child{margin-top:0;}
+.pmap-card{background:var(--s2);border-radius:9px;padding:13px 15px;margin-bottom:8px;border-left:3px solid var(--b2);transition:border-left-color .15s;}
+.pmap-card.active{border-left-color:var(--gold2);}
+.pmap-card.queued{border-left-color:var(--b2);opacity:.7;}
+.pmap-problem{font-size:13px;font-weight:600;color:var(--text);line-height:1.4;margin-bottom:5px;}
+.pmap-arrow{font-size:10px;color:var(--muted);margin-bottom:4px;letter-spacing:.03em;}
+.pmap-tool{font-size:12px;color:var(--muted2);line-height:1.4;}
+.pmap-meta{display:flex;align-items:center;gap:7px;margin-top:8px;}
+.pmap-days{font-size:9px;color:var(--muted);letter-spacing:.04em;}
+.pmap-empty{font-size:11px;color:var(--muted);font-style:italic;padding:6px 0 10px;}
+
 /* ── THOUGHT SPACE ─────────────────────────────────────── */
 .thought-fab{position:fixed;bottom:84px;right:20px;width:44px;height:44px;border-radius:50%;background:var(--indigo);color:#fff;border:none;font-size:17px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.4);z-index:550;transition:transform .15s,filter .15s;}
 .thought-fab:hover{filter:brightness(1.15);transform:scale(1.06);}
@@ -1347,9 +1360,16 @@ body.light .page-watermark { opacity: .2; }
       </div>
       <div class="ins-nav">
         <button class="ins-nav-btn on" id="ins-tab-friction" onclick="switchInsight('friction')">💢 Friction</button>
+        <button class="ins-nav-btn"    id="ins-tab-problems" onclick="switchInsight('problems')" >🗺 Problems</button>
         <button class="ins-nav-btn"    id="ins-tab-proven"   onclick="switchInsight('proven')"  >🛠 Proven</button>
         <button class="ins-nav-btn"    id="ins-tab-thoughts" onclick="switchInsight('thoughts')" >🧠 Mind</button>
         <button class="ins-nav-btn"    id="ins-tab-archive"  onclick="switchInsight('archive')" >🗂 Archive</button>
+      </div>
+
+      <!-- Problems Map -->
+      <div class="ins-section" id="ins-problems">
+        <p class="ins-caption">Every problem you're currently working on, and what you're running at it. Read-only — edit from the Habits tab.</p>
+        <div id="pmap-content"></div>
       </div>
 
       <!-- Friction Log -->
@@ -4758,6 +4778,64 @@ function findBorrowedCandidate(problemText, discarded){
   return bestScore > 0 ? best : null;
 }
 
+/* ── PROBLEMS MAP ───────────────────────────────────── */
+function renderProblemsMap(){
+  const el = document.getElementById('pmap-content');
+  if(!el) return;
+  const d = getHabitMgr();
+  const active = d.active || [];
+  const queue  = d.queue  || [];
+
+  function daysSince(checks){
+    // days since first check, or since habit was added (fallback: checks length)
+    if(!checks || !checks.length) return null;
+    const first = checks.slice().sort((a,b)=>a.date.localeCompare(b.date))[0];
+    const ms = Date.now() - new Date(first.date).getTime();
+    return Math.max(1, Math.floor(ms / 86400000));
+  }
+
+  function typeBadge(type){
+    if(type==='long-horizon') return `<span class="hab-type-badge hab-type-lh">long-horizon</span>`;
+    if(type==='routine-checklist') return `<span class="hab-type-badge hab-type-rc">routine</span>`;
+    return `<span class="hab-type-badge hab-type-tr">experiment</span>`;
+  }
+
+  let html = '';
+
+  if(!active.length && !queue.length){
+    el.innerHTML = '<div class="pmap-empty">No active problems — add habits from the Habits tab.</div>';
+    return;
+  }
+
+  if(active.length){
+    html += `<div class="pmap-section-hdr">Active — ${active.length} running</div>`;
+    html += active.map(h => {
+      const days = daysSince(h.dailyChecks);
+      const daysStr = days ? `${days}d` : '';
+      const toolLine = (h.tool && h.problem) ? `<div class="pmap-arrow">→ currently trying</div><div class="pmap-tool">${esc(h.tool)}</div>` : '';
+      return `<div class="pmap-card active">
+        <div class="pmap-problem">${esc(h.problem || h.tool || '(untitled)')}</div>
+        ${toolLine}
+        <div class="pmap-meta">${typeBadge(h.type)}${daysStr ? `<span class="pmap-days">${daysStr}</span>` : ''}</div>
+      </div>`;
+    }).join('');
+  }
+
+  if(queue.length){
+    html += `<div class="pmap-section-hdr">Waiting — ${queue.length} queued</div>`;
+    html += queue.map(h => {
+      const toolLine = h.tool ? `<div class="pmap-arrow">→ planned</div><div class="pmap-tool">${esc(h.tool)}</div>` : `<div class="pmap-arrow" style="opacity:.5">→ no experiment yet</div>`;
+      return `<div class="pmap-card queued">
+        <div class="pmap-problem">${esc(h.problem || h.tool || '(untitled)')}</div>
+        ${toolLine}
+        <div class="pmap-meta">${typeBadge(h.type)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  el.innerHTML = html;
+}
+
 /* ── THOUGHT SPACE ──────────────────────────────────── */
 function getThoughtMgr(){ return ls.get('sq_thought_mgr', {captures:[], sessions:[]}); }
 function saveThoughtMgr(d){ ls.set('sq_thought_mgr', d); pushSync(); }
@@ -4880,13 +4958,14 @@ function renderInsights(){ switchInsight(_insightTab); }
 
 function switchInsight(tab){
   _insightTab = tab;
-  ['friction','proven','thoughts','archive'].forEach(t => {
+  ['friction','problems','proven','thoughts','archive'].forEach(t => {
     const s = document.getElementById('ins-'+t);
     const b = document.getElementById('ins-tab-'+t);
     if(s) s.classList.toggle('on', t===tab);
     if(b) b.classList.toggle('on', t===tab);
   });
   if(tab==='friction') renderFrictionLog();
+  else if(tab==='problems') renderProblemsMap();
   else if(tab==='proven') renderProvenTools();
   else if(tab==='thoughts') renderThoughtSpace();
   else if(tab==='archive') renderArchive();
