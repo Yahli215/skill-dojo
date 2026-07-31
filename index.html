@@ -1359,8 +1359,8 @@ body.light .page-watermark { opacity: .2; }
         <div class="sec-line"></div>
       </div>
       <div class="ins-nav">
-        <button class="ins-nav-btn on" id="ins-tab-friction" onclick="switchInsight('friction')">💢 Friction</button>
-        <button class="ins-nav-btn"    id="ins-tab-problems" onclick="switchInsight('problems')" >🗺 Problems</button>
+        <button class="ins-nav-btn on" id="ins-tab-friction" onclick="switchInsight('friction')">📋 Problems</button>
+        <button class="ins-nav-btn"    id="ins-tab-problems" onclick="switchInsight('problems')" >🗺 Map</button>
         <button class="ins-nav-btn"    id="ins-tab-proven"   onclick="switchInsight('proven')"  >🛠 Proven</button>
         <button class="ins-nav-btn"    id="ins-tab-thoughts" onclick="switchInsight('thoughts')" >🧠 Mind</button>
         <button class="ins-nav-btn"    id="ins-tab-archive"  onclick="switchInsight('archive')" >🗂 Archive</button>
@@ -1374,7 +1374,7 @@ body.light .page-watermark { opacity: .2; }
 
       <!-- Friction Log -->
       <div class="ins-section" id="ins-friction">
-        <p class="ins-caption">Log it the moment something feels hard, repeatedly resistant, or like you keep redoing/forgetting it. Speed over structure — text + optional tag, nothing else required.</p>
+        <p class="ins-caption">Dump any problem you're witnessing in your day — body, mind, habits, relationships, chess, anything. No structure needed. Just get it out.</p>
         <div class="friction-week-hdr">Last 7 Days — by tag</div>
         <div id="friction-weekly" class="friction-tag-summary"></div>
         <div class="friction-week-hdr">All Entries</div>
@@ -1546,22 +1546,20 @@ body.light .page-watermark { opacity: .2; }
 </div>
 
 <!-- Friction Log quick-add -->
-<button class="friction-fab" onclick="openFrictionModal()" title="Log friction">💢</button>
+<button class="friction-fab" onclick="openFrictionModal()" title="Log a problem">📋</button>
 <div class="friction-overlay" id="friction-overlay" onclick="if(event.target===this)closeFrictionModal()">
   <div class="friction-box">
-    <div class="friction-box-title">💢 Log Friction</div>
-    <div class="friction-box-sub">Both tag and description are optional.</div>
+    <div class="friction-box-title">📋 Log Problem</div>
+    <div class="friction-box-sub">Tag optional — just describe what's wrong.</div>
     <div class="friction-tags">
-      <button class="friction-tag-chip" onclick="pickFrictionTag('opening prep',this)">opening prep</button>
-      <button class="friction-tag-chip" onclick="pickFrictionTag('calculation',this)">calculation</button>
-      <button class="friction-tag-chip" onclick="pickFrictionTag('endgame',this)">endgame</button>
-      <button class="friction-tag-chip" onclick="pickFrictionTag('focus',this)">focus</button>
-      <button class="friction-tag-chip" onclick="pickFrictionTag('memory',this)">memory</button>
-      <button class="friction-tag-chip" onclick="pickFrictionTag('distraction',this)">distraction</button>
-      <button class="friction-tag-chip" onclick="pickFrictionTag('mindset',this)">mindset</button>
+      <button class="friction-tag-chip" onclick="pickFrictionTag('body',this)">body</button>
+      <button class="friction-tag-chip" onclick="pickFrictionTag('mind',this)">mind</button>
+      <button class="friction-tag-chip" onclick="pickFrictionTag('habits',this)">habits</button>
+      <button class="friction-tag-chip" onclick="pickFrictionTag('chess',this)">chess</button>
+      <button class="friction-tag-chip" onclick="pickFrictionTag('social',this)">social</button>
       <button class="friction-tag-chip" onclick="pickFrictionTag('other',this)">other</button>
     </div>
-    <textarea class="friction-inp" id="friction-modal-inp" placeholder="What was hard… (optional)"
+    <textarea class="friction-inp" id="friction-modal-inp" placeholder="What's the problem…"
       onkeydown="if(event.key==='Enter'&&(event.metaKey||event.ctrlKey)){event.preventDefault();saveFrictionEntry();} if(event.key==='Escape'){closeFrictionModal();}"></textarea>
     <div class="friction-box-row">
       <button class="friction-cancel-btn" onclick="closeFrictionModal()">Cancel</button>
@@ -4297,20 +4295,16 @@ const EXPERIMENT_MIN_DAYS = 5; // assumption: "set period" before forcing an ext
 function getArchive()  { return ls.get('sq_archive','[]'); }
 function saveArchive(a){ ls.set('sq_archive',a); pushSync(); }
 
-// ── FRICTION LOG ───────────────────────────────────────────────────────
-// Captures moments during training where something felt hard, resistant, or
-// repeatedly forgotten — the demonstrated-friction source for the habit queue.
-const FRICTION_TAGS = ['opening prep','calculation','endgame','focus','memory','distraction','mindset','other'];
-// Lightweight in-browser keyword classifier — no API, no key, runs on every keystroke.
-// Not true NLP, just substring scoring; good enough to pre-select a tag for short notes.
+// ── PROBLEMS LOG ───────────────────────────────────────────────────────
+// General-purpose daily problem dump — any area of life.
+const FRICTION_TAGS = ['body','mind','habits','chess','social','other'];
+// Lightweight keyword classifier for auto-tag suggestion.
 const FRICTION_TAG_KEYWORDS = {
-  'opening prep': ['opening','repertoire','prep','theory','novelty','sideline','gambit','move order','variation','line','explain'],
-  'calculation':  ['calculat','candidate move','tactic','combination','blunder','missed','visualiz','forcing','tree'],
-  'endgame':      ['endgame','ending','zugzwang','opposition','rook ending','pawn ending','king and pawn','technique'],
-  'memory':       ['forgot','forget','rememb','memoriz','recall','memory'],
-  'focus':        ['focus','concentrat','tired','fatigue','attention','zone out','drift','sleepy'],
-  'distraction':  ['task','class','classes','schedule','appointment','errand','deadline','email','meeting','homework','university','phone','notification','message','logistics'],
-  'mindset':      ['philosophy','identity','meaning','purpose','passion','motivat','exciting','struggle','sturrgle','give up','quit','believ','beliv','chess life'],
+  'body':   ['gym','workout','exercise','sleep','tired','fatigue','pain','sick','energy','eating','diet','run','sport','body','health','physical','weight'],
+  'mind':   ['anxious','anxiety','stress','fear','worry','doubt','panic','mood','emotion','sad','low','depress','mental','thought','belief','confid','self'],
+  'habits': ['habit','routine','forgot','forget','keep skipping','procrastinat','lazy','disciplin','consistent','schedule','daily','morning','night','track'],
+  'chess':  ['chess','opening','endgame','calculat','blunder','tactic','repertoire','game','tournament','rating','position','prep','training','analysis'],
+  'social': ['friend','family','relationship','social','people','talk','conversation','conflict','alone','isolat','team','partner','coach'],
 };
 function getFrictionTagSuggestion(text){
   const t = (text||'').toLowerCase();
@@ -4717,14 +4711,12 @@ function renderProvenTools(){
 // Deliberately cross-domain — friction tagged "mindset" checks anxiety and
 // general-life tools too, not just chess ones.
 const FRICTION_TAG_TO_PROVEN_DOMAINS = {
-  'opening prep': ['chess'],
-  'calculation':  ['chess'],
-  'endgame':      ['chess'],
-  'memory':       ['chess','general life'],
-  'focus':        ['chess','general life','anxiety'],
-  'distraction':  ['general life','chess'],
-  'mindset':      ['anxiety','general life','chess'],
-  'other':        PROVEN_DOMAINS,
+  'body':    ['general life','sleep','anxiety'],
+  'mind':    ['anxiety','general life','chess'],
+  'habits':  ['general life','anxiety'],
+  'chess':   ['chess','general life'],
+  'social':  ['general life','anxiety'],
+  'other':   PROVEN_DOMAINS,
 };
 const PROVEN_MATCH_STOPWORDS = new Set(['this','that','with','from','have','about','into','your','just','like','when','what','their','there','then','than','some','more','very','feel','feels','felt','being','been','keep','still','again','really','thing','things']);
 
