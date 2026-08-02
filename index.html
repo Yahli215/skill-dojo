@@ -4940,7 +4940,7 @@ function renderProblemsMap(){
 }
 
 /* ── THOUGHT SPACE ──────────────────────────────────── */
-function getThoughtMgr(){ return ls.get('sq_thought_mgr', {captures:[], sessions:[]}); }
+function getThoughtMgr(){ return ls.get('sq_thought_mgr', '{"captures":[],"sessions":[]}'); }
 function saveThoughtMgr(d){ ls.set('sq_thought_mgr', d); pushSync(); }
 
 function todayKey(){ return new Date().toISOString().slice(0,10); }
@@ -5046,7 +5046,7 @@ function renderThoughtSpace(){
 }
 
 /* ── DELEGATED REVIEW ───────────────────────────────── */
-function getReviewMgr(){ return ls.get('sq_delegated_review', {entries:[], verdicts:[]}); }
+function getReviewMgr(){ return ls.get('sq_delegated_review', '{"entries":[],"verdicts":[]}'); }
 function saveReviewMgr(d){ ls.set('sq_delegated_review', d); pushSync(); }
 
 let _reviewTab = 'log';
