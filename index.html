@@ -677,9 +677,45 @@ body.light .page-watermark { opacity: .2; }
 
 /* ── VIEW NAV ───────────────────────────────────────── */
 .view-nav{display:flex;gap:0;margin-bottom:28px;border-bottom:1px solid var(--b1);}
-.view-nav-btn{padding:9px 20px;font-size:9px;font-family:var(--mono);cursor:pointer;border:none;border-bottom:2px solid transparent;background:none;color:var(--muted);transition:all .2s;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:-1px;}
+.view-nav-btn{padding:9px 14px;font-size:9px;font-family:var(--mono);cursor:pointer;border:none;border-bottom:2px solid transparent;background:none;color:var(--muted);transition:all .2s;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:-1px;}
 .view-nav-btn.on{color:var(--text);border-bottom-color:var(--verm);}
 .view-nav-btn:hover:not(.on){color:var(--text);}
+
+/* ── DELEGATED REVIEW ───────────────────────────────── */
+.dr-sub-nav{display:flex;gap:0;border-bottom:1px solid var(--b1);margin-bottom:18px;}
+.dr-sub-btn{flex:1;text-align:center;padding:7px 4px;font-size:9px;letter-spacing:1px;text-transform:uppercase;border:none;background:none;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;font-family:var(--mono);transition:color .2s;}
+.dr-sub-btn.on{color:var(--text);border-bottom-color:var(--indigo);}
+.dr-section{display:none;}
+.dr-section.on{display:block;}
+.dr-add-form{background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:14px 15px;margin-bottom:18px;}
+.dr-field-lbl{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted2);margin-bottom:5px;}
+.dr-inp{width:100%;background:var(--bg);border:1px solid var(--b2);border-radius:7px;padding:9px 11px;color:var(--text);font-family:inherit;font-size:12px;outline:none;box-sizing:border-box;margin-bottom:12px;}
+.dr-inp:focus{border-color:var(--indigo);}
+.dr-inp::placeholder{color:var(--muted);}
+.dr-log-btn{background:var(--indigo);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.04em;transition:filter .15s;}
+.dr-log-btn:hover{filter:brightness(1.1);}
+.dr-entries-hdr{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid var(--b1);}
+.dr-entry-card{background:var(--s2);border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid var(--b2);}
+.dr-entry-card.pending{border-left-color:var(--gold2);}
+.dr-entry-card.done{border-left-color:var(--green2);opacity:.7;}
+.dr-entry-date{font-size:9px;color:var(--muted);letter-spacing:.04em;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+.dr-entry-badge{font-size:8px;padding:2px 6px;border-radius:3px;letter-spacing:.04em;font-weight:600;}
+.dr-entry-badge.pending{background:rgba(232,184,64,.15);color:var(--gold2);}
+.dr-entry-badge.reviewed{background:rgba(70,184,128,.12);color:var(--green2);}
+.dr-entry-line{font-size:12px;color:var(--text);line-height:1.4;margin-bottom:3px;}
+.dr-entry-problem{font-size:11px;color:var(--muted2);font-style:italic;margin-top:4px;}
+.verdict-card{background:var(--s1);border:1px solid var(--b1);border-radius:10px;padding:14px 15px;margin-bottom:12px;}
+.verdict-date{font-size:9px;color:var(--muted);letter-spacing:.04em;margin-bottom:10px;}
+.verdict-problem{font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;line-height:1.4;}
+.verdict-solution{font-size:12px;color:var(--indigo);margin-bottom:10px;line-height:1.4;}
+.verdict-why-row{font-size:10px;color:var(--muted2);line-height:1.5;margin-bottom:3px;padding-left:10px;border-left:2px solid var(--b2);}
+.verdict-why-row strong{color:var(--muted);font-weight:600;}
+.verdict-meta{display:flex;align-items:center;gap:12px;margin:10px 0 12px;font-size:10px;color:var(--muted2);}
+.verdict-outcome-row{display:flex;gap:8px;}
+.verdict-outcome-btn{flex:1;border:1px solid var(--b2);background:none;color:var(--muted);border-radius:7px;padding:7px 10px;font-size:10px;cursor:pointer;font-family:inherit;transition:all .15s;font-weight:600;}
+.verdict-outcome-btn.held.active{background:rgba(70,184,128,.15);border-color:var(--green2);color:var(--green2);}
+.verdict-outcome-btn.nope.active{background:rgba(200,72,40,.1);border-color:var(--verm);color:var(--verm);}
+.dr-empty{font-size:11px;color:var(--muted);font-style:italic;padding:12px 0;}
 
 /* ── CONCLUSIONS / INSIGHTS ──────────────────────────── */
 .concl-input-row{display:flex;flex-direction:column;gap:8px;margin-bottom:24px;}
@@ -1166,6 +1202,7 @@ body.light .page-watermark { opacity: .2; }
       <button class="view-nav-btn"    id="vnav-habits"   onclick="switchView('habits')">習慣 Habits</button>
       <button class="view-nav-btn"    id="vnav-tasks"    onclick="switchView('tasks')">課題 Tasks</button>
       <button class="view-nav-btn"    id="vnav-insights" onclick="switchView('insights')">洞察 Insights</button>
+      <button class="view-nav-btn"    id="vnav-review"   onclick="switchView('review')">審 Review</button>
     </div>
 
     <div id="training-view">
@@ -1457,6 +1494,39 @@ body.light .page-watermark { opacity: .2; }
       <button class="task-done-toggle" id="task-done-toggle" onclick="toggleDoneTasks()" style="display:none"></button>
       <div id="task-done-list" style="display:none"></div>
     </div><!-- /tasks-view -->
+
+    <!-- Review view -->
+    <div id="review-view" style="display:none">
+      <div class="sec-hdr">
+        <div class="sec-lbl">Delegated Review</div>
+        <div class="sec-kj">審</div>
+        <div class="sec-line"></div>
+      </div>
+      <p style="font-size:11px;color:var(--muted2);margin:-4px 0 18px;line-height:1.5;">Raw data from you → structured verdicts from Claude. No self-analysis needed.</p>
+      <div class="dr-sub-nav">
+        <button class="dr-sub-btn on" id="dr-tab-log" onclick="switchReview('log')">📥 Log</button>
+        <button class="dr-sub-btn" id="dr-tab-verdicts" onclick="switchReview('verdicts')">📋 Verdicts</button>
+      </div>
+      <!-- Log sub-section -->
+      <div class="dr-section on" id="dr-log">
+        <div class="dr-add-form">
+          <div class="dr-field-lbl">What worked / didn't today</div>
+          <input class="dr-inp" id="dr-worked" placeholder="E.g. skipped gym again, sleep better, mood crashed at 3pm…" onkeydown="if(event.key==='Enter')document.getElementById('dr-problem').focus()">
+          <div class="dr-field-lbl">New problem, if any</div>
+          <input class="dr-inp" id="dr-problem" placeholder="E.g. can't hold focus after lunch" style="margin-bottom:0" onkeydown="if(event.key==='Enter')addReviewEntry()">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
+            <span style="font-size:9px;color:var(--muted);" id="dr-date-preview"></span>
+            <button class="dr-log-btn" onclick="addReviewEntry()">Log Entry</button>
+          </div>
+        </div>
+        <div class="dr-entries-hdr">Recent entries</div>
+        <div id="dr-entry-list"></div>
+      </div>
+      <!-- Verdicts sub-section -->
+      <div class="dr-section" id="dr-verdicts">
+        <div id="dr-verdict-list"></div>
+      </div>
+    </div><!-- /review-view -->
 
   </div>
 </div>
@@ -2123,6 +2193,21 @@ async function bootFromCloud(){
           });
         }
       }
+      if(d.delegatedReview){ const local=ls.get('sq_delegated_review',null);
+        if(!local){ ls.set('sq_delegated_review',d.delegatedReview); }
+        else {
+          const eIds = new Set((local.entries||[]).map(e=>e.id));
+          const extraE = (d.delegatedReview.entries||[]).filter(e=>!eIds.has(e.id));
+          // Cloud verdicts are authoritative (Claude writes them) — merge by id, cloud wins
+          const localVIds = new Set((local.verdicts||[]).map(v=>v.id));
+          const cloudVIds = new Set((d.delegatedReview.verdicts||[]).map(v=>v.id));
+          const extraLV = (local.verdicts||[]).filter(v=>!cloudVIds.has(v.id));
+          ls.set('sq_delegated_review',{
+            entries:[...(local.entries||[]),...extraE],
+            verdicts:[...(d.delegatedReview.verdicts||[]),...extraLV]
+          });
+        }
+      }
       if(d.tasks){
         const localT = ls.get('sq_tasks','[]');
         if(Array.isArray(localT) && localT.length > 0 && Array.isArray(d.tasks) && d.tasks.length > 0){
@@ -2300,6 +2385,32 @@ async function refreshFromCloud(){
         }
       }
       if(d.protein) ls.set('sq_protein', d.protein);
+      if(d.thoughtMgr){ const local=ls.get('sq_thought_mgr',null);
+        if(!local){ ls.set('sq_thought_mgr',d.thoughtMgr); }
+        else {
+          const capIds = new Set((local.captures||[]).map(c=>c.id));
+          const extraCap = (d.thoughtMgr.captures||[]).filter(c=>!capIds.has(c.id));
+          const localSessDates = new Set((local.sessions||[]).map(s=>s.date));
+          const extraSess = (d.thoughtMgr.sessions||[]).filter(s=>!localSessDates.has(s.date));
+          ls.set('sq_thought_mgr',{
+            captures:[...(local.captures||[]),...extraCap],
+            sessions:[...(local.sessions||[]),...extraSess]
+          });
+        }
+      }
+      if(d.delegatedReview){ const local=ls.get('sq_delegated_review',null);
+        if(!local){ ls.set('sq_delegated_review',d.delegatedReview); }
+        else {
+          const eIds = new Set((local.entries||[]).map(e=>e.id));
+          const extraE = (d.delegatedReview.entries||[]).filter(e=>!eIds.has(e.id));
+          const cloudVIds = new Set((d.delegatedReview.verdicts||[]).map(v=>v.id));
+          const extraLV = (local.verdicts||[]).filter(v=>!cloudVIds.has(v.id));
+          ls.set('sq_delegated_review',{
+            entries:[...(local.entries||[]),...extraE],
+            verdicts:[...(d.delegatedReview.verdicts||[]),...extraLV]
+          });
+        }
+      }
       // Reload the in-memory skill array and re-render without touching intervals
       const defs2 = getDefs(), data2 = getData();
       skills = defs2.map(def => ({...def, keywords:def.keywords||[], dailyGoalMins:def.dailyGoalMins||0,
@@ -4934,16 +5045,121 @@ function renderThoughtSpace(){
   }
 }
 
+/* ── DELEGATED REVIEW ───────────────────────────────── */
+function getReviewMgr(){ return ls.get('sq_delegated_review', {entries:[], verdicts:[]}); }
+function saveReviewMgr(d){ ls.set('sq_delegated_review', d); pushSync(); }
+
+let _reviewTab = 'log';
+function switchReview(tab){
+  _reviewTab = tab;
+  ['log','verdicts'].forEach(t => {
+    const s = document.getElementById('dr-'+t);
+    const b = document.getElementById('dr-tab-'+t);
+    if(s) s.classList.toggle('on', t===tab);
+    if(b) b.classList.toggle('on', t===tab);
+  });
+  renderReview();
+}
+
+function addReviewEntry(){
+  const worked = (document.getElementById('dr-worked')?.value || '').trim();
+  const problem = (document.getElementById('dr-problem')?.value || '').trim();
+  if(!worked && !problem) return;
+  const d = getReviewMgr();
+  d.entries.push({
+    id: 're' + Date.now(),
+    date: todayKey(),
+    ts: new Date().toISOString(),
+    worked,
+    newProblem: problem,
+    reviewed: false
+  });
+  saveReviewMgr(d);
+  document.getElementById('dr-worked').value = '';
+  document.getElementById('dr-problem').value = '';
+  renderReview();
+}
+
+function setVerdictOutcome(verdictId, outcome){
+  const d = getReviewMgr();
+  const v = d.verdicts.find(x => x.id === verdictId);
+  if(!v) return;
+  v.outcome = v.outcome === outcome ? null : outcome; // toggle
+  saveReviewMgr(d);
+  renderReview();
+}
+
+function renderReview(){
+  // Update date preview
+  const prev = document.getElementById('dr-date-preview');
+  if(prev) prev.textContent = todayKey();
+
+  const d = getReviewMgr();
+
+  // ─── LOG tab ───────────────────────────────────────
+  const listEl = document.getElementById('dr-entry-list');
+  if(listEl){
+    const sorted = [...d.entries].sort((a,b) => b.ts.localeCompare(a.ts)).slice(0,30);
+    if(!sorted.length){
+      listEl.innerHTML = `<div class="dr-empty">No entries yet. Log what worked / didn't today.</div>`;
+    } else {
+      listEl.innerHTML = sorted.map(e => {
+        const dt = new Date(e.ts);
+        const timeStr = dt.toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+        const badge = e.reviewed
+          ? `<span class="dr-entry-badge reviewed">reviewed</span>`
+          : `<span class="dr-entry-badge pending">pending</span>`;
+        const workedHtml = e.worked
+          ? `<div class="dr-entry-line">✓ ${esc(e.worked)}</div>` : '';
+        const problemHtml = e.newProblem
+          ? `<div class="dr-entry-problem">⚠ ${esc(e.newProblem)}</div>` : '';
+        return `<div class="dr-entry-card ${e.reviewed ? 'done' : 'pending'}">
+          <div class="dr-entry-date">${timeStr}${badge}</div>
+          ${workedHtml}${problemHtml}
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // ─── VERDICTS tab ─────────────────────────────────
+  const vlistEl = document.getElementById('dr-verdict-list');
+  if(vlistEl){
+    const sorted = [...d.verdicts].sort((a,b) => b.issuedAt.localeCompare(a.issuedAt));
+    if(!sorted.length){
+      vlistEl.innerHTML = `<div class="dr-empty">No verdicts yet. Claude will add them here after morning review.</div>`;
+    } else {
+      vlistEl.innerHTML = sorted.map(v => {
+        const issDate = v.issuedAt ? v.issuedAt.slice(0,10) : '—';
+        const heldActive  = v.outcome === 'held'  ? 'active' : '';
+        const nopeActive  = v.outcome === 'nope'  ? 'active' : '';
+        return `<div class="verdict-card">
+          <div class="verdict-date">Issued ${issDate} · Trial ${esc(v.trialLength||'?')} · Review ${esc(v.reviewDate||'?')}</div>
+          <div class="verdict-problem">${esc(v.problem)}</div>
+          <div class="verdict-solution">→ ${esc(v.solution)}</div>
+          <div class="verdict-why-row"><strong>Root cause vs symptom:</strong> ${esc(v.whyRootCause||'')}</div>
+          <div class="verdict-why-row"><strong>Falsifiable:</strong> ${esc(v.whyFalsifiable||'')}</div>
+          <div class="verdict-why-row"><strong>Pattern match:</strong> ${esc(v.whyPatternMatch||'')}</div>
+          <div class="verdict-outcome-row" style="margin-top:12px">
+            <button class="verdict-outcome-btn held ${heldActive}" onclick="setVerdictOutcome('${v.id}','held')">✓ Held up</button>
+            <button class="verdict-outcome-btn nope ${nopeActive}" onclick="setVerdictOutcome('${v.id}','nope')">✗ Didn't hold</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+  }
+}
+
 let _insightTab = 'friction';
 
 function switchView(view){
-  ['training','habits','tasks','insights'].forEach(v => {
+  ['training','habits','tasks','insights','review'].forEach(v => {
     document.getElementById(`${v}-view`).style.display = v === view ? '' : 'none';
     document.getElementById(`vnav-${v}`).classList.toggle('on', v === view);
   });
   if(view === 'insights') renderInsights();
   if(view === 'tasks') renderTasks();
   if(view === 'habits') renderHabitMgr();
+  if(view === 'review') renderReview();
 }
 
 function renderInsights(){ switchInsight(_insightTab); }
@@ -5790,6 +6006,7 @@ async function pushCloud(){
     frictionLog: getFrictionLog(), frictionDismissed: getFrictionDismissed(),
     provenTools: getProvenTools(), bottles: getBottles(),
     thoughtMgr: getThoughtMgr(),
+    delegatedReview: getReviewMgr(),
     ...(timerToWrite !== undefined ? { activeTimer: timerToWrite } : {}),
   };
   try {
