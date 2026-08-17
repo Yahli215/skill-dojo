@@ -3579,17 +3579,7 @@ function closeOpeningCheck(finished){
 /* ── END-OF-SESSION CHECKPOINT CHECK ─────────────────── */
 let _cpCheckItems=[];
 
-function startCheckpointChecks(){
-  const bottles=getBottles().filter(b=>!b.masteredAt&&!b.archived);
-  _cpCheckItems=[];
-  bottles.forEach(b=>{
-    const activeCp=b.checkpoints.find(cp=>!cp.done);
-    if(activeCp) _cpCheckItems.push({bottleId:b.id,cpId:activeCp.id,answer:null});
-  });
-  if(!_cpCheckItems.length) return;
-  renderCpCheckModal();
-  document.getElementById('cp-check-ov').classList.add('on');
-}
+function startCheckpointChecks(){ /* disabled */ }
 
 function renderCpCheckModal(){
   const bottles=getBottles();
