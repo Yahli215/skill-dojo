@@ -3562,7 +3562,7 @@ function saveNewBottle(){
 let _lastSessionSkill=null;
 
 function checkOpeningRevisionPrompt(){
-  if(_lastSessionSkill && _lastSessionSkill.name.toLowerCase().includes('opening')){
+  if(false){ // disabled
     document.getElementById('opening-check-ov').classList.add('on');
   } else {
     startCheckpointChecks();
