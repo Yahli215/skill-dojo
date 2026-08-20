@@ -1395,12 +1395,8 @@ body.light .page-watermark { opacity: .2; }
         <div class="sec-kj">洞察</div>
         <div class="sec-line"></div>
       </div>
-      <div class="ins-nav">
-        <button class="ins-nav-btn on" id="ins-tab-friction" onclick="switchInsight('friction')">📋 Problems</button>
-        <button class="ins-nav-btn"    id="ins-tab-problems" onclick="switchInsight('problems')" >🗺 Map</button>
-        <button class="ins-nav-btn"    id="ins-tab-proven"   onclick="switchInsight('proven')"  >🛠 Proven</button>
-        <button class="ins-nav-btn"    id="ins-tab-thoughts" onclick="switchInsight('thoughts')" >🧠 Mind</button>
-        <button class="ins-nav-btn"    id="ins-tab-archive"  onclick="switchInsight('archive')" >🗂 Archive</button>
+      <div class="ins-nav" style="display:none">
+        <button class="ins-nav-btn on" id="ins-tab-archive"  onclick="switchInsight('archive')" >🗂 Archive</button>
       </div>
 
       <!-- Problems Map -->
@@ -5139,7 +5135,7 @@ function renderReview(){
   }
 }
 
-let _insightTab = 'friction';
+let _insightTab = 'archive';
 
 function switchView(view){
   ['training','habits','tasks','insights','review'].forEach(v => {
