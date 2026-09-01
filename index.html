@@ -1506,10 +1506,7 @@ body.light .page-watermark { opacity: .2; }
       <!-- Log sub-section -->
       <div class="dr-section on" id="dr-log">
         <div class="dr-add-form">
-          <div class="dr-field-lbl">What worked / didn't today</div>
-          <input class="dr-inp" id="dr-worked" placeholder="E.g. skipped gym again, sleep better, mood crashed at 3pm…" onkeydown="if(event.key==='Enter')document.getElementById('dr-problem').focus()">
-          <div class="dr-field-lbl">New problem, if any</div>
-          <input class="dr-inp" id="dr-problem" placeholder="E.g. can't hold focus after lunch" style="margin-bottom:0" onkeydown="if(event.key==='Enter')addReviewEntry()">
+          <textarea class="dr-inp" id="dr-note" rows="4" placeholder="Write anything — what happened, what worked, what's bothering you…" style="resize:vertical;margin-bottom:0" onkeydown="if(event.key==='Enter'&&event.ctrlKey)addReviewEntry()"></textarea>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
             <span style="font-size:9px;color:var(--muted);" id="dr-date-preview"></span>
             <button class="dr-log-btn" onclick="addReviewEntry()">Log Entry</button>
@@ -5048,21 +5045,18 @@ function switchReview(tab){
 }
 
 function addReviewEntry(){
-  const worked = (document.getElementById('dr-worked')?.value || '').trim();
-  const problem = (document.getElementById('dr-problem')?.value || '').trim();
-  if(!worked && !problem) return;
+  const text = (document.getElementById('dr-note')?.value || '').trim();
+  if(!text) return;
   const d = getReviewMgr();
   d.entries.push({
     id: 're' + Date.now(),
     date: todayKey(),
     ts: new Date().toISOString(),
-    worked,
-    newProblem: problem,
+    text,
     reviewed: false
   });
   saveReviewMgr(d);
-  document.getElementById('dr-worked').value = '';
-  document.getElementById('dr-problem').value = '';
+  document.getElementById('dr-note').value = '';
   renderReview();
 }
 
@@ -5095,13 +5089,11 @@ function renderReview(){
         const badge = e.reviewed
           ? `<span class="dr-entry-badge reviewed">reviewed</span>`
           : `<span class="dr-entry-badge pending">pending</span>`;
-        const workedHtml = e.worked
-          ? `<div class="dr-entry-line">✓ ${esc(e.worked)}</div>` : '';
-        const problemHtml = e.newProblem
-          ? `<div class="dr-entry-problem">⚠ ${esc(e.newProblem)}</div>` : '';
+        const noteHtml = (e.text || e.worked || e.newProblem)
+          ? `<div class="dr-entry-line">${esc(e.text || [e.worked, e.newProblem].filter(Boolean).join(' · '))}</div>` : '';
         return `<div class="dr-entry-card ${e.reviewed ? 'done' : 'pending'}">
           <div class="dr-entry-date">${timeStr}${badge}</div>
-          ${workedHtml}${problemHtml}
+          ${noteHtml}
         </div>`;
       }).join('');
     }
