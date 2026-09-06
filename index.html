@@ -715,6 +715,7 @@ body.light .page-watermark { opacity: .2; }
 .verdict-outcome-btn{flex:1;border:1px solid var(--b2);background:none;color:var(--muted);border-radius:7px;padding:7px 10px;font-size:10px;cursor:pointer;font-family:inherit;transition:all .15s;font-weight:600;}
 .verdict-outcome-btn.held.active{background:rgba(70,184,128,.15);border-color:var(--green2);color:var(--green2);}
 .verdict-outcome-btn.nope.active{background:rgba(200,72,40,.1);border-color:var(--verm);color:var(--verm);}
+.verdict-sent-badge{margin-top:8px;font-size:10px;font-weight:600;color:var(--green2);border:1px solid var(--green2);border-radius:7px;padding:7px 10px;text-align:center;background:rgba(70,184,128,.08);}
 .dr-empty{font-size:11px;color:var(--muted);font-style:italic;padding:12px 0;}
 
 /* ── CONCLUSIONS / INSIGHTS ──────────────────────────── */
@@ -5069,6 +5070,33 @@ function setVerdictOutcome(verdictId, outcome){
   renderReview();
 }
 
+// Bridges a Claude-issued verdict into the Habits queue so there's one
+// single place to track "what am I currently experimenting on" instead of
+// verdicts and habits living as two disconnected lists.
+function sendVerdictToHabits(verdictId){
+  const rd = getReviewMgr();
+  const v = (rd.verdicts||[]).find(x => x.id === verdictId);
+  if(!v) return;
+  const hd = getHabitMgr();
+  const notesParts = [];
+  if(v.whyRootCause)  notesParts.push('Root cause: ' + v.whyRootCause);
+  if(v.whyFalsifiable) notesParts.push('Signal: ' + v.whyFalsifiable);
+  if(v.trialLength)   notesParts.push('Trial: ' + v.trialLength + (v.reviewDate ? ' · Review ' + v.reviewDate : ''));
+  const notes = notesParts.join('\n');
+  const anchor = (hd.anchors || DEFAULT_ANCHORS)[0];
+  if(isOverCap(hd)){
+    if(!hd.queue) hd.queue = [];
+    hd.queue.push({id:uid(), type:'trigger-replacement', anchor, problem:v.problem||'', tool:v.solution||'', notes, milestoneDate:null, toolOrigin:'verdict', provenId:null});
+  } else {
+    hd.active.push(newHabit('trigger-replacement', anchor, v.problem, v.solution, notes, null));
+  }
+  saveHabitMgr(hd);
+  v.sentToHabits = true;
+  saveReviewMgr(rd);
+  renderReview();
+  toast('Sent to Habits.', 2500);
+}
+
 function renderReview(){
   // Update date preview
   const prev = document.getElementById('dr-date-preview');
@@ -5110,6 +5138,9 @@ function renderReview(){
         const issDate = v.issuedAt ? v.issuedAt.slice(0,10) : '—';
         const heldActive  = v.outcome === 'held'  ? 'active' : '';
         const nopeActive  = v.outcome === 'nope'  ? 'active' : '';
+        const sendRow = v.sentToHabits
+          ? `<div class="verdict-sent-badge">✓ In Habits</div>`
+          : `<button class="verdict-outcome-btn" onclick="sendVerdictToHabits('${v.id}')" style="margin-top:8px">→ Send to Habits</button>`;
         return `<div class="verdict-card">
           <div class="verdict-date">Issued ${issDate} · Trial ${esc(v.trialLength||'?')} · Review ${esc(v.reviewDate||'?')}</div>
           <div class="verdict-problem">${esc(v.problem)}</div>
@@ -5121,6 +5152,7 @@ function renderReview(){
             <button class="verdict-outcome-btn held ${heldActive}" onclick="setVerdictOutcome('${v.id}','held')">✓ Held up</button>
             <button class="verdict-outcome-btn nope ${nopeActive}" onclick="setVerdictOutcome('${v.id}','nope')">✗ Didn't hold</button>
           </div>
+          ${sendRow}
         </div>`;
       }).join('');
     }
