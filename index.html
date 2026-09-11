@@ -2223,6 +2223,11 @@ async function bootFromCloud(){
           });
         }
       }
+      // reviewFeedback: cloud is authoritative (written by morning review agent); union with local
+      if(Array.isArray(d.reviewFeedback) && d.reviewFeedback.length){
+        const localRF = ls.get('sq_review_feedback','[]');
+        ls.set('sq_review_feedback', [...new Set([...d.reviewFeedback, ...localRF])]);
+      }
       if(d.tasks){
         const localT = ls.get('sq_tasks','[]');
         if(Array.isArray(localT) && localT.length > 0 && Array.isArray(d.tasks) && d.tasks.length > 0){
@@ -2426,6 +2431,10 @@ async function refreshFromCloud(){
             verdicts:[...(d.delegatedReview.verdicts||[]),...extraLV]
           });
         }
+      }
+      if(Array.isArray(d.reviewFeedback) && d.reviewFeedback.length){
+        const localRF = ls.get('sq_review_feedback','[]');
+        ls.set('sq_review_feedback', [...new Set([...d.reviewFeedback, ...localRF])]);
       }
       // Reload the in-memory skill array and re-render without touching intervals
       const defs2 = getDefs(), data2 = getData();
@@ -6102,6 +6111,7 @@ async function pushCloud(){
     provenTools: getProvenTools(), bottles: getBottles(),
     thoughtMgr: getThoughtMgr(),
     delegatedReview: getReviewMgr(),
+    reviewFeedback: ls.get('sq_review_feedback','[]'),
     ...(timerToWrite !== undefined ? { activeTimer: timerToWrite } : {}),
   };
   try {
