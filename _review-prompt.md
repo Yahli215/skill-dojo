@@ -2,6 +2,19 @@
 
 When Ran says "run delegated review" (or similar), do this:
 
+## 0. Read feedback from prior sessions
+
+In the same Supabase fetch (Step 1), read `rows[0].data.reviewFeedback` — an array of strings left by Ran during past sessions. If it exists and is non-empty:
+- Read every note silently and let it influence how you run this session (classification judgment, tone, what to skip, how to present candidates, etc.)
+- Do NOT list the notes back to Ran or acknowledge them verbosely — just apply them
+- After applying, clear the list: set `data.reviewFeedback = []` in the PATCH at Step 5
+
+If `reviewFeedback` is absent or empty, proceed normally.
+
+---
+
+**During the session**, if Ran says anything like "note for next time", "remember for next time", "next time do X", or "you should have done Y differently" — append his note as a plain string to `data.reviewFeedback` and include it in the Step 5 PATCH. Confirm with one line: "Noted — will apply next review."
+
 ## 1. Fetch from Supabase
 
 ```bash
