@@ -200,6 +200,14 @@ body.light::before { opacity: .06; }
 .strikes-disp { font-size:10px; color:var(--verm); margin-top:4px; display:none; }
 .strikes-disp.show { display:block; }
 
+/* ── BREAK TAGGING CHIP ─────────────────────────────── */
+#break-chip { display:none; position:fixed; bottom:80px; right:20px; z-index:900; background:var(--s2); border:1px solid var(--b2); border-radius:12px; padding:12px 16px; box-shadow:0 4px 16px rgba(0,0,0,.3); max-width:260px; }
+#break-chip.show { display:block; }
+.break-chip-label { font-size:10px; color:var(--muted2); letter-spacing:.06em; text-transform:uppercase; margin-bottom:8px; }
+.break-chip-opts { display:flex; flex-wrap:wrap; gap:6px; }
+.break-chip-btn { padding:5px 10px; border-radius:16px; border:1px solid var(--b2); background:none; color:var(--text); font-size:11px; cursor:pointer; font-family:var(--mono); transition:all .12s; }
+.break-chip-btn:hover { border-color:var(--gold2); color:var(--gold2); }
+
 /* ── GOOGLE CALENDAR ────────────────────────────────── */
 .cal-section { margin-bottom: 32px; }
 .gcal-connect { display: flex; align-items: center; gap: 12px; font-size: 10px; color: var(--muted2); }
@@ -1251,6 +1259,18 @@ body.light .page-watermark { opacity: .2; }
       <button class="checkin-btn" onclick="doCheckin()">✓ I'm here</button>
     </div>
 
+    <!-- Break-type tagging chip (appears when starting a timer after a long break) -->
+    <div id="break-chip">
+      <div class="break-chip-label">What kind of break was that?</div>
+      <div class="break-chip-opts">
+        <button class="break-chip-btn" onclick="logBreak('movement')">🏃 movement</button>
+        <button class="break-chip-btn" onclick="logBreak('rest_scroll')">😴 rest/scroll</button>
+        <button class="break-chip-btn" onclick="logBreak('food')">🍽 food</button>
+        <button class="break-chip-btn" onclick="logBreak('other')">💬 other</button>
+        <button class="break-chip-btn" onclick="dismissBreakChip()">skip</button>
+      </div>
+    </div>
+
     <!-- Remote timer (running on another device) -->
     <div class="timer-bar remote-timer-bar" id="remote-timer-bar">
       <div class="t-icon" id="rt-icon">🖥️</div>
@@ -1417,7 +1437,8 @@ body.light .page-watermark { opacity: .2; }
         <div class="sec-kj">洞察</div>
         <div class="sec-line"></div>
       </div>
-      <div class="ins-nav" style="display:none">
+      <div class="ins-nav">
+        <button class="ins-nav-btn" id="ins-tab-lifebot"  onclick="switchInsight('lifebot')" >🤖 Lifebot</button>
         <button class="ins-nav-btn on" id="ins-tab-archive"  onclick="switchInsight('archive')" >🗂 Archive</button>
       </div>
 
@@ -1473,6 +1494,12 @@ body.light .page-watermark { opacity: .2; }
         </div>
         <div class="thought-history-hdr">Past sessions</div>
         <div id="thought-history-list"></div>
+      </div>
+
+      <!-- Lifebot -->
+      <div class="ins-section" id="ins-lifebot">
+        <p class="ins-caption">Data-driven insights from your actual session history — completion rates, break patterns, and time-of-day performance.</p>
+        <div id="lifebot-content"></div>
       </div>
 
       <!-- Chess Archive -->
@@ -1840,7 +1867,8 @@ const ls = {
 };
 const getDefs  = () => ls.get('sq_skill_defs','[]');
 const getData  = () => ls.get('sq_skill_data','{}');
-const getSess  = () => ls.get('sq_sessions','[]');
+const getSess   = () => ls.get('sq_sessions','[]');
+const getBreaks = () => ls.get('sq_breaks','[]');
 const getTimer = () => ls.get('sq_active_timer','null');
 const getGCal  = () => ls.get('sq_gcal','null');
 const saveGCal = t  => ls.set('sq_gcal', t);
@@ -2228,6 +2256,12 @@ async function bootFromCloud(){
         const localRF = ls.get('sq_review_feedback','[]');
         ls.set('sq_review_feedback', [...new Set([...d.reviewFeedback, ...localRF])]);
       }
+      if(d.breaks){
+        const localB = ls.get('sq_breaks','[]');
+        const cloudBIds = new Set(d.breaks.map(b=>b.id));
+        const extraB = localB.filter(b=>!cloudBIds.has(b.id));
+        ls.set('sq_breaks', extraB.length ? [...d.breaks,...extraB] : d.breaks);
+      }
       if(d.tasks){
         const localT = ls.get('sq_tasks','[]');
         if(Array.isArray(localT) && localT.length > 0 && Array.isArray(d.tasks) && d.tasks.length > 0){
@@ -2435,6 +2469,12 @@ async function refreshFromCloud(){
       if(Array.isArray(d.reviewFeedback) && d.reviewFeedback.length){
         const localRF = ls.get('sq_review_feedback','[]');
         ls.set('sq_review_feedback', [...new Set([...d.reviewFeedback, ...localRF])]);
+      }
+      if(d.breaks){
+        const localB = ls.get('sq_breaks','[]');
+        const cloudBIds = new Set(d.breaks.map(b=>b.id));
+        const extraB = localB.filter(b=>!cloudBIds.has(b.id));
+        ls.set('sq_breaks', extraB.length ? [...d.breaks,...extraB] : d.breaks);
       }
       // Reload the in-memory skill array and re-render without touching intervals
       const defs2 = getDefs(), data2 = getData();
@@ -2693,6 +2733,15 @@ function startTimer(){
   document.getElementById('timer-bar').classList.add('on');
   document.getElementById('quick-timer').style.display='none';
   reqNotif();
+  // Break-type chip: tag the break that just ended
+  const _allSess = getSess();
+  if(_allSess.length){
+    const _lastS = _allSess[_allSess.length-1];
+    if(_lastS.stop){
+      const _breakMs = Date.now() - new Date(_lastS.stop).getTime();
+      if(_breakMs >= 5*60*1000) showBreakChip(_lastS.stop, Math.round(_breakMs/60000));
+    }
+  }
 }
 
 function stopTimer(){
@@ -2705,7 +2754,9 @@ function stopTimer(){
   const mins = Math.floor(elapsed/60);
   if(mins<1){ toast('稽古が短すぎます (< 1 min)'); cancelTimer(); return; }
   const desc = activeTimer.isPomo ? activeTimer.desc+' · R'+activeTimer.round : activeTimer.desc;
-  const session = {id:uid(),skillId:activeTimer.skillId,description:desc,startTime:tStart,endTime:Date.now(),duration:elapsed,mins,stop:new Date().toISOString(),start:new Date(tStart).toISOString(),duration_minutes:mins,end_rpe:null,peak_rpe:null,session_load:null};
+  const plannedMins = activeTimer.isPomo ? (activeTimer.pw||null) : null;
+  const outcome = plannedMins == null ? 'completed' : (mins >= 0.85 * plannedMins ? 'completed' : 'cut_short');
+  const session = {id:uid(),skillId:activeTimer.skillId,description:desc,startTime:tStart,endTime:Date.now(),duration:elapsed,mins,stop:new Date().toISOString(),start:new Date(tStart).toISOString(),duration_minutes:mins,plannedMins,outcome,end_rpe:null,peak_rpe:null,session_load:null};
   const all = getSess(); all.push(session); ls.set('sq_sessions',all); sessions=all;
   try{renderDaily();}catch(e){}
   const data=getData(), sid=activeTimer.skillId;
@@ -2844,7 +2895,7 @@ function tickTimer(){
           const rEl=Math.floor((Date.now()-activeTimer.phaseStart)/1000);
           const rMins=Math.floor(rEl/60);
           if(rMins>=1){
-            const rSess={id:uid(),skillId:activeTimer.skillId,description:activeTimer.desc+' · R'+activeTimer.round,startTime:activeTimer.phaseStart,endTime:Date.now(),duration:rEl,mins:rMins,stop:new Date().toISOString(),start:new Date(activeTimer.phaseStart).toISOString(),duration_minutes:rMins,end_rpe:null,peak_rpe:null,session_load:null};
+            const rSess={id:uid(),skillId:activeTimer.skillId,description:activeTimer.desc+' · R'+activeTimer.round,startTime:activeTimer.phaseStart,endTime:Date.now(),duration:rEl,mins:rMins,stop:new Date().toISOString(),start:new Date(activeTimer.phaseStart).toISOString(),duration_minutes:rMins,plannedMins:activeTimer.pw||null,outcome:'completed',end_rpe:null,peak_rpe:null,session_load:null};
             const rAll=getSess(); rAll.push(rSess); ls.set('sq_sessions',rAll); sessions=rAll;
             const rData=getData(),rSid=activeTimer.skillId;
             if(!rData[rSid]) rData[rSid]={totalMins:0,rank:'Novice'};
@@ -2935,6 +2986,27 @@ function initCheckinState(){
   if(ci.date!==todayKey()){ localStorage.removeItem('sq_checkin'); return; }
   if(Date.now()>=ci.deadline) missedCheckin();
   else showCheckinBanner(ci.deadline);
+}
+
+/* ── BREAK TAGGING ──────────────────────────────────── */
+let _breakChipData=null, _breakChipTimer=null;
+function showBreakChip(breakAt, durationMins){
+  _breakChipData={id:uid(),at:breakAt,duration_mins:durationMins};
+  clearTimeout(_breakChipTimer);
+  document.getElementById('break-chip')?.classList.add('show');
+  _breakChipTimer=setTimeout(()=>dismissBreakChip(),8000);
+}
+function logBreak(type){
+  if(!_breakChipData) return;
+  const b={..._breakChipData,type};
+  const all=getBreaks(); all.push(b); ls.set('sq_breaks',all);
+  pushSync();
+  dismissBreakChip();
+}
+function dismissBreakChip(){
+  clearTimeout(_breakChipTimer); _breakChipTimer=null;
+  document.getElementById('break-chip')?.classList.remove('show');
+  _breakChipData=null;
 }
 
 /* ── GOOGLE CALENDAR ────────────────────────────────── */
@@ -4298,7 +4370,7 @@ function weekMins(ago){ const now=new Date(),wS=new Date(now); wS.setDate(now.ge
 
 /* ── BACKUP ─────────────────────────────────────────── */
 function exportData(){
-  const data={version:1,exportedAt:new Date().toISOString(),skillDefs:getDefs(),skillData:getData(),sessions:getSess(),theme:localStorage.getItem('sq_theme')||'dark'};
+  const data={version:1,exportedAt:new Date().toISOString(),skillDefs:getDefs(),skillData:getData(),sessions:getSess(),breaks:getBreaks(),theme:localStorage.getItem('sq_theme')||'dark'};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='dojo-backup-'+new Date().toISOString().split('T')[0]+'.json';a.click();URL.revokeObjectURL(url);toast('Backup downloaded.');
 }
@@ -4311,6 +4383,7 @@ function importData(input){
       if(!data.skillDefs||!data.sessions)throw new Error();
       if(!confirm('Restore backup from ' + (data.exportedAt?.split('T')[0]||'unknown') + '?\n\nThis replaces your current data.'))return;
       ls.set('sq_skill_defs',data.skillDefs);ls.set('sq_skill_data',data.skillData||{});ls.set('sq_sessions',data.sessions);
+      if(data.breaks) ls.set('sq_breaks',data.breaks);
       if(data.theme)localStorage.setItem('sq_theme',data.theme);toast('Restored. Reloading…');setTimeout(()=>location.reload(),1000);
     }catch{toast('❌ Invalid backup file.');}
   };
@@ -5303,9 +5376,107 @@ function switchView(view){
 
 function renderInsights(){ switchInsight(_insightTab); }
 
+/* ── LIFEBOT ─────────────────────────────────────────── */
+function computeLifebotStats(){
+  const sess=getSess().filter(s=>s.stop);
+  const breaks=getBreaks();
+  // 1. Completion rate by skill (n>=8)
+  const bySkill={};
+  sess.forEach(s=>{
+    if(!bySkill[s.skillId]) bySkill[s.skillId]={total:0,completed:0};
+    bySkill[s.skillId].total++;
+    if(s.outcome==='completed'||s.plannedMins==null) bySkill[s.skillId].completed++;
+  });
+  const completionBySkill=Object.entries(bySkill)
+    .filter(([,v])=>v.total>=8)
+    .map(([id,v])=>({skillId:id,rate:v.completed/v.total,n:v.total}));
+  // 2. Continuation rate by break type
+  const sortedSess=[...sess].sort((a,b)=>new Date(a.stop)-new Date(b.stop));
+  const contByType={};
+  breaks.forEach(br=>{
+    const type=br.type||'unknown';
+    if(!contByType[type]) contByType[type]={continued:0,total:0};
+    contByType[type].total++;
+    const brAt=new Date(br.at).getTime();
+    const next=sortedSess.find(s=>new Date(s.start||s.startTime).getTime()>brAt);
+    if(next){
+      const lag=new Date(next.start||next.startTime).getTime()-brAt-(br.duration_mins||0)*60000;
+      if(lag<30*60*1000) contByType[type].continued++;
+    }
+  });
+  // 3. Session-length buckets
+  const buckets={'1-15':0,'16-30':0,'31-60':0,'61-90':0,'90+':0};
+  sess.forEach(s=>{
+    const m=s.mins||0;
+    if(m<=15) buckets['1-15']++;
+    else if(m<=30) buckets['16-30']++;
+    else if(m<=60) buckets['31-60']++;
+    else if(m<=90) buckets['61-90']++;
+    else buckets['90+']++;
+  });
+  // 4. Time-of-day bands
+  const bands={morning:{mins:0,n:0},afternoon:{mins:0,n:0},evening:{mins:0,n:0},night:{mins:0,n:0}};
+  sess.forEach(s=>{
+    const h=new Date(s.start||s.startTime).getHours();
+    const band=h>=6&&h<12?'morning':h>=12&&h<17?'afternoon':h>=17&&h<22?'evening':'night';
+    bands[band].mins+=s.mins||0; bands[band].n++;
+  });
+  return {completionBySkill,contByType,buckets,bands};
+}
+
+function renderLifebot(){
+  const el=document.getElementById('lifebot-content');
+  if(!el) return;
+  const sess=getSess().filter(s=>s.stop);
+  if(sess.length<8){ el.innerHTML='<div class="ins-caption" style="margin-top:12px">Need at least 8 sessions to show stats.</div>'; return; }
+  const stats=computeLifebotStats();
+  const pct=n=>(n*100).toFixed(0)+'%';
+  // Completion by skill
+  let html='<div class="friction-week-hdr">Completion Rate by Skill</div>';
+  if(!stats.completionBySkill.length){ html+='<div class="concl-empty">Need 8+ sessions per skill.</div>'; }
+  else {
+    stats.completionBySkill.sort((a,b)=>b.rate-a.rate).forEach(({skillId,rate,n})=>{
+      const sk=skills.find(s=>s.id===skillId);
+      const name=sk?`${sk.emoji} ${sk.name}`:skillId;
+      const color=rate>=0.85?'var(--green2)':rate>=0.6?'var(--gold2)':'var(--verm)';
+      html+=`<div class="friction-tag-row" style="margin-bottom:5px"><span>${esc(name)}</span><span style="color:${color};font-weight:700">${pct(rate)} <span style="color:var(--muted2);font-weight:400;font-size:10px">(${n} sess)</span></span></div>`;
+    });
+  }
+  // Break continuation
+  html+='<div class="friction-week-hdr" style="margin-top:18px">Return Rate After Break Type</div>';
+  const bt=stats.contByType;
+  const BREAK_LABELS={movement:'🏃 movement',rest_scroll:'😴 rest/scroll',food:'🍽 food',other:'💬 other',unknown:'— untagged'};
+  const btEntries=Object.entries(bt).filter(([,v])=>v.total>=2);
+  if(!btEntries.length){ html+='<div class="concl-empty">Tag more breaks to see patterns.</div>'; }
+  else {
+    btEntries.sort((a,b)=>b[1].continued/b[1].total-a[1].continued/a[1].total).forEach(([type,v])=>{
+      const r=v.continued/v.total;
+      const color=r>=0.8?'var(--green2)':r>=0.5?'var(--gold2)':'var(--verm)';
+      html+=`<div class="friction-tag-row" style="margin-bottom:5px"><span>${BREAK_LABELS[type]||type}</span><span style="color:${color};font-weight:700">${pct(r)} back <span style="color:var(--muted2);font-weight:400;font-size:10px">(${v.total})</span></span></div>`;
+    });
+  }
+  // Session-length buckets
+  html+='<div class="friction-week-hdr" style="margin-top:18px">Session Length Distribution</div><div style="display:flex;gap:8px;flex-wrap:wrap">';
+  const total=Object.values(stats.buckets).reduce((a,n)=>a+n,0)||1;
+  Object.entries(stats.buckets).forEach(([k,n])=>{
+    const pctVal=Math.round(n/total*100);
+    html+=`<div style="text-align:center;min-width:48px"><div style="font-size:16px;font-weight:700;color:var(--text)">${pctVal}%</div><div style="font-size:9px;color:var(--muted2);margin-top:2px">${k} min</div></div>`;
+  });
+  html+='</div>';
+  // Time-of-day
+  html+='<div class="friction-week-hdr" style="margin-top:18px">Avg Session Length by Time of Day</div><div style="display:flex;gap:8px;flex-wrap:wrap">';
+  const BAND_LABELS={morning:'🌅 morning',afternoon:'☀ afternoon',evening:'🌆 evening',night:'🌙 night'};
+  Object.entries(stats.bands).forEach(([band,v])=>{
+    const avg=v.n>0?Math.round(v.mins/v.n):0;
+    html+=`<div style="text-align:center;min-width:56px"><div style="font-size:16px;font-weight:700;color:var(--text)">${avg}m</div><div style="font-size:9px;color:var(--muted2);margin-top:2px">${BAND_LABELS[band]}</div></div>`;
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+
 function switchInsight(tab){
   _insightTab = tab;
-  ['friction','problems','proven','thoughts','archive'].forEach(t => {
+  ['friction','problems','proven','thoughts','lifebot','archive'].forEach(t => {
     const s = document.getElementById('ins-'+t);
     const b = document.getElementById('ins-tab-'+t);
     if(s) s.classList.toggle('on', t===tab);
@@ -5315,6 +5486,7 @@ function switchInsight(tab){
   else if(tab==='problems') renderProblemsMap();
   else if(tab==='proven') renderProvenTools();
   else if(tab==='thoughts') renderThoughtSpace();
+  else if(tab==='lifebot') renderLifebot();
   else if(tab==='archive') renderArchive();
 }
 
@@ -6139,7 +6311,7 @@ async function pushCloud(){
     ?? (_cloudSyncDone ? _cloudTimerCache : undefined);
   const data = {
     skillDefs: getDefs(), skillData: getData(),
-    sessions: sess, habits: getHabits(), tasks: getTasks(), protein: getProteinLog(),
+    sessions: sess, breaks: getBreaks(), habits: getHabits(), tasks: getTasks(), protein: getProteinLog(),
     conclusions: getConclusions(),
     pregame: getPregame(), opener: getOpener(), habitMgr: getHabitMgr(), archive: getArchive(),
     frictionLog: getFrictionLog(), frictionDismissed: getFrictionDismissed(),
