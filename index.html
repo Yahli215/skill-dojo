@@ -5159,25 +5159,26 @@ function setVerdictOutcome(verdictId, outcome){
   const d = getReviewMgr();
   const v = d.verdicts.find(x => x.id === verdictId);
   if(!v) return;
-  const prevOutcome = v.outcome;
-  v.outcome = v.outcome === outcome ? null : outcome; // toggle
 
-  // "Held up" is a structural win — log it as a proven tool automatically,
-  // the same way a completed Pomodoro round gets logged rather than just
-  // checked off. Reversing out of "held" (toggle off, or switching to
-  // "nope") removes the entry it created.
-  if(prevOutcome === 'held' && v.outcome !== 'held' && v.provenToolId){
-    saveProvenTools(getProvenTools().filter(p => p.id !== v.provenToolId));
-    v.provenToolId = null;
-  } else if(v.outcome === 'held' && prevOutcome !== 'held'){
+  if(outcome === 'held'){
+    // "Held up" = trial's done, it worked. Log it as a proven tool and drop
+    // it out of the verdicts list entirely — a completed task, same feel as
+    // a finished Pomodoro round or a verdict sent to Habits. One-way, no
+    // toggle-off, since there's nothing left in the list to toggle.
     const entry = {id:uid(), tool: v.solution||'', problem: v.problem||'', domain:'general life', ts:new Date().toISOString(), source:'verdict', verdictId: v.id};
     const all = getProvenTools();
     all.unshift(entry);
     saveProvenTools(all);
-    v.provenToolId = entry.id;
-    toast('Logged as proven tool.', 2000);
+    d.verdicts = d.verdicts.filter(x => x.id !== verdictId);
+    saveReviewMgr(d);
+    if(typeof pushSync === 'function') pushSync();
+    toast('Held up — logged as proven tool.', 2200);
+    renderReview();
+    return;
   }
 
+  // "Didn't hold" — just record the outcome, keep it visible, toggleable.
+  v.outcome = v.outcome === outcome ? null : outcome;
   saveReviewMgr(d);
   renderReview();
 }
@@ -5241,6 +5242,23 @@ function renderReview(){
   }
 
   // ─── VERDICTS tab ─────────────────────────────────
+  // One-time cleanup: verdicts already marked "held" from before this was a
+  // one-way completion (older client) — make sure they're logged as a
+  // proven tool, then drop them out of storage instead of just the view.
+  const strandedHeld = (d.verdicts||[]).filter(v => v.outcome === 'held');
+  if(strandedHeld.length){
+    const provenVerdictIds = new Set(getProvenTools().map(p => p.verdictId).filter(Boolean));
+    const toLog = strandedHeld.filter(v => !provenVerdictIds.has(v.id));
+    if(toLog.length){
+      const all = getProvenTools();
+      toLog.forEach(v => all.unshift({id:uid(), tool: v.solution||'', problem: v.problem||'', domain:'general life', ts:new Date().toISOString(), source:'verdict', verdictId: v.id}));
+      saveProvenTools(all);
+    }
+    d.verdicts = d.verdicts.filter(v => v.outcome !== 'held');
+    saveReviewMgr(d);
+    if(typeof pushSync === 'function') pushSync();
+  }
+
   const vlistEl = document.getElementById('dr-verdict-list');
   if(vlistEl){
     const sorted = [...d.verdicts].filter(v => !v.sentToHabits).sort((a,b) => b.issuedAt.localeCompare(a.issuedAt));
