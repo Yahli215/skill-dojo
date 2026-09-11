@@ -5378,14 +5378,19 @@ function renderInsights(){ switchInsight(_insightTab); }
 
 /* ── LIFEBOT ─────────────────────────────────────────── */
 function computeLifebotStats(){
-  const sess=getSess().filter(s=>s.stop);
+  const allSess=getSess().filter(s=>s.stop);
   const breaks=getBreaks();
-  // 1. Completion rate by skill (n>=8)
+  // Only count sessions within plausible working hours (7:00–23:00)
+  // to exclude phantom/forgotten overnight sessions
+  const inHours=s=>{ const h=new Date(s.start||s.startTime).getHours(); return h>=7&&h<23; };
+  const sess=allSess.filter(inHours);
+  // 1. Completion rate by skill — only sessions where plannedMins is set (v66+)
+  // Pre-v66 sessions have plannedMins==null and would all show as 'completed' (fake data)
   const bySkill={};
-  sess.forEach(s=>{
+  sess.filter(s=>s.plannedMins!=null).forEach(s=>{
     if(!bySkill[s.skillId]) bySkill[s.skillId]={total:0,completed:0};
     bySkill[s.skillId].total++;
-    if(s.outcome==='completed'||s.plannedMins==null) bySkill[s.skillId].completed++;
+    if(s.outcome==='completed') bySkill[s.skillId].completed++;
   });
   const completionBySkill=Object.entries(bySkill)
     .filter(([,v])=>v.total>=8)
@@ -5404,7 +5409,7 @@ function computeLifebotStats(){
       if(lag<30*60*1000) contByType[type].continued++;
     }
   });
-  // 3. Session-length buckets
+  // 3. Session-length buckets (working-hours sessions only)
   const buckets={'1-15':0,'16-30':0,'31-60':0,'61-90':0,'90+':0};
   sess.forEach(s=>{
     const m=s.mins||0;
@@ -5414,7 +5419,7 @@ function computeLifebotStats(){
     else if(m<=90) buckets['61-90']++;
     else buckets['90+']++;
   });
-  // 4. Time-of-day bands
+  // 4. Time-of-day bands (working-hours sessions only)
   const bands={morning:{mins:0,n:0},afternoon:{mins:0,n:0},evening:{mins:0,n:0},night:{mins:0,n:0}};
   sess.forEach(s=>{
     const h=new Date(s.start||s.startTime).getHours();
@@ -5433,7 +5438,7 @@ function renderLifebot(){
   const pct=n=>(n*100).toFixed(0)+'%';
   // Completion by skill
   let html='<div class="friction-week-hdr">Completion Rate by Skill</div>';
-  if(!stats.completionBySkill.length){ html+='<div class="concl-empty">Need 8+ sessions per skill.</div>'; }
+  if(!stats.completionBySkill.length){ html+='<div class="concl-empty" style="font-size:11px;color:var(--muted2)">Need 8+ Pomodoro sessions per skill logged after v66 — old sessions are excluded (no planned duration recorded).</div>'; }
   else {
     stats.completionBySkill.sort((a,b)=>b.rate-a.rate).forEach(({skillId,rate,n})=>{
       const sk=skills.find(s=>s.id===skillId);
