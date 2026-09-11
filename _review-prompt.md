@@ -26,12 +26,23 @@ For each unreviewed entry, read the `text` (or `worked`/`newProblem` in legacy e
 - **WIN** — describes something that worked, a positive observation, a useful discovery, or progress.
 - **MIXED** — contains both. Split into problem part and win part and handle each separately.
 
-## 4a. For PROBLEM entries → generate a verdict
+## 4a. For PROBLEM entries → classify stakes, then generate a verdict
+
+### Stakes classification
+
+A verdict is **HIGH STAKES** if the solution fundamentally depends on which structural or environmental *mechanism type* is chosen — i.e., a hardware/consequence device, a social-accountability arrangement, and a scheduling/environment redesign would each produce genuinely different outcomes and it's not obvious which fits best. When the right mechanism is unclear, default to HIGH STAKES.
+
+A verdict is **LOW STAKES** if the problem has a clear, obvious single solution path (minor friction, simple timing fix, obvious removal of one bad habit, etc.) where generating 3 mechanism alternatives would be artificial.
+
+---
+
+### LOW STAKES verdict (single solution, status "final", commit immediately)
 
 ```json
 {
   "id": "v<unix_ms>",
   "issuedAt": "<today YYYY-MM-DD>",
+  "status": "final",
   "coveredEntryIds": ["<entry.id>"],
   "problem": "<one-sentence restatement>",
   "solution": "<specific, concrete experiment — not generic advice>",
@@ -44,7 +55,57 @@ For each unreviewed entry, read the `text` (or `worked`/`newProblem` in legacy e
 }
 ```
 
-Constraints:
+---
+
+### HIGH STAKES verdict (3 candidates, status "draft", wait for Ran's pick)
+
+Generate 3 candidates with genuinely different mechanism types. Reject any candidate that is a minor variant of another already in the list.
+
+Mechanism types to draw from (use each at most once per verdict):
+- **device** — a physical object, app lock, alarm, or external consequence mechanism
+- **social** — another person observes, is told, or is affected by a miss
+- **environment** — scheduling change or friction removal that makes the failure mode structurally harder to reach
+- **other** — anything that doesn't fit the above
+
+```json
+{
+  "id": "v<unix_ms>",
+  "issuedAt": "<today YYYY-MM-DD>",
+  "status": "draft",
+  "coveredEntryIds": ["<entry.id>"],
+  "problem": "<one-sentence restatement>",
+  "solution": null,
+  "whyRootCause": "<one line>",
+  "whyFalsifiable": "<one line>",
+  "whyPatternMatch": "<one line>",
+  "trialLength": "<e.g. '2 weeks'>",
+  "reviewDate": null,
+  "outcome": null,
+  "candidates": [
+    {
+      "type": "device|social|environment|other",
+      "solution": "<specific, concrete>",
+      "whyThisType": "<one line — why this mechanism fits the root cause>"
+    },
+    {
+      "type": "...",
+      "solution": "...",
+      "whyThisType": "..."
+    },
+    {
+      "type": "...",
+      "solution": "...",
+      "whyThisType": "..."
+    }
+  ]
+}
+```
+
+**Do NOT commit a draft verdict to Supabase yet.** Present the candidates to Ran first (see Step 6). Once he picks or supplies his own solution, write that into `solution`, flip `status` to `"final"`, set `trialLength` and `reviewDate` from that point, then commit.
+
+---
+
+Constraints (apply to all verdicts):
 - Root cause > symptom
 - Specific > generic ("Do X at Y time" beats "be more consistent")
 - Ran's context: 19yo chess GM, 90-min focus blocks, chess ends 22:30, sleep 00:00, daily sport. Urgency hurts his chess. Slow/deep is the right gear.
@@ -69,7 +130,9 @@ If it's just a positive observation with no clear reusable tool, note it briefly
 
 ## 5. Write back
 
-Mark all processed entries `reviewed: true`. PATCH the full data object back:
+Mark all processed entries `reviewed: true`. Commit LOW STAKES verdicts and WIN provenTools entries now. Do NOT commit HIGH STAKES draft verdicts — wait for Ran's pick first.
+
+PATCH the full data object back:
 
 ```bash
 curl -s -X PATCH \
@@ -83,7 +146,7 @@ curl -s -X PATCH \
 
 ## 6. Output format
 
-For each PROBLEM verdict:
+**For LOW STAKES verdicts (already committed):**
 **Problem:** ...
 **→ Try:** ...
 **Root cause:** ...
@@ -91,7 +154,25 @@ For each PROBLEM verdict:
 **Pattern:** ...
 **Trial:** X weeks · Review DATE
 
-For each WIN added to provenTools:
+**For HIGH STAKES draft verdicts (awaiting pick):**
+**Problem:** ...
+**Root cause:** ...
+**Signal:** ...
+**Pattern:** ...
+
+Pick a solution:
+**A** *(device)* — [solution]
+  *→ [whyThisType]*
+**B** *(social)* — [solution]
+  *→ [whyThisType]*
+**C** *(environment)* — [solution]
+  *→ [whyThisType]*
+
+*or: none of these — tell me what you'd rather do.*
+
+Once Ran replies with A/B/C or his own version, write that into `solution`, flip `status` to `"final"`, set `trialLength` and `reviewDate` from today, commit to Supabase.
+
+**For each WIN added to provenTools:**
 **Win logged:** [tool name] — [evidence]
 
 No preamble, no encouragement.
