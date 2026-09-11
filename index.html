@@ -5185,8 +5185,9 @@ function sendVerdictToHabits(verdictId){
     hd.active.push(newHabit('trigger-replacement', anchor, v.problem, v.solution, notes, null));
   }
   saveHabitMgr(hd);
-  v.sentToHabits = true;
+  rd.verdicts = (rd.verdicts||[]).filter(x => x.id !== verdictId);
   saveReviewMgr(rd);
+  if(typeof pushSync === 'function') pushSync();
   renderReview();
   toast('Sent to Habits.', 2500);
 }
@@ -5224,7 +5225,7 @@ function renderReview(){
   // ─── VERDICTS tab ─────────────────────────────────
   const vlistEl = document.getElementById('dr-verdict-list');
   if(vlistEl){
-    const sorted = [...d.verdicts].sort((a,b) => b.issuedAt.localeCompare(a.issuedAt));
+    const sorted = [...d.verdicts].filter(v => !v.sentToHabits).sort((a,b) => b.issuedAt.localeCompare(a.issuedAt));
     if(!sorted.length){
       vlistEl.innerHTML = `<div class="dr-empty">No verdicts yet. Claude will add them here after morning review.</div>`;
     } else {
@@ -5232,9 +5233,7 @@ function renderReview(){
         const issDate = v.issuedAt ? v.issuedAt.slice(0,10) : '—';
         const heldActive  = v.outcome === 'held'  ? 'active' : '';
         const nopeActive  = v.outcome === 'nope'  ? 'active' : '';
-        const sendRow = v.sentToHabits
-          ? `<div class="verdict-sent-badge">✓ In Habits</div>`
-          : `<button class="verdict-outcome-btn" onclick="sendVerdictToHabits('${v.id}')" style="margin-top:8px">→ Send to Habits</button>`;
+        const sendRow = `<button class="verdict-outcome-btn" onclick="sendVerdictToHabits('${v.id}')" style="margin-top:8px">→ Send to Habits</button>`;
         return `<div class="verdict-card">
           <div class="verdict-date">Issued ${issDate} · Trial ${esc(v.trialLength||'?')} · Review ${esc(v.reviewDate||'?')}</div>
           <div class="verdict-problem">${esc(v.problem)}</div>
