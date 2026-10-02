@@ -5559,6 +5559,10 @@ function renderExperimentCard(h, idx){
   const reviews = h.weeklyReviews||[];
 
   let html = `<div class="exp-meta-row" style="margin-bottom:12px"><span>Started ${startedLbl}</span><span>·</span><span>${fmtDuration(days)}</span></div>
+    <div class="habit-notes-lbl">Habit name:</div>
+    <input class="habit-notes-inp" style="margin-bottom:8px" value="${esc(h.tool||'')}" placeholder="What I'm doing (e.g. sleep by 10pm)…" oninput="schedSaveHabitField(${idx},'tool',this.value)">
+    <div class="habit-notes-lbl">Problem it fixes:</div>
+    <input class="habit-notes-inp" style="margin-bottom:8px" value="${esc(h.problem||'')}" placeholder="Root cause or pattern…" oninput="schedSaveHabitField(${idx},'problem',this.value)">
     <div class="habit-notes-lbl">Specific behavior I'm building:</div>
     <textarea class="habit-notes-inp" id="habit-notes-${idx}"
       placeholder="Describe the exact trigger, action, and reward…"
@@ -5587,6 +5591,7 @@ function renderExperimentCard(h, idx){
       ? new Date(h.milestoneDate+'T12:00:00').toLocaleDateString([],{month:'short',day:'numeric',year:'2-digit'})
       : '—';
     html += `<div class="exp-section-lbl" style="margin-top:12px">Milestone review: <span style="color:${msDue?'var(--indigo)':'var(--muted2)'}">${msDateFmt}${msDue?' (due now)':''}</span></div>
+      <input type="date" class="habit-notes-inp" style="margin-bottom:8px;padding:7px 10px" value="${h.milestoneDate||''}" onchange="schedSaveHabitField(${idx},'milestoneDate',this.value)">
       <div class="exp-week-rollup" style="margin-bottom:8px">${weekCount}/7 days checked this week</div>`;
     if(msDue){
       html += `<div class="milestone-review-box">
@@ -5892,6 +5897,17 @@ function schedSaveOutcomeNote(idx, text){
     if(!d.active[idx]) return;
     d.active[idx].outcomeNote = text;
     saveHabitMgr(d);
+  }, 700);
+}
+function schedSaveHabitField(idx, field, value){
+  const key = 'field-'+idx+'-'+field;
+  if(_notesDebounce[key]) clearTimeout(_notesDebounce[key]);
+  _notesDebounce[key] = setTimeout(()=>{
+    const d = getHabitMgr();
+    if(!d.active[idx]) return;
+    d.active[idx][field] = value || null;
+    saveHabitMgr(d);
+    renderHabitMgr();
   }, 700);
 }
 
