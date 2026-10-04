@@ -188,6 +188,10 @@ body.light::before { opacity: .06; }
 .t-next-btn { display: none; margin-top: 5px; background: none; border: 1px solid rgba(200,144,10,.4); border-radius: 5px; padding: 4px 10px; color: var(--gold2); font-size: 9px; cursor: pointer; letter-spacing: 1px; transition: all .15s; }
 .t-next-btn:hover { background: rgba(200,144,10,.1); }
 .timer-bar.break .t-next-btn { display: block; }
+.t-switch-btn { display: none; margin-top: 5px; background: none; border: 1px solid rgba(91,200,212,.3); border-radius: 5px; padding: 4px 10px; color: #5bc8d4; font-size: 9px; cursor: pointer; letter-spacing: 1px; transition: all .15s; }
+.t-switch-btn:hover { background: rgba(91,200,212,.1); }
+.timer-bar.on .t-switch-btn { display: block; }
+.timer-bar.break .t-switch-btn { display: none; }
 
 /* ── CHECK-IN BANNER ───────────────────────────────── */
 #checkin-banner { display:none; background:rgba(220,50,50,.07); border:1px solid rgba(220,50,50,.25); padding:14px 22px; margin-bottom:20px; align-items:center; gap:16px; }
@@ -1246,6 +1250,7 @@ body.light .page-watermark { opacity: .2; }
       <div class="t-right">
         <div class="t-time" id="t-time">00:00</div>
         <button class="t-stop" onclick="stopTimer()">■ 止める</button>
+        <button class="t-switch-btn" onclick="openSwitchTopic()">⇄ Switch</button>
         <button class="t-next-btn" onclick="openNextRoundEdit()">✎ Next round</button>
       </div>
     </div>
@@ -1696,7 +1701,7 @@ body.light .page-watermark { opacity: .2; }
 <!-- Next Round Edit Modal -->
 <div class="btl-modal-ov" id="next-round-ov" onclick="if(event.target===this)closeNextRoundEdit()">
   <div class="btl-modal" style="max-width:360px">
-    <div class="btl-modal-title">NEXT ROUND</div>
+    <div class="btl-modal-title" id="next-round-title">NEXT ROUND</div>
     <div id="next-round-pills" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
     <input class="btl-inp" id="next-round-desc" placeholder="What will you work on?" maxlength="100">
     <div class="btl-modal-row">
@@ -2748,8 +2753,8 @@ function stopTimer(){
   if(!activeTimer) return;
   // Pomodoro break: work was already auto-saved — just end the break cleanly
   if(activeTimer.isPomo && activeTimer.phase==='break'){ cancelTimer(); return; }
-  // For Pomodoro work phase: measure from phaseStart (current round only)
-  const tStart = (activeTimer.isPomo && activeTimer.phase==='work') ? activeTimer.phaseStart : activeTimer.startTime;
+  // Measure from phaseStart — updated on topic switch so this always reflects the current segment
+  const tStart = activeTimer.phaseStart || activeTimer.startTime;
   const elapsed = Math.floor((Date.now()-tStart)/1000);
   const mins = Math.floor(elapsed/60);
   if(mins<1){ toast('稽古が短すぎます (< 1 min)'); cancelTimer(); return; }
@@ -2783,9 +2788,31 @@ function cancelTimer(){
 }
 
 let _nextRoundSelId=null;
+let _switchMode=false;
+function openSwitchTopic(){
+  if(!activeTimer) return;
+  _switchMode=true;
+  _nextRoundSelId=activeTimer.skillId;
+  const pillsEl=document.getElementById('next-round-pills');
+  if(pillsEl){
+    pillsEl.innerHTML=skills.map(sk=>`
+      <button class="skill-pill${sk.id===_nextRoundSelId?' sel':''}" data-id="${sk.id}"
+        onclick="document.querySelectorAll('#next-round-pills .skill-pill').forEach(b=>b.classList.remove('sel'));this.classList.add('sel');_nextRoundSelId=this.dataset.id">
+        ${sk.emoji} ${esc(sk.name)}
+      </button>`).join('');
+  }
+  const descEl=document.getElementById('next-round-desc');
+  if(descEl) descEl.value=activeTimer.desc||'';
+  const titleEl=document.getElementById('next-round-title');
+  if(titleEl) titleEl.textContent='SWITCH TOPIC NOW';
+  document.getElementById('next-round-ov').classList.add('on');
+}
 function openNextRoundEdit(){
   if(!activeTimer) return;
+  _switchMode=false;
   _nextRoundSelId=activeTimer.skillId;
+  const titleEl=document.getElementById('next-round-title');
+  if(titleEl) titleEl.textContent='NEXT ROUND';
   const pillsEl=document.getElementById('next-round-pills');
   if(pillsEl){
     pillsEl.innerHTML=skills.map(sk=>`
@@ -2805,10 +2832,37 @@ function closeNextRoundEdit(){
 function saveNextRoundEdit(){
   if(!activeTimer) return;
   const desc=document.getElementById('next-round-desc').value.trim();
-  if(_nextRoundSelId) activeTimer.skillId=_nextRoundSelId;
+  const newSkillId=_nextRoundSelId||activeTimer.skillId;
+
+  if(_switchMode && newSkillId!==activeTimer.skillId){
+    // flush elapsed time to the current skill before switching
+    const oldSkillId=activeTimer.skillId;
+    const tStart=activeTimer.phaseStart||activeTimer.startTime;
+    const elapsed=Math.floor((Date.now()-tStart)/1000);
+    const mins=Math.floor(elapsed/60);
+    const oldSk=skills.find(s=>s.id===oldSkillId);
+    if(mins>=1){
+      const partDesc=(activeTimer.desc||'')+(activeTimer.isPomo?' · R'+activeTimer.round+'a':' (split)');
+      const partSess={id:uid(),skillId:oldSkillId,description:partDesc,startTime:tStart,endTime:Date.now(),duration:elapsed,mins,stop:new Date().toISOString(),start:new Date(tStart).toISOString(),duration_minutes:mins,plannedMins:null,outcome:'completed',end_rpe:null,peak_rpe:null,session_load:null};
+      const all=getSess(); all.push(partSess); ls.set('sq_sessions',all); sessions=all;
+      const data=getData();
+      if(!data[oldSkillId]) data[oldSkillId]={totalMins:0,rank:'Novice'};
+      data[oldSkillId].totalMins+=mins;
+      data[oldSkillId].rank=getRank(data[oldSkillId].totalMins).name;
+      ls.set('sq_skill_data',data);
+      try{renderDaily();}catch(e){}
+      pushSync();
+    }
+    // reset segment start to now
+    activeTimer.phaseStart=Date.now();
+    if(!activeTimer.isPomo) activeTimer.startTime=Date.now();
+    const newSk=skills.find(s=>s.id===newSkillId);
+    toast(`${mins>=1?mins+'m saved to '+(oldSk?.name||'prev')+'  · ':''} Now on ${newSk?.name||'new topic'}`,2500);
+  }
+
+  activeTimer.skillId=newSkillId;
   if(desc) activeTimer.desc=desc;
   ls.set('sq_active_timer',activeTimer);
-  // Update the timer bar display immediately
   const sk=skills.find(s=>s.id===activeTimer.skillId);
   if(sk){
     const skEl=document.getElementById('t-skill'); if(skEl) skEl.textContent=sk.emoji+' '+sk.name;
@@ -2816,7 +2870,7 @@ function saveNextRoundEdit(){
   }
   const dEl=document.getElementById('t-desc'); if(dEl) dEl.textContent=activeTimer.desc;
   closeNextRoundEdit();
-  toast('Next round updated.',1800);
+  if(!_switchMode) toast('Next round updated.',1800);
 }
 
 function resetTabIndicator(){
