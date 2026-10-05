@@ -58,8 +58,8 @@ body {
   color: var(--text);
   font-family: var(--mono);
   min-height: 100vh;
-  font-size: 12px;
-  line-height: 1.6;
+  font-size: 13px;
+  line-height: 1.65;
 }
 body.light::before { opacity: .06; }
 .z { position: relative; z-index: 1; }
@@ -2853,8 +2853,10 @@ function saveNextRoundEdit(){
       try{renderDaily();}catch(e){}
       pushSync();
     }
-    // reset segment start to now
+    // reset segment start to now, deduct elapsed from planned duration
     activeTimer.phaseStart=Date.now();
+    if(activeTimer.isPomo && activeTimer.phase==='work')
+      activeTimer.pw=Math.max(1,(activeTimer.pw||90)-Math.floor(elapsed/60));
     if(!activeTimer.isPomo) activeTimer.startTime=Date.now();
     const newSk=skills.find(s=>s.id===newSkillId);
     toast(`${mins>=1?mins+'m saved to '+(oldSk?.name||'prev')+'  · ':''} Now on ${newSk?.name||'new topic'}`,2500);
