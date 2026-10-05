@@ -1235,6 +1235,39 @@ body.light .page-watermark { opacity: .2; }
 .ml-modal-row{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;}
 .ml-modal-cancel{background:none;border:1px solid var(--b2);color:var(--muted2);font-family:var(--mono);font-size:10px;padding:7px 14px;cursor:pointer;border-radius:5px;}
 .ml-modal-save{background:var(--verm);border:none;color:#fff;font-family:var(--serif);font-size:11px;font-weight:700;padding:8px 18px;cursor:pointer;border-radius:5px;letter-spacing:1px;}
+/* ── PROBLEM TRACKER ─────────────────────────────────── */
+.pt-status-badge{font-size:8px;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;border-radius:10px;font-weight:700;}
+.pt-status-badge.open{background:var(--s2);color:var(--muted2);border:1px solid var(--b2);}
+.pt-status-badge.in_progress{background:rgba(104,120,192,.18);color:var(--indigo);border:1px solid rgba(104,120,192,.35);}
+.pt-status-badge.solved{background:rgba(74,144,96,.15);color:var(--green2);border:1px solid rgba(74,144,96,.3);}
+.pt-steps{margin-top:14px;padding-top:12px;border-top:1px solid var(--b1);display:flex;flex-direction:column;gap:14px;}
+.pt-step{background:var(--s2);border:1px solid var(--b1);border-radius:7px;padding:12px 14px;}
+.pt-step-hdr{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.pt-step-num{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;background:var(--b2);color:var(--muted2);}
+.pt-step-num.done{background:var(--green2);color:#fff;}
+.pt-step-num.active{background:var(--indigo);color:#fff;}
+.pt-step-title{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted2);}
+.pt-step-body{font-size:11px;color:var(--text);line-height:1.6;}
+.pt-sol-list{display:flex;flex-direction:column;gap:5px;margin-bottom:8px;}
+.pt-sol-item{display:flex;gap:8px;align-items:flex-start;}
+.pt-sol-text{flex:1;font-size:11px;color:var(--text);line-height:1.4;}
+.pt-sol-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:0;line-height:1;flex-shrink:0;margin-top:1px;}
+.pt-sol-del:hover{color:var(--verm);}
+.pt-sol-add{display:flex;gap:6px;margin-top:4px;}
+.pt-sol-inp{flex:1;background:var(--bg);border:1px solid var(--b2);padding:6px 8px;color:var(--text);font-family:var(--mono);font-size:11px;outline:none;border-radius:4px;}
+.pt-sol-inp:focus{border-color:var(--gold);}
+.pt-sol-add-btn{background:none;border:1px solid var(--b2);color:var(--muted2);font-family:var(--mono);font-size:10px;padding:5px 12px;border-radius:4px;cursor:pointer;white-space:nowrap;}
+.pt-sol-add-btn:hover{border-color:var(--gold);color:var(--gold);}
+.pt-exp-list{display:flex;flex-direction:column;gap:8px;margin-bottom:8px;}
+.pt-exp-card{background:var(--bg);border:1px solid var(--b1);border-radius:6px;padding:10px 12px;}
+.pt-exp-title{font-size:11px;font-weight:700;margin-bottom:4px;}
+.pt-exp-meta{font-size:9px;color:var(--muted2);margin-bottom:6px;display:flex;gap:8px;flex-wrap:wrap;}
+.pt-exp-btns{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;}
+.pt-verdict-hist{margin-top:8px;padding-top:8px;border-top:1px solid var(--b1);}
+.pt-final-inp{width:100%;background:var(--bg);border:1px solid var(--b2);padding:8px 10px;color:var(--text);font-family:var(--mono);font-size:11px;outline:none;resize:vertical;border-radius:4px;min-height:60px;margin-bottom:8px;}
+.pt-final-inp:focus{border-color:var(--gold);}
+.pt-solve-btn{background:var(--green2);border:none;color:#fff;font-family:var(--serif);font-size:11px;font-weight:700;padding:7px 16px;cursor:pointer;border-radius:5px;letter-spacing:1px;}
+.pt-solve-btn:hover{opacity:.85;}
 </style>
 </head>
 <body class="z">
@@ -1304,7 +1337,7 @@ body.light .page-watermark { opacity: .2; }
       <button class="view-nav-btn"    id="vnav-tasks"    onclick="switchView('tasks')">課題 Tasks</button>
       <button class="view-nav-btn"    id="vnav-insights" onclick="switchView('insights')">洞察 Insights</button>
       <button class="view-nav-btn"    id="vnav-review"   onclick="switchView('review')">審 Review</button>
-      <button class="view-nav-btn"    id="vnav-methods"  onclick="switchView('methods')">術 Methods</button>
+      <button class="view-nav-btn"    id="vnav-methods"  onclick="switchView('methods')">解 Problems</button>
     </div>
 
     <div id="training-view">
@@ -1655,114 +1688,80 @@ body.light .page-watermark { opacity: .2; }
 
     <!-- ── METHODS VIEW ───────────────────────────────── -->
     <div id="methods-view" style="display:none">
-      <div class="ml-due-banner" id="ml-due-banner">
-        <div class="ml-due-hdr">⚑ Due for review</div>
-        <div class="ml-due-list" id="ml-due-list"></div>
-      </div>
-      <div class="ml-filters" id="ml-filters"></div>
-      <div id="ml-list"></div>
-      <button class="ml-add-btn" onclick="openMethodModal()">+ Add method</button>
+      <div class="ml-filters" id="pt-filters"></div>
+      <div id="pt-list"></div>
+      <button class="ml-add-btn" onclick="openProblemModal()">+ New problem</button>
     </div><!-- /methods-view -->
 
   </div>
 </div>
 
 <!-- Method add/edit modal -->
-<div class="ml-modal-ov" id="ml-modal-ov" onclick="if(event.target===this)closeMethodModal()">
+<!-- Problem modal (create / edit problem) -->
+<div class="ml-modal-ov" id="pt-modal-ov" onclick="if(event.target===this)closeProblemModal()">
   <div class="ml-modal">
-    <div class="ml-modal-title" id="ml-modal-title">New Method</div>
+    <div class="ml-modal-title" id="pt-modal-title">New Problem</div>
     <div class="ml-field">
-      <div class="ml-field-lbl">Name</div>
-      <input class="ml-inp" id="ml-name" placeholder="e.g. No flashcards for chess ideas">
-    </div>
-    <div class="ml-field">
-      <div class="ml-field-lbl">Area</div>
-      <div class="ml-chip-row" id="ml-area-chips"></div>
+      <div class="ml-field-lbl">Problem name (short)</div>
+      <input class="ml-inp" id="pt-title" placeholder="e.g. Evening phone spiral">
     </div>
     <div class="ml-field">
-      <div class="ml-field-lbl">What I do (1–2 lines)</div>
-      <textarea class="ml-textarea" id="ml-what" rows="2" placeholder="Describe the practice concisely…"></textarea>
-    </div>
-    <div class="ml-field">
-      <div class="ml-field-lbl">Status</div>
-      <div class="ml-chip-row" id="ml-status-chips"></div>
-    </div>
-    <div class="ml-field">
-      <div class="ml-field-lbl">Source</div>
-      <div class="ml-chip-row" id="ml-source-chips"></div>
-    </div>
-    <div class="ml-field">
-      <div class="ml-field-lbl">Hypothesis — what I expect it to improve</div>
-      <textarea class="ml-textarea" id="ml-hypothesis" rows="2" placeholder="If I do X, then Y will improve because…"></textarea>
-    </div>
-    <div class="ml-field">
-      <div class="ml-field-lbl">Metric — one number or rating I'll judge it by</div>
-      <input class="ml-inp" id="ml-metric" placeholder="e.g. % of ideas recalled, avg sleep quality rating">
-    </div>
-    <div class="ml-field" id="ml-dur-field">
-      <div class="ml-field-lbl">Minimum duration / sample before verdict</div>
-      <input class="ml-inp" id="ml-duration" placeholder="e.g. 14 nights, 20 games, 6 weeks">
-    </div>
-    <div class="ml-field" id="ml-kill-field">
-      <div class="ml-field-lbl">Kill condition (drop early if…)</div>
-      <textarea class="ml-textarea" id="ml-kill" rows="2" placeholder="e.g. score under 60% after 20 trials → switch approach"></textarea>
-    </div>
-    <div class="ml-field">
-      <div class="ml-field-lbl">Check date</div>
-      <input class="ml-inp" id="ml-checkdate" type="date">
+      <div class="ml-field-lbl">Step 1 — Describe the problem</div>
+      <textarea class="ml-textarea" id="pt-problem" rows="4" placeholder="What exactly is happening? When? What does it cost you?"></textarea>
     </div>
     <div class="ml-modal-row">
-      <button class="ml-modal-cancel" onclick="closeMethodModal()">Cancel</button>
-      <button class="ml-modal-save" onclick="saveMethodModal()">Save</button>
+      <button class="ml-modal-cancel" onclick="closeProblemModal()">Cancel</button>
+      <button class="ml-modal-save" onclick="saveProblemModal()">Save</button>
     </div>
   </div>
 </div>
 
-<!-- Verdict modal -->
-<div class="ml-modal-ov" id="ml-verdict-ov" onclick="if(event.target===this)closeVerdictModal()">
+<!-- Experiment modal (step 3) -->
+<div class="ml-modal-ov" id="pt-exp-modal-ov" onclick="if(event.target===this)closePtExpModal()">
+  <div class="ml-modal">
+    <div class="ml-modal-title" id="pt-exp-modal-title">New Experiment</div>
+    <div class="ml-field">
+      <div class="ml-field-lbl">Solution being tested</div>
+      <input class="ml-inp" id="pt-exp-solution" placeholder="Which solution from step 2 are you testing?">
+    </div>
+    <div class="ml-field">
+      <div class="ml-field-lbl">Hypothesis — what should happen</div>
+      <textarea class="ml-textarea" id="pt-exp-hypothesis" rows="2" placeholder="If I do X, then Y will happen because…"></textarea>
+    </div>
+    <div class="ml-field">
+      <div class="ml-field-lbl">How I'll judge it</div>
+      <input class="ml-inp" id="pt-exp-metric" placeholder="e.g. Phone off by 22:00 every night for 2 weeks">
+    </div>
+    <div class="ml-field">
+      <div class="ml-field-lbl">Check date</div>
+      <input class="ml-inp" id="pt-exp-checkdate" type="date">
+    </div>
+    <div class="ml-modal-row">
+      <button class="ml-modal-cancel" onclick="closePtExpModal()">Cancel</button>
+      <button class="ml-modal-save" onclick="savePtExpModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Verdict modal (on experiment) -->
+<div class="ml-modal-ov" id="pt-verdict-ov" onclick="if(event.target===this)closePtVerdictModal()">
   <div class="ml-modal" style="max-width:400px">
     <div class="ml-modal-title">Log Verdict</div>
     <div class="ml-field">
       <div class="ml-field-lbl">Outcome</div>
-      <div class="ml-chip-row" id="ml-verdict-chips"></div>
+      <div class="ml-chip-row" id="pt-verdict-chips"></div>
     </div>
     <div class="ml-field">
-      <div class="ml-field-lbl">Notes — what data / reason</div>
-      <textarea class="ml-textarea" id="ml-verdict-note" rows="3" placeholder="What did you observe? Any numbers?"></textarea>
+      <div class="ml-field-lbl">Notes</div>
+      <textarea class="ml-textarea" id="pt-verdict-note" rows="3" placeholder="What did you observe?"></textarea>
     </div>
     <div class="ml-field">
-      <div class="ml-field-lbl">Next check date (leave blank to close out)</div>
-      <input class="ml-inp" id="ml-verdict-nextdate" type="date">
+      <div class="ml-field-lbl">Next check date (blank = done)</div>
+      <input class="ml-inp" id="pt-verdict-nextdate" type="date">
     </div>
     <div class="ml-modal-row">
-      <button class="ml-modal-cancel" onclick="closeVerdictModal()">Cancel</button>
-      <button class="ml-modal-save" onclick="saveVerdictModal()">Save verdict</button>
-    </div>
-  </div>
-</div>
-
-<!-- Data point modal -->
-<div class="ml-modal-ov" id="ml-dp-ov" onclick="if(event.target===this)closeDpModal()">
-  <div class="ml-modal" style="max-width:360px">
-    <div class="ml-modal-title">Add Data Point</div>
-    <div class="ml-field">
-      <textarea class="ml-textarea" id="ml-dp-note" rows="3" placeholder="e.g. Night 7: slept well, woke once. Rating 7/10"></textarea>
-    </div>
-    <div class="ml-modal-row">
-      <button class="ml-modal-cancel" onclick="closeDpModal()">Cancel</button>
-      <button class="ml-modal-save" onclick="saveDpModal()">Add</button>
-    </div>
-  </div>
-</div>
-
-<!-- Pause picker modal (when 3rd active attempted) -->
-<div class="ml-modal-ov" id="ml-pause-ov">
-  <div class="ml-modal" style="max-width:400px">
-    <div class="ml-modal-title">2 active experiments already</div>
-    <p style="font-size:11px;color:var(--muted2);margin-bottom:14px;line-height:1.6">Pause one to keep signals clean. Which one?</p>
-    <div id="ml-pause-list"></div>
-    <div class="ml-modal-row">
-      <button class="ml-modal-cancel" onclick="closePauseModal()">Cancel</button>
+      <button class="ml-modal-cancel" onclick="closePtVerdictModal()">Cancel</button>
+      <button class="ml-modal-save" onclick="savePtVerdictModal()">Save verdict</button>
     </div>
   </div>
 </div>
@@ -2456,11 +2455,11 @@ async function bootFromCloud(){
         const extraB = localB.filter(b=>!cloudBIds.has(b.id));
         ls.set('sq_breaks', extraB.length ? [...d.breaks,...extraB] : d.breaks);
       }
-      if(d.methods){
-        const localM = ls.get('sq_methods','[]');
-        const cloudMIds = new Set(d.methods.map(m=>m.id));
-        const extraM = localM.filter(m=>!cloudMIds.has(m.id));
-        ls.set('sq_methods', extraM.length ? [...d.methods,...extraM] : d.methods);
+      if(d.problems){
+        const localP = ls.get('sq_problems','[]');
+        const cloudPIds = new Set(d.problems.map(p=>p.id));
+        const extraP = localP.filter(p=>!cloudPIds.has(p.id));
+        ls.set('sq_problems', extraP.length ? [...d.problems,...extraP] : d.problems);
       }
       if(d.tasks){
         const localT = ls.get('sq_tasks','[]');
@@ -2677,11 +2676,11 @@ async function refreshFromCloud(){
         const extraB = localB.filter(b=>!cloudBIds.has(b.id));
         ls.set('sq_breaks', extraB.length ? [...d.breaks,...extraB] : d.breaks);
       }
-      if(d.methods){
-        const localM = ls.get('sq_methods','[]');
-        const cloudMIds = new Set(d.methods.map(m=>m.id));
-        const extraM = localM.filter(m=>!cloudMIds.has(m.id));
-        ls.set('sq_methods', extraM.length ? [...d.methods,...extraM] : d.methods);
+      if(d.problems){
+        const localP = ls.get('sq_problems','[]');
+        const cloudPIds = new Set(d.problems.map(p=>p.id));
+        const extraP = localP.filter(p=>!cloudPIds.has(p.id));
+        ls.set('sq_problems', extraP.length ? [...d.problems,...extraP] : d.problems);
       }
       // Reload the in-memory skill array and re-render without touching intervals
       const defs2 = getDefs(), data2 = getData();
@@ -6599,7 +6598,7 @@ async function pushCloud(){
     thoughtMgr: getThoughtMgr(),
     delegatedReview: getReviewMgr(),
     reviewFeedback: ls.get('sq_review_feedback','[]'),
-    methods: getMethods(),
+    problems: getProblems(),
     ...(timerToWrite !== undefined ? { activeTimer: timerToWrite } : {}),
   };
   try {
@@ -6649,343 +6648,327 @@ function closeBadgeCreate(){}
 function saveBadge(){}
 function deleteBadgeFromForm(){}
 
-/* ── METHODS LAB ─────────────────────────────────────── */
+/* ── PROBLEM TRACKER ─────────────────────────────────── */
 
-const ML_AREAS   = ['thinking','explaining','learning','sleep','training','other'];
-const ML_SOURCES = ['own','research','coach'];
-const ML_STATUSES= ['default','active','paused','adopted','rejected'];
-const ML_STATUS_LABELS = {default:'Default',active:'Active experiment',paused:'Paused',adopted:'Adopted',rejected:'Rejected'};
-const ML_SOURCE_LABELS = {own:'My own idea',research:'Research-backed',coach:'Coach-backed'};
+function getProblems(){ return ls.get('sq_problems','[]'); }
+function saveProblems(arr){ ls.set('sq_problems',arr); pushSync(); }
+// keep sq_methods key populated for backup compatibility
+function getMethods(){ return getProblems(); }
+function saveMethods(arr){ saveProblems(arr); }
 
-function getMethods(){ return ls.get('sq_methods','[]'); }
-function saveMethods(arr){ ls.set('sq_methods',arr); pushSync(); }
+let _ptFilter = 'all';
+let _ptExpanded = new Set();
+let _ptEditId = null;
+let _ptExpModalProbId = null;
+let _ptExpModalExpId = null;
+let _ptVerdictProbId = null;
+let _ptVerdictExpId = null;
 
-function _methodsDue(m){
-  if(!m.checkDate || m.status==='rejected') return null;
-  const today = new Date(); today.setHours(0,0,0,0);
-  const cd = new Date(m.checkDate+'T12:00:00');
-  const diffDays = Math.round((cd-today)/(1000*60*60*24));
-  if(diffDays < 0) return 'overdue';
-  if(diffDays <= 7) return 'soon';
-  return null;
-}
+const PT_STATUSES = ['open','in_progress','solved'];
+const PT_STATUS_LABELS = {open:'Open',in_progress:'In Progress',solved:'Solved'};
+const PT_VERDICT_CHIPS = ['working','mixed','not_working'];
+const PT_VERDICT_LABELS = {working:'Working ✓',mixed:'Mixed →',not_working:'Not working ✕'};
 
-let _mlFilter = 'all';
-let _mlExpanded = new Set();
+function renderMethods(){ renderProblems(); }
 
-function renderMethods(){
-  const methods = getMethods();
-  // Due banner
-  const dueMethods = methods.filter(m => _methodsDue(m));
-  const banner = document.getElementById('ml-due-banner');
-  const dueList = document.getElementById('ml-due-list');
-  if(dueMethods.length){
-    banner.classList.add('show');
-    dueList.innerHTML = dueMethods.map(m => {
-      const due = _methodsDue(m);
-      const cdFmt = new Date(m.checkDate+'T12:00:00').toLocaleDateString([],{month:'short',day:'numeric'});
-      return `<div class="ml-due-item">
-        <span class="ml-due-name">${esc(m.name)}</span>
-        <span class="ml-due-tag ${due}">${due==='overdue'?'OVERDUE':'Due '+cdFmt}</span>
-        <button class="ml-card-btn verdict-btn" style="font-size:9px;padding:3px 8px" onclick="openVerdictModal('${m.id}')">Log verdict →</button>
-      </div>`;
-    }).join('');
-  } else { banner.classList.remove('show'); }
-
+function renderProblems(){
+  const probs = getProblems();
   // Filter chips
-  const filtersEl = document.getElementById('ml-filters');
-  const counts = {all:methods.length};
-  ML_STATUSES.forEach(s => counts[s] = methods.filter(m=>m.status===s).length);
-  filtersEl.innerHTML = [['all','All'],...ML_STATUSES.map(s=>[s,ML_STATUS_LABELS[s]])].map(([k,lbl]) =>
-    `<button class="ml-filter${_mlFilter===k?' sel':''}" onclick="_mlFilter='${k}';renderMethods()">${lbl} <span style="opacity:.55">${counts[k]||0}</span></button>`
+  const filtersEl = document.getElementById('pt-filters');
+  if(!filtersEl) return;
+  const counts = {all:probs.length};
+  PT_STATUSES.forEach(s => counts[s] = probs.filter(p=>p.status===s).length);
+  filtersEl.innerHTML = [['all','All'],...PT_STATUSES.map(s=>[s,PT_STATUS_LABELS[s]])].map(([k,lbl]) =>
+    `<button class="ml-filter${_ptFilter===k?' sel':''}" onclick="_ptFilter='${k}';renderProblems()">${lbl} <span style="opacity:.55">${counts[k]||0}</span></button>`
   ).join('');
-
   // Cards
-  const filtered = _mlFilter === 'all' ? methods : methods.filter(m=>m.status===_mlFilter);
-  const listEl = document.getElementById('ml-list');
+  const filtered = _ptFilter==='all' ? probs : probs.filter(p=>p.status===_ptFilter);
+  const listEl = document.getElementById('pt-list');
   if(!filtered.length){
-    listEl.innerHTML = `<div style="color:var(--muted);font-size:11px;padding:12px 0">${_mlFilter==='all'?'No methods yet. Add one below.':'No methods with this status.'}</div>`;
+    listEl.innerHTML = `<div style="color:var(--muted);font-size:11px;padding:12px 0">No problems yet — add one below.</div>`;
     return;
   }
-  listEl.innerHTML = filtered.map(m => renderMethodCard(m)).join('');
+  listEl.innerHTML = filtered.map(p => renderProblemCard(p)).join('');
 }
 
-function renderMethodCard(m){
-  const due = _methodsDue(m);
-  const expanded = _mlExpanded.has(m.id);
-  const cdFmt = m.checkDate ? new Date(m.checkDate+'T12:00:00').toLocaleDateString([],{month:'short',day:'numeric',year:'2-digit'}) : '—';
-  const activeCount = getMethods().filter(x=>x.status==='active').length;
+function renderProblemCard(p){
+  const expanded = _ptExpanded.has(p.id);
+  const sols = p.solutions||[];
+  const exps = p.experiments||[];
 
-  // Detail section
+  // Step completion indicators
+  const s1done = !!(p.problem && p.problem.trim());
+  const s2done = sols.length > 0;
+  const s3done = exps.length > 0;
+  const s4done = !!(p.finalSolution && p.finalSolution.trim());
+
   let detailHtml = '';
   if(expanded){
-    detailHtml += `<div class="ml-detail-grid">`;
-    if(m.hypothesis) detailHtml += `<div class="ml-detail-row"><div class="ml-detail-lbl">Hypothesis</div><div class="ml-detail-val">${esc(m.hypothesis)}</div></div>`;
-    if(m.metric) detailHtml += `<div class="ml-detail-row"><div class="ml-detail-lbl">Metric</div><div class="ml-detail-val">${esc(m.metric)}</div></div>`;
-    if(m.minDuration) detailHtml += `<div class="ml-detail-row"><div class="ml-detail-lbl">Min duration</div><div class="ml-detail-val">${esc(m.minDuration)}</div></div>`;
-    if(m.killCondition) detailHtml += `<div class="ml-detail-row"><div class="ml-detail-lbl">Kill condition</div><div class="ml-detail-val">${esc(m.killCondition)}</div></div>`;
-    detailHtml += `</div>`;
-    // Verdict history
-    if(m.verdicts && m.verdicts.length){
-      detailHtml += `<div class="ml-verdict-hist"><div class="ml-detail-lbl" style="margin-bottom:6px">Verdict history</div>`;
-      detailHtml += [...m.verdicts].reverse().map(v => `<div class="ml-verdict-item">
-        <div class="ml-verdict-item-hdr">
-          <span class="ml-verdict-result ${v.result}">${v.result.toUpperCase()}</span>
-          <span style="font-size:9px;color:var(--muted)">${v.date}</span>
-        </div>
-        <div class="ml-verdict-note">${esc(v.note||'')}</div>
-      </div>`).join('');
-      detailHtml += `</div>`;
-    }
-    // Data points (active/paused only)
-    if((m.status==='active'||m.status==='paused') && (m.dataPoints||[]).length){
-      detailHtml += `<div class="ml-detail-row"><div class="ml-detail-lbl">Data points</div><div class="ml-dp-list">`;
-      detailHtml += [...(m.dataPoints||[])].reverse().slice(0,8).map(dp =>
-        `<div class="ml-dp-item"><span class="ml-dp-date">${dp.date}</span><span>${esc(dp.note)}</span></div>`
-      ).join('');
-      detailHtml += `</div></div>`;
-    }
-    // Action buttons
-    detailHtml += `<div class="ml-card-btns">`;
-    detailHtml += `<button class="ml-card-btn" onclick="event.stopPropagation();openMethodModal('${m.id}')">✎ Edit</button>`;
-    if(m.status==='active') detailHtml += `<button class="ml-card-btn" onclick="event.stopPropagation();openDpModal('${m.id}')">+ Data point</button>`;
-    detailHtml += `<button class="ml-card-btn verdict-btn" onclick="event.stopPropagation();openVerdictModal('${m.id}')">✓ Log verdict</button>`;
-    if(m.status!=='active' && m.status!=='rejected'){
-      const canActivate = activeCount < 2 || m.status==='paused';
-      detailHtml += `<button class="ml-card-btn" onclick="event.stopPropagation();activateMethod('${m.id}')">${canActivate?'▶ Activate experiment':'▶ Activate (will prompt pause)'}</button>`;
-    }
-    if(m.status==='active') detailHtml += `<button class="ml-card-btn" onclick="event.stopPropagation();setMethodStatus('${m.id}','paused')">⏸ Pause</button>`;
-    detailHtml += `<button class="ml-card-btn" style="margin-left:auto;color:var(--muted)" onclick="event.stopPropagation();deleteMethod('${m.id}')">✕ Delete</button>`;
-    detailHtml += `</div>`;
+    // ── Step 1: Problem ──
+    detailHtml += `<div class="pt-steps">
+    <div class="pt-step">
+      <div class="pt-step-hdr">
+        <div class="pt-step-num${s1done?' done':' active'}">1</div>
+        <div class="pt-step-title">Problem</div>
+      </div>
+      <div class="pt-step-body">
+        <textarea class="pt-final-inp" rows="3" placeholder="What exactly is happening? When? What does it cost you?" onblur="saveProblemField('${p.id}','problem',this.value)">${esc(p.problem||'')}</textarea>
+      </div>
+    </div>
+
+    <div class="pt-step">
+      <div class="pt-step-hdr">
+        <div class="pt-step-num${s2done?' done':''}"${!s1done?' style="opacity:.45"':''}>2</div>
+        <div class="pt-step-title">Possible Solutions</div>
+      </div>
+      <div class="pt-sol-list" id="pt-sols-${p.id}">
+        ${sols.map((s,i)=>`<div class="pt-sol-item">
+          <div class="pt-sol-text">${esc(s.text)}</div>
+          <button class="pt-sol-del" onclick="event.stopPropagation();deleteSolution('${p.id}',${i})" title="Remove">✕</button>
+          <button class="ml-card-btn" style="font-size:8px;padding:3px 8px;white-space:nowrap" onclick="event.stopPropagation();prefillExpSolution('${p.id}','${s.text.replace(/'/g,"\\'")}')">Test →</button>
+        </div>`).join('')}
+      </div>
+      <div class="pt-sol-add" onclick="event.stopPropagation()">
+        <input class="pt-sol-inp" id="pt-sol-inp-${p.id}" placeholder="Add a possible solution…" onkeydown="if(event.key==='Enter'){event.preventDefault();addSolution('${p.id}',this.value);this.value='';}">
+        <button class="pt-sol-add-btn" onclick="addSolution('${p.id}',document.getElementById('pt-sol-inp-${p.id}').value);document.getElementById('pt-sol-inp-${p.id}').value=''">+ Add</button>
+      </div>
+    </div>
+
+    <div class="pt-step">
+      <div class="pt-step-hdr">
+        <div class="pt-step-num${s3done?' done':''}"${!s2done?' style="opacity:.45"':''}>3</div>
+        <div class="pt-step-title">Experiments — does it actually work?</div>
+      </div>
+      <div class="pt-exp-list">
+        ${exps.map(e => renderPtExpCard(p.id, e)).join('')}
+      </div>
+      <button class="ml-card-btn" onclick="event.stopPropagation();openPtExpModal('${p.id}')">+ New experiment</button>
+    </div>
+
+    <div class="pt-step">
+      <div class="pt-step-hdr">
+        <div class="pt-step-num${s4done?' done':''}"${!s3done?' style="opacity:.45"':''}>4</div>
+        <div class="pt-step-title">Final Solution</div>
+      </div>
+      <div class="pt-step-body" onclick="event.stopPropagation()">
+        <textarea class="pt-final-inp" rows="3" placeholder="What are you adopting?" onblur="saveProblemField('${p.id}','finalSolution',this.value)">${esc(p.finalSolution||'')}</textarea>
+        ${p.status!=='solved'?`<button class="pt-solve-btn" onclick="event.stopPropagation();markSolved('${p.id}')">✓ Mark as Solved</button>`:'<span style="color:var(--green2);font-size:10px;font-weight:700">✓ SOLVED</span>'}
+      </div>
+    </div>
+    </div>`;
+
+    // action bar
+    detailHtml += `<div class="ml-card-btns" style="margin-top:12px">
+      <button class="ml-card-btn" onclick="event.stopPropagation();openProblemModal('${p.id}')">✎ Edit title</button>
+      <button class="ml-card-btn" style="margin-left:auto;color:var(--muted)" onclick="event.stopPropagation();deleteProblem('${p.id}')">✕ Delete</button>
+    </div>`;
   }
 
-  return `<div class="ml-card${expanded?' expanded':''}" onclick="toggleMethodCard('${m.id}')">
+  return `<div class="ml-card${expanded?' expanded':''}" onclick="toggleProblemCard('${p.id}')">
     <div class="ml-card-head">
       <div class="ml-card-main">
-        <div class="ml-card-name">${esc(m.name)}</div>
-        ${m.what ? `<div class="ml-card-what">${esc(m.what)}</div>` : ''}
+        <div class="ml-card-name">${esc(p.title)}</div>
         <div class="ml-card-meta">
-          <span class="ml-status-badge ${m.status}">${ML_STATUS_LABELS[m.status]||m.status}</span>
-          <span class="ml-area-tag">${m.area||''}</span>
-          ${m.checkDate ? `<span class="ml-check-date${due?' '+due:''}">${due==='overdue'?'⚑ OVERDUE':due==='soon'?'⚑ Due '+cdFmt:'Check '+cdFmt}</span>` : ''}
+          <span class="pt-status-badge ${p.status}">${PT_STATUS_LABELS[p.status]||p.status}</span>
+          <span style="font-size:9px;color:var(--muted)">${sols.length} solutions · ${exps.length} experiments</span>
         </div>
       </div>
-      <button class="ml-card-expand" onclick="event.stopPropagation();toggleMethodCard('${m.id}')">${expanded?'▲':'▼'}</button>
+      <button class="ml-card-expand" onclick="event.stopPropagation();toggleProblemCard('${p.id}')">${expanded?'▲':'▼'}</button>
     </div>
     <div class="ml-detail">${detailHtml}</div>
   </div>`;
 }
 
-function toggleMethodCard(id){
-  if(_mlExpanded.has(id)) _mlExpanded.delete(id);
-  else _mlExpanded.add(id);
-  renderMethods();
+function renderPtExpCard(probId, e){
+  const statusColor = {active:'var(--indigo)',paused:'var(--gold2)',working:'var(--green2)',not_working:'var(--verm)',mixed:'var(--muted2)'};
+  const verdicts = e.verdicts||[];
+  const lastVerdict = verdicts.length ? verdicts[verdicts.length-1] : null;
+  return `<div class="pt-exp-card">
+    <div class="pt-exp-title">${esc(e.solution)}</div>
+    <div class="pt-exp-meta">
+      ${e.status?`<span style="color:${statusColor[e.status]||'var(--muted2)'}">${e.status.replace('_',' ').toUpperCase()}</span>`:''}
+      ${e.checkDate?`<span>Check ${new Date(e.checkDate+'T12:00:00').toLocaleDateString([],{month:'short',day:'numeric'})}</span>`:''}
+      ${e.metric?`<span style="color:var(--muted)">${esc(e.metric)}</span>`:''}
+    </div>
+    ${e.hypothesis?`<div style="font-size:10px;color:var(--muted2);line-height:1.4;margin-bottom:4px">${esc(e.hypothesis)}</div>`:''}
+    ${verdicts.length?`<div class="pt-verdict-hist">${verdicts.slice(-3).reverse().map(v=>`<div class="ml-verdict-item"><div class="ml-verdict-item-hdr"><span class="ml-verdict-result" style="color:${statusColor[v.result]||'var(--muted)'}">${v.result.replace('_',' ').toUpperCase()}</span><span style="font-size:9px;color:var(--muted)">${v.date}</span></div><div class="ml-verdict-note">${esc(v.note||'')}</div></div>`).join('')}</div>`:''}
+    <div class="pt-exp-btns">
+      <button class="ml-card-btn verdict-btn" onclick="event.stopPropagation();openPtVerdictModal('${probId}','${e.id}')">✓ Log verdict</button>
+      <button class="ml-card-btn" onclick="event.stopPropagation();openPtExpModal('${probId}','${e.id}')">✎ Edit</button>
+      <button class="ml-card-btn" onclick="event.stopPropagation();deletePtExp('${probId}','${e.id}')" style="color:var(--muted)">✕</button>
+    </div>
+  </div>`;
 }
 
-// ── Modal state ──
-let _mlEditId = null;
-let _mlModalArea = 'learning';
-let _mlModalStatus = 'default';
-let _mlModalSource = 'own';
-let _mlVerdictId = null;
-let _mlVerdictResult = 'continue';
-let _mlDpId = null;
-let _mlPauseCallback = null;
-
-function openMethodModal(id=null){
-  _mlEditId = id;
-  const m = id ? getMethods().find(x=>x.id===id) : null;
-  _mlModalArea   = m ? (m.area||'learning') : 'learning';
-  _mlModalStatus = m ? (m.status||'default') : 'default';
-  _mlModalSource = m ? (m.source||'own') : 'own';
-
-  document.getElementById('ml-modal-title').textContent = id ? 'Edit Method' : 'New Method';
-  document.getElementById('ml-name').value        = m?.name||'';
-  document.getElementById('ml-what').value        = m?.what||'';
-  document.getElementById('ml-hypothesis').value  = m?.hypothesis||'';
-  document.getElementById('ml-metric').value      = m?.metric||'';
-  document.getElementById('ml-duration').value    = m?.minDuration||'';
-  document.getElementById('ml-kill').value        = m?.killCondition||'';
-  document.getElementById('ml-checkdate').value   = m?.checkDate||'';
-
-  _renderModalChips('ml-area-chips',   ML_AREAS,    _mlModalArea,   v=>{_mlModalArea=v;   _renderModalChips('ml-area-chips',   ML_AREAS,    _mlModalArea,   null,true);});
-  _renderModalChips('ml-status-chips', ML_STATUSES, _mlModalStatus, v=>{_mlModalStatus=v; _renderModalChips('ml-status-chips', ML_STATUSES, _mlModalStatus, null,true,ML_STATUS_LABELS);},false,ML_STATUS_LABELS);
-  _renderModalChips('ml-source-chips', ML_SOURCES,  _mlModalSource, v=>{_mlModalSource=v; _renderModalChips('ml-source-chips', ML_SOURCES,  _mlModalSource, null,true,ML_SOURCE_LABELS);},false,ML_SOURCE_LABELS);
-
-  document.getElementById('ml-modal-ov').classList.add('on');
-  setTimeout(()=>document.getElementById('ml-name').focus(),60);
+function toggleProblemCard(id){
+  if(_ptExpanded.has(id)) _ptExpanded.delete(id);
+  else _ptExpanded.add(id);
+  renderProblems();
 }
-function _renderModalChips(elId, opts, sel, cb, noAppend=false, labels=null){
-  const el = document.getElementById(elId); if(!el) return;
-  el.innerHTML = opts.map(o => `<button class="ml-chip${sel===o?' sel':''}" onclick="(${cb||'()=>{}'})(this.dataset.v);this.closest('.ml-chip-row').querySelectorAll('.ml-chip').forEach(b=>b.classList.remove('sel'));this.classList.add('sel')" data-v="${o}">${labels?labels[o]:o}</button>`).join('');
+
+// ── Problem save helpers ──
+function saveProblemField(id, field, value){
+  const probs = getProblems();
+  const p = probs.find(x=>x.id===id); if(!p) return;
+  p[field] = value.trim(); p.updatedAt = new Date().toISOString();
+  if(field==='finalSolution' && value.trim() && p.status==='open') p.status='in_progress';
+  saveProblems(probs);
+  renderProblems();
 }
-function closeMethodModal(){ document.getElementById('ml-modal-ov').classList.remove('on'); }
 
-function saveMethodModal(){
-  const name = document.getElementById('ml-name').value.trim();
-  if(!name){ toast('Name required',1500); return; }
-  // Get current chip selections from DOM
-  const area   = document.querySelector('#ml-area-chips .ml-chip.sel')?.dataset.v   || _mlModalArea;
-  const status = document.querySelector('#ml-status-chips .ml-chip.sel')?.dataset.v || _mlModalStatus;
-  const source = document.querySelector('#ml-source-chips .ml-chip.sel')?.dataset.v || _mlModalSource;
+function addSolution(probId, text){
+  text = (text||'').trim(); if(!text) return;
+  const probs = getProblems();
+  const p = probs.find(x=>x.id===probId); if(!p) return;
+  p.solutions = p.solutions||[];
+  p.solutions.push({id:uid(), text});
+  if(p.status==='open') p.status='in_progress';
+  p.updatedAt = new Date().toISOString();
+  saveProblems(probs);
+  renderProblems();
+}
 
-  const methods = getMethods();
-  if(status==='active'){
-    const activeCount = methods.filter(m=>m.status==='active' && m.id!==_mlEditId).length;
-    if(activeCount >= 2){ toast('Already 2 active experiments — pause one first.',2500); return; }
-  }
+function deleteSolution(probId, idx){
+  const probs = getProblems();
+  const p = probs.find(x=>x.id===probId); if(!p) return;
+  p.solutions.splice(idx, 1);
+  p.updatedAt = new Date().toISOString();
+  saveProblems(probs);
+  renderProblems();
+}
 
-  if(_mlEditId){
-    const idx = methods.findIndex(m=>m.id===_mlEditId);
-    if(idx===-1) return;
-    methods[idx] = {...methods[idx], name, area, status, source,
-      what: document.getElementById('ml-what').value.trim(),
-      hypothesis: document.getElementById('ml-hypothesis').value.trim(),
-      metric: document.getElementById('ml-metric').value.trim(),
-      minDuration: document.getElementById('ml-duration').value.trim(),
-      killCondition: document.getElementById('ml-kill').value.trim(),
-      checkDate: document.getElementById('ml-checkdate').value||null,
-      updatedAt: new Date().toISOString()};
+function markSolved(id){
+  const probs = getProblems();
+  const p = probs.find(x=>x.id===id); if(!p) return;
+  p.status = 'solved'; p.updatedAt = new Date().toISOString();
+  saveProblems(probs);
+  renderProblems();
+}
+
+function deleteProblem(id){
+  if(!confirm('Delete this problem?')) return;
+  saveProblems(getProblems().filter(p=>p.id!==id));
+  _ptExpanded.delete(id);
+  renderProblems();
+}
+
+// ── Problem modal ──
+function openProblemModal(id=null){
+  _ptEditId = id;
+  const p = id ? getProblems().find(x=>x.id===id) : null;
+  document.getElementById('pt-modal-title').textContent = id ? 'Edit Problem' : 'New Problem';
+  document.getElementById('pt-title').value   = p?.title||'';
+  document.getElementById('pt-problem').value = p?.problem||'';
+  document.getElementById('pt-modal-ov').classList.add('on');
+  setTimeout(()=>document.getElementById('pt-title').focus(),60);
+}
+function closeProblemModal(){ document.getElementById('pt-modal-ov').classList.remove('on'); }
+function saveProblemModal(){
+  const title = document.getElementById('pt-title').value.trim();
+  if(!title){ toast('Name required',1500); return; }
+  const problem = document.getElementById('pt-problem').value.trim();
+  const probs = getProblems();
+  if(_ptEditId){
+    const p = probs.find(x=>x.id===_ptEditId); if(!p) return;
+    p.title = title; p.problem = problem||p.problem; p.updatedAt = new Date().toISOString();
   } else {
-    methods.push({id:uid(), name, area, status, source,
-      what: document.getElementById('ml-what').value.trim(),
-      hypothesis: document.getElementById('ml-hypothesis').value.trim(),
-      metric: document.getElementById('ml-metric').value.trim(),
-      minDuration: document.getElementById('ml-duration').value.trim(),
-      killCondition: document.getElementById('ml-kill').value.trim(),
-      checkDate: document.getElementById('ml-checkdate').value||null,
-      verdicts:[], dataPoints:[],
-      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()});
+    const newP = {id:uid(), title, problem, solutions:[], experiments:[], finalSolution:'', status:'open', createdAt:new Date().toISOString(), updatedAt:new Date().toISOString()};
+    probs.push(newP);
+    _ptExpanded.add(newP.id);
   }
-  saveMethods(methods);
-  closeMethodModal();
-  _mlExpanded.add(_mlEditId || methods[methods.length-1].id);
-  renderMethods();
+  saveProblems(probs);
+  closeProblemModal();
+  renderProblems();
 }
 
-function activateMethod(id){
-  const methods = getMethods();
-  const activeOthers = methods.filter(m=>m.status==='active' && m.id!==id);
-  if(activeOthers.length >= 2){
-    // Show pause picker
-    _mlPauseCallback = (pauseId) => {
-      setMethodStatus(pauseId,'paused',false);
-      setMethodStatus(id,'active',false);
-      saveMethods(getMethods());
-      closePauseModal();
-      renderMethods();
-    };
-    const el = document.getElementById('ml-pause-list');
-    el.innerHTML = activeOthers.map(m =>
-      `<button class="ml-card-btn" style="display:block;width:100%;text-align:left;margin-bottom:8px;padding:10px 12px" onclick="_mlPauseCallback('${m.id}')">${esc(m.name)} <span style="color:var(--muted);font-size:9px">${m.area}</span></button>`
-    ).join('');
-    document.getElementById('ml-pause-ov').classList.add('on');
-    return;
+// ── Experiment modal ──
+function prefillExpSolution(probId, solText){
+  openPtExpModal(probId);
+  setTimeout(()=>{ document.getElementById('pt-exp-solution').value = solText; }, 80);
+}
+function openPtExpModal(probId, expId=null){
+  _ptExpModalProbId = probId;
+  _ptExpModalExpId = expId;
+  const probs = getProblems();
+  const p = probs.find(x=>x.id===probId); if(!p) return;
+  const e = expId ? (p.experiments||[]).find(x=>x.id===expId) : null;
+  document.getElementById('pt-exp-modal-title').textContent = expId ? 'Edit Experiment' : 'New Experiment';
+  document.getElementById('pt-exp-solution').value    = e?.solution||'';
+  document.getElementById('pt-exp-hypothesis').value  = e?.hypothesis||'';
+  document.getElementById('pt-exp-metric').value      = e?.metric||'';
+  document.getElementById('pt-exp-checkdate').value   = e?.checkDate||'';
+  document.getElementById('pt-exp-modal-ov').classList.add('on');
+  setTimeout(()=>document.getElementById('pt-exp-solution').focus(),60);
+}
+function closePtExpModal(){ document.getElementById('pt-exp-modal-ov').classList.remove('on'); }
+function savePtExpModal(){
+  const solution = document.getElementById('pt-exp-solution').value.trim();
+  if(!solution){ toast('Solution field required',1500); return; }
+  const probs = getProblems();
+  const p = probs.find(x=>x.id===_ptExpModalProbId); if(!p) return;
+  p.experiments = p.experiments||[];
+  const expData = {
+    solution,
+    hypothesis: document.getElementById('pt-exp-hypothesis').value.trim(),
+    metric:     document.getElementById('pt-exp-metric').value.trim(),
+    checkDate:  document.getElementById('pt-exp-checkdate').value||null,
+    status: 'active',
+    verdicts: []
+  };
+  if(_ptExpModalExpId){
+    const idx = p.experiments.findIndex(x=>x.id===_ptExpModalExpId);
+    if(idx!==-1) p.experiments[idx] = {...p.experiments[idx], ...expData};
+  } else {
+    p.experiments.push({id:uid(), ...expData});
+    if(p.status==='open') p.status='in_progress';
   }
-  setMethodStatus(id,'active');
-}
-function closePauseModal(){ document.getElementById('ml-pause-ov').classList.remove('on'); }
-
-function setMethodStatus(id, status, doRender=true){
-  const methods = getMethods();
-  const m = methods.find(x=>x.id===id); if(!m) return;
-  m.status = status; m.updatedAt = new Date().toISOString();
-  saveMethods(methods);
-  if(doRender) renderMethods();
+  p.updatedAt = new Date().toISOString();
+  saveProblems(probs);
+  closePtExpModal();
+  renderProblems();
 }
 
-function deleteMethod(id){
-  if(!confirm('Delete this method?')) return;
-  saveMethods(getMethods().filter(m=>m.id!==id));
-  _mlExpanded.delete(id);
-  renderMethods();
+function deletePtExp(probId, expId){
+  const probs = getProblems();
+  const p = probs.find(x=>x.id===probId); if(!p) return;
+  p.experiments = (p.experiments||[]).filter(e=>e.id!==expId);
+  p.updatedAt = new Date().toISOString();
+  saveProblems(probs);
+  renderProblems();
 }
 
 // ── Verdict modal ──
-function openVerdictModal(id){
-  _mlVerdictId = id;
-  _mlVerdictResult = 'continue';
-  document.getElementById('ml-verdict-note').value = '';
-  document.getElementById('ml-verdict-nextdate').value = '';
-  const chips = ['adopted','continue','paused','rejected'];
-  const labels = {adopted:'Adopted ✓',continue:'Continue →',paused:'Pause ⏸',rejected:'Rejected ✕'};
-  document.getElementById('ml-verdict-chips').innerHTML = chips.map(c =>
-    `<button class="ml-chip${c==='continue'?' sel':''}" onclick="_mlVerdictResult='${c}';this.closest('.ml-chip-row').querySelectorAll('.ml-chip').forEach(b=>b.classList.remove('sel'));this.classList.add('sel')">${labels[c]}</button>`
+function openPtVerdictModal(probId, expId){
+  _ptVerdictProbId = probId; _ptVerdictExpId = expId;
+  document.getElementById('pt-verdict-note').value = '';
+  document.getElementById('pt-verdict-nextdate').value = '';
+  document.getElementById('pt-verdict-chips').innerHTML = PT_VERDICT_CHIPS.map((c,i) =>
+    `<button class="ml-chip${i===0?' sel':''}" data-v="${c}" onclick="this.closest('.ml-chip-row').querySelectorAll('.ml-chip').forEach(b=>b.classList.remove('sel'));this.classList.add('sel')">${PT_VERDICT_LABELS[c]}</button>`
   ).join('');
-  document.getElementById('ml-verdict-ov').classList.add('on');
+  document.getElementById('pt-verdict-ov').classList.add('on');
 }
-function closeVerdictModal(){ document.getElementById('ml-verdict-ov').classList.remove('on'); }
-function saveVerdictModal(){
-  const note = document.getElementById('ml-verdict-note').value.trim();
-  const nextDate = document.getElementById('ml-verdict-nextdate').value || null;
-  const result = document.querySelector('#ml-verdict-chips .ml-chip.sel')?.dataset?.v || _mlVerdictResult;
-  // Re-read result from DOM
-  const selChip = document.querySelector('#ml-verdict-chips .ml-chip.sel');
-  const finalResult = selChip ? (['adopted','continue','paused','rejected'].find(c=>selChip.textContent.toLowerCase().startsWith(c.slice(0,4)))||'continue') : _mlVerdictResult;
-
-  const methods = getMethods();
-  const m = methods.find(x=>x.id===_mlVerdictId); if(!m) return;
-  m.verdicts = m.verdicts||[];
-  m.verdicts.push({date:new Date().toLocaleDateString([],{year:'2-digit',month:'short',day:'numeric'}), result:finalResult, note});
-  // Update status based on verdict
-  if(finalResult==='adopted') m.status='adopted';
-  if(finalResult==='rejected') m.status='rejected';
-  if(finalResult==='paused') m.status='paused';
-  // Update check date
-  if(nextDate) m.checkDate = nextDate;
-  else if(finalResult==='adopted'){
-    const d=new Date(); d.setDate(d.getDate()+180);
-    m.checkDate = d.toISOString().slice(0,10);
-  } else if(finalResult==='continue'){
-    const d=new Date(); d.setDate(d.getDate()+42);
-    m.checkDate = d.toISOString().slice(0,10);
-  }
-  m.updatedAt = new Date().toISOString();
-  saveMethods(methods);
-  closeVerdictModal();
-  _mlExpanded.add(_mlVerdictId);
-  renderMethods();
+function closePtVerdictModal(){ document.getElementById('pt-verdict-ov').classList.remove('on'); }
+function savePtVerdictModal(){
+  const selChip = document.querySelector('#pt-verdict-chips .ml-chip.sel');
+  const result = selChip?.dataset?.v || 'mixed';
+  const note = document.getElementById('pt-verdict-note').value.trim();
+  const nextDate = document.getElementById('pt-verdict-nextdate').value||null;
+  const probs = getProblems();
+  const p = probs.find(x=>x.id===_ptVerdictProbId); if(!p) return;
+  const e = (p.experiments||[]).find(x=>x.id===_ptVerdictExpId); if(!e) return;
+  e.verdicts = e.verdicts||[];
+  e.verdicts.push({date:new Date().toLocaleDateString([],{month:'short',day:'numeric',year:'2-digit'}), result, note});
+  if(result==='working') e.status='working';
+  if(result==='not_working') e.status='not_working';
+  if(result==='mixed') e.status='mixed';
+  if(nextDate) e.checkDate = nextDate;
+  p.updatedAt = new Date().toISOString();
+  saveProblems(probs);
+  closePtVerdictModal();
+  renderProblems();
 }
 
-// ── Data point modal ──
-function openDpModal(id){ _mlDpId=id; document.getElementById('ml-dp-note').value=''; document.getElementById('ml-dp-ov').classList.add('on'); setTimeout(()=>document.getElementById('ml-dp-note').focus(),60); }
-function closeDpModal(){ document.getElementById('ml-dp-ov').classList.remove('on'); }
-function saveDpModal(){
-  const note = document.getElementById('ml-dp-note').value.trim(); if(!note) return;
-  const methods = getMethods();
-  const m = methods.find(x=>x.id===_mlDpId); if(!m) return;
-  m.dataPoints = m.dataPoints||[];
-  m.dataPoints.push({date:new Date().toLocaleDateString([],{month:'short',day:'numeric'}), note});
-  saveMethods(methods);
-  closeDpModal();
-  _mlExpanded.add(_mlDpId);
-  renderMethods();
-}
-
-// ── Seed (runs once) ──
-function initMethodsSeed(){
-  const methods = getMethods();
-  if(methods.length > 0) return; // already seeded
-  const checkDate = new Date(); checkDate.setDate(checkDate.getDate()+42);
-  methods.push({
-    id: uid(),
-    name: 'No flashcards for chess ideas',
-    area: 'learning',
-    what: "No flashcards for understood ideas — only for specifics. Keep a simple list of ideas, each with one example position.",
-    status: 'adopted',
-    source: 'research',
-    hypothesis: 'Understood material is forgotten far more slowly than rote material; periodic list review is sufficient without active recall cards.',
-    metric: '% of 15–20 random ideas found when shown a NEW position where the idea applies, without looking at the list first.',
-    minDuration: 'N/A — already adopted',
-    killCondition: 'Under ~60% found → add light monthly list review. Still no full flashcards.',
-    checkDate: checkDate.toISOString().slice(0,10),
-    verdicts: [],
-    dataPoints: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  });
-  saveMethods(methods);
-}
+function initMethodsSeed(){ /* no seed needed */ }
 
 
 
