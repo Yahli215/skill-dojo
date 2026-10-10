@@ -2380,6 +2380,9 @@ async function bootFromCloud(){
 
       _cloudTimerCache = d.activeTimer || null;
       _cloudSyncDone = true; if(typeof _lastPullAt !== 'undefined') _lastPullAt = Date.now();
+      // Re-render the current tab so cloud data shows immediately (not only after tab switch)
+      const _cv = ['training','habits','tasks','insights','methods'].find(v => { const el=document.getElementById(v+'-view'); return el && el.style.display !== 'none'; });
+      if(_cv) setTimeout(() => switchView(_cv), 0);
       if(d.activeTimer && !activeTimer) { boot(); startRemoteTimer(d.activeTimer); return; }
     } else {
       _cloudSyncDone = true;
