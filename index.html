@@ -638,42 +638,6 @@ body.light .page-watermark { opacity: .2; }
 .gkey-cancel{background:none;border:1px solid var(--b2);color:var(--t3);border-radius:8px;padding:8px 16px;cursor:pointer;font-family:inherit;font-size:12px;}
 .gkey-save{background:var(--gold2);color:#000;border:none;border-radius:8px;padding:8px 18px;font-weight:700;cursor:pointer;font-family:inherit;font-size:12px;}
 .gkey-save:disabled{opacity:.4;cursor:not-allowed;}
-/* Protein tracker */
-.protein-card{background:var(--s1);border:1px solid var(--b1);border-radius:10px;padding:14px 16px;margin-bottom:28px;}
-.protein-top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px;}
-.protein-nums{display:flex;align-items:baseline;gap:3px;}
-.protein-val{font-size:28px;font-weight:700;color:var(--verm);transition:color .3s;}
-.protein-val.mid{color:var(--gold2);}
-.protein-val.hit{color:var(--green);}
-.protein-unit{font-size:14px;color:var(--t3);}
-.protein-goal-lbl{font-size:13px;color:var(--t3);margin-left:2px;}
-.protein-range-lbl{font-size:10px;color:var(--muted);letter-spacing:.05em;}
-/* Protein history */
-.protein-history{margin-top:14px;padding-top:12px;border-top:1px solid var(--b1);}
-.protein-hist-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
-.protein-hist-lbl{font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;}
-.protein-hist-stat{font-size:11px;color:var(--muted2);font-weight:600;}
-.ph-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px 4px;}
-.ph-day{display:flex;flex-direction:column;align-items:center;gap:3px;}
-.ph-dot{width:100%;aspect-ratio:1;border-radius:50%;background:var(--b2);transition:background .2s;}
-.ph-dot.mid{background:var(--gold2);}
-.ph-dot.hit{background:var(--green);}
-.ph-dot.today{outline:2px solid var(--muted2);outline-offset:2px;}
-.ph-dot.today.mid{outline-color:var(--gold2);}
-.ph-dot.today.hit{outline-color:var(--green);}
-.ph-lbl{font-size:8px;color:var(--muted);letter-spacing:.03em;}
-.protein-bar-bg{height:5px;background:var(--b2);border-radius:3px;margin-bottom:12px;overflow:hidden;}
-.protein-bar-fill{height:100%;background:var(--verm);border-radius:3px;transition:width .4s,background .3s;}
-.protein-bar-fill.mid{background:var(--gold2);}
-.protein-bar-fill.hit{background:var(--green);}
-.protein-btns{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
-.pro-btn{background:var(--b1);border:1px solid var(--b2);color:var(--text);border-radius:8px;padding:5px 11px;font-size:12px;cursor:pointer;font-family:inherit;transition:all .15s;}
-.pro-btn:hover{border-color:var(--green);color:var(--green);}
-.pro-inp{width:70px;background:var(--b1);border:1px solid var(--b2);color:var(--text);border-radius:8px;padding:5px 8px;font-size:12px;font-family:inherit;text-align:center;}
-.pro-inp:focus{outline:none;border-color:var(--gold2);}
-.pro-set-btn{background:var(--gold2);color:#000;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
-.pro-reset-btn{background:none;border:1px solid var(--b2);color:var(--muted);border-radius:8px;padding:5px 9px;font-size:12px;cursor:pointer;margin-left:auto;}
-.pro-reset-btn:hover{border-color:var(--verm);color:var(--verm);}
 /* Saturday Review */
 .sat-review-btn{display:none;margin-bottom:16px;background:linear-gradient(135deg,var(--s2),var(--s1));border:1px solid var(--gold2);color:var(--gold2);padding:9px 18px;border-radius:8px;cursor:pointer;font-size:11px;letter-spacing:.1em;font-family:inherit;}
 .sat-review-btn.visible{display:block;}
@@ -1482,34 +1446,6 @@ body.light .page-watermark { opacity: .2; }
     <button class="bottle-add-btn" onclick="openCreateBottle()">＋ New skill bottle</button>
     <div id="mastered-log-area"></div>
 
-    <!-- Protein tracker -->
-    <div class="sec-hdr" style="margin-top:4px">
-      <div class="sec-lbl">Protein</div>
-      <div class="sec-kj">タンパク質</div>
-      <div class="sec-line"></div>
-    </div>
-    <div class="protein-card" id="protein-card">
-      <div class="protein-top">
-        <div class="protein-nums">
-          <span class="protein-val" id="protein-val">0</span>
-          <span class="protein-unit">g</span>
-          <span class="protein-goal-lbl" id="protein-goal-lbl">/ 130g</span>
-        </div>
-        <div class="protein-range-lbl" id="protein-range-lbl">target 105–130g</div>
-      </div>
-      <div class="protein-bar-bg"><div class="protein-bar-fill" id="protein-bar-fill" style="width:0%"></div></div>
-      <div class="protein-btns">
-        <button class="pro-btn" onclick="addProtein(10)">+10g</button>
-        <button class="pro-btn" onclick="addProtein(20)">+20g</button>
-        <button class="pro-btn" onclick="addProtein(30)">+30g</button>
-        <button class="pro-btn" onclick="addProtein(40)">+40g</button>
-        <input class="pro-inp" id="pro-inp" type="number" min="0" max="500" placeholder="custom">
-        <button class="pro-set-btn" onclick="setProteinCustom()">Set</button>
-        <button class="pro-reset-btn" onclick="resetProtein()" title="Reset to 0">↺</button>
-      </div>
-      <div class="protein-history" id="protein-history"></div>
-    </div>
-
     </div><!-- /training-view -->
 
     <!-- Habits view -->
@@ -1953,10 +1889,40 @@ const QUOTES = [
   {jp:'不動心を持て。',              en:'"Have an immovable mind."',                                attr:'武道訓 · Budo Teaching'},
   {jp:'勝負は積み重ねた稽古の数だ。', en:'"Victory is the number of practices accumulated."',       attr:'道場の教え · Dojo Teaching'},
   /* ── Toji ── */
-  {jp:'No cursed energy. Just work.',           en:'',  attr:'Toji Fushiguro'},
-  {jp:'Pain is the body logging work. Keep logging.', en:'', attr:'Toji Fushiguro'},
-  {jp:'The gap between you and the top? Accumulated sessions.', en:'', attr:'Toji Fushiguro'},
-  {jp:'六時間。毎日。それが使命だ。', en:'"Six hours. Every day. That is the mission."',              attr:'Toji Fushiguro'},
+  {jp:'No cursed energy. Just work.',                                       en:'',  attr:'Toji Fushiguro'},
+  {jp:'Pain is the body logging work. Keep logging.',                       en:'',  attr:'Toji Fushiguro'},
+  {jp:'The gap between you and the top? Accumulated sessions.',             en:'',  attr:'Toji Fushiguro'},
+  {jp:'六時間。毎日。それが使命だ。', en:'"Six hours. Every day. That is the mission."',  attr:'Toji Fushiguro'},
+  {jp:'Feelings are noise. The board is signal.',                           en:'',  attr:'Toji Fushiguro'},
+  {jp:'You don\'t beat them by wanting it more. You beat them by having done it more.', en:'', attr:'Toji Fushiguro'},
+  {jp:'Clock it. Log it. Stack it. That\'s the job.',                       en:'',  attr:'Toji Fushiguro'},
+  {jp:'The strongest don\'t practice when they feel like it.',              en:'',  attr:'Toji Fushiguro'},
+  {jp:'No ceremony. Sit down. Work.',                                       en:'',  attr:'Toji Fushiguro'},
+  {jp:'怠けた日は積まれない。', en:'"A skipped day doesn\'t accumulate."',            attr:'Toji Fushiguro'},
+  {jp:'Curiosity opens it. Stillness closes it. Both are needed.',          en:'',  attr:'Toji Fushiguro'},
+  {jp:'The board doesn\'t care how you feel. Good.',                        en:'',  attr:'Toji Fushiguro'},
+  {jp:'One session at a time. That\'s all the plan you need.',              en:'',  attr:'Toji Fushiguro'},
+  {jp:'勝つのは才能じゃない。続けた時間だ。', en:'"Winning isn\'t talent. It\'s accumulated hours."', attr:'Toji Fushiguro'},
+  {jp:'If your head is in it, your hands will follow.',                     en:'',  attr:'Toji Fushiguro'},
+  {jp:'Doubt is fine. Stopping is not.',                                    en:'',  attr:'Toji Fushiguro'},
+  /* ── Ayanokoji ── */
+  {jp:'Emotions are tools. Learn to hold them without being held by them.', en:'',  attr:'Ayanokoji Kiyotaka'},
+  {jp:'There is no wasted move — only moves you haven\'t understood yet.',  en:'',  attr:'Ayanokoji Kiyotaka'},
+  {jp:'The gap between preparation and improvisation is invisible to your opponent.', en:'', attr:'Ayanokoji Kiyotaka'},
+  {jp:'Calm is not the absence of pressure. It is the refusal to show it.', en:'',  attr:'Ayanokoji Kiyotaka'},
+  {jp:'Process matters. Results confirm.',                                   en:'',  attr:'Ayanokoji Kiyotaka'},
+  /* ── Chess / anonymous ── */
+  {jp:'Every GM was once a player who refused to stop.',                    en:'',  attr:'道場の教え · Dojo Teaching'},
+  {jp:'A position is only lost if you stop finding moves.',                 en:'',  attr:'道場の教え · Dojo Teaching'},
+  {jp:'The player who knows more patterns needs to calculate less.',        en:'',  attr:'道場の教え · Dojo Teaching'},
+  {jp:'Preparation is the move your opponent never sees coming.',           en:'',  attr:'道場の教え · Dojo Teaching'},
+  {jp:'Focus is the strongest piece on the board.',                         en:'',  attr:'道場の教え · Dojo Teaching'},
+  /* ── More Musashi ── */
+  {jp:'動かざること山の如し。',  en:'"Immovable as a mountain."',                   attr:'宮本武蔵 · Miyamoto Musashi'},
+  {jp:'少にして学べば、壮にして成す。', en:'"Study when young; achieve in maturity."', attr:'宮本武蔵 · Miyamoto Musashi'},
+  /* ── More Zen ── */
+  {jp:'坐禅して悟りを求めるな。ただ坐れ。', en:'"Do not sit in zazen seeking enlightenment. Just sit."', attr:'道元 · Dogen'},
+  {jp:'生死の中に仏あり。', en:'"Within life and death, Buddha is found."',         attr:'道元 · Dogen'},
 ];
 
 const EMOJI_OPTIONS = ['♟','💻','📚','✍','🎯','💪','🧘','🎵','🌍','🔬','🎨','🤝','🗣','⚡','🏃','🎸','📊','🧠','🌱','🔧','📸','🎮','💡','🎭','📝','🔭','🚀','⚽','🏊','🥋'];
@@ -2411,7 +2377,7 @@ async function bootFromCloud(){
           ls.set('sq_tasks', d.tasks);
         }
       }
-      if(d.protein) ls.set('sq_protein', d.protein);
+
       _cloudTimerCache = d.activeTimer || null;
       _cloudSyncDone = true; if(typeof _lastPullAt !== 'undefined') _lastPullAt = Date.now();
       if(d.activeTimer && !activeTimer) { boot(); startRemoteTimer(d.activeTimer); return; }
@@ -2573,7 +2539,7 @@ async function refreshFromCloud(){
           ls.set('sq_tasks', d.tasks);
         }
       }
-      if(d.protein) ls.set('sq_protein', d.protein);
+
       if(d.thoughtMgr){ const local=ls.get('sq_thought_mgr',null);
         if(!local){ ls.set('sq_thought_mgr',d.thoughtMgr); }
         else {
@@ -2714,7 +2680,6 @@ function renderApp(){
   try { renderReport(); }   catch(e){ console.error('renderReport:', e); }
   try { renderHabitMgr(); } catch(e){ console.error('renderHabitMgr:', e); }
   try { renderBottles(); }        catch(e){ console.error('renderBottles:', e); }
-  try { renderProtein(); }        catch(e){ console.error('renderProtein:', e); }
 }
 
 function renderPills(){
@@ -3721,113 +3686,6 @@ ${taskList}`;
 }
 // ── End Tasks ──────────────────────────────────────────
 
-// ── Protein tracker ───────────────────────────────────
-const PROTEIN_MIN  = 105;
-const PROTEIN_TARGET = 130;
-
-function getProteinLog(){ return ls.get('sq_protein','{}'); }
-function saveProteinLog(p){ ls.set('sq_protein', p); }
-
-function getTodayProtein(){
-  return getProteinLog()[todayKey()] || 0;
-}
-
-function addProtein(g){
-  const log = getProteinLog();
-  const k = todayKey();
-  log[k] = (log[k] || 0) + g;
-  saveProteinLog(log);
-  renderProtein();
-  pushSync();
-}
-
-function setProteinCustom(){
-  const inp = document.getElementById('pro-inp');
-  const val = parseInt(inp.value);
-  if(isNaN(val) || val < 0) return;
-  const log = getProteinLog();
-  log[todayKey()] = val;
-  saveProteinLog(log);
-  inp.value = '';
-  renderProtein();
-  pushSync();
-}
-
-function resetProtein(){
-  const log = getProteinLog();
-  log[todayKey()] = 0;
-  saveProteinLog(log);
-  renderProtein();
-  pushSync();
-}
-
-function renderProtein(){
-  const grams = getTodayProtein();
-  const pct   = Math.min(100, Math.round(grams / PROTEIN_TARGET * 100));
-  const isHit = grams >= PROTEIN_TARGET;
-  const isMid = grams >= PROTEIN_MIN && !isHit;
-
-  const valEl  = document.getElementById('protein-val');
-  const barEl  = document.getElementById('protein-bar-fill');
-  const lblEl  = document.getElementById('protein-range-lbl');
-  if(!valEl) return;
-
-  valEl.textContent = grams;
-  valEl.className   = 'protein-val' + (isHit ? ' hit' : isMid ? ' mid' : '');
-  barEl.style.width = pct + '%';
-  barEl.className   = 'protein-bar-fill' + (isHit ? ' hit' : isMid ? ' mid' : '');
-  lblEl.textContent = isHit ? '✓ target hit!' : isMid ? 'in range — keep going' : 'target 105–130g';
-  renderProteinHistory();
-}
-
-function renderProteinHistory(){
-  const el = document.getElementById('protein-history');
-  if(!el) return;
-  const log   = getProteinLog();
-  const today = todayKey();
-
-  // Last 14 days oldest → newest
-  const days = [];
-  for(let i = 13; i >= 0; i--){
-    const d = new Date(); d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0,10);
-    const g   = log[key] || 0;
-    days.push({
-      key, g,
-      isHit:   g >= PROTEIN_TARGET,
-      isMid:   g >= PROTEIN_MIN && g < PROTEIN_TARGET,
-      isToday: key === today,
-      dayLbl:  d.toLocaleDateString([],{weekday:'short'}).slice(0,2)
-    });
-  }
-
-  // Streak: walk back from today; skip today if not yet logged
-  let streak = 0;
-  const startIdx = days[13].g === 0 ? 12 : 13;
-  for(let i = startIdx; i >= 0; i--){
-    if(days[i].isHit || days[i].isMid) streak++;
-    else break;
-  }
-
-  const hits     = days.filter(d => d.isHit || d.isMid).length;
-  const statText = streak > 1 ? `🔥 ${streak}-day streak` : `${hits} / 14 days`;
-
-  el.innerHTML = `
-    <div class="protein-hist-hdr">
-      <div class="protein-hist-lbl">Daily Wins</div>
-      <div class="protein-hist-stat">${statText}</div>
-    </div>
-    <div class="ph-grid">
-      ${days.map(d => {
-        const cls = [d.isHit?'hit':d.isMid?'mid':'', d.isToday?'today':''].filter(Boolean).join(' ');
-        return `<div class="ph-day">
-          <div class="ph-dot ${cls}" title="${d.key}: ${d.g > 0 ? d.g+'g' : '—'}"></div>
-          <div class="ph-lbl">${d.dayLbl}</div>
-        </div>`;
-      }).join('')}
-    </div>`;
-}
-// ── End Protein ────────────────────────────────────────
 
 /* ── MASTERY BOTTLES ─────────────────────────────────── */
 function getBottles(){
@@ -6524,7 +6382,7 @@ async function pushCloud(){
     ?? (_cloudSyncDone ? _cloudTimerCache : undefined);
   const data = {
     skillDefs: getDefs(), skillData: getData(),
-    sessions: sess, breaks: getBreaks(), habits: getHabits(), tasks: getTasks(), protein: getProteinLog(),
+    sessions: sess, breaks: getBreaks(), habits: getHabits(), tasks: getTasks(),
     conclusions: getConclusions(),
     pregame: getPregame(), opener: getOpener(), habitMgr: getHabitMgr(), archive: getArchive(),
     frictionLog: getFrictionLog(), frictionDismissed: getFrictionDismissed(),
