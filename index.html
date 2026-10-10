@@ -5416,9 +5416,9 @@ function renderReview(){
 let _insightTab = 'archive';
 
 function switchView(view){
-  ['training','habits','tasks','insights','review','methods'].forEach(v => { // review-view kept as empty stub
-    document.getElementById(`${v}-view`).style.display = v === view ? '' : 'none';
-    document.getElementById(`vnav-${v}`).classList.toggle('on', v === view);
+  ['training','habits','tasks','insights','review','methods'].forEach(v => {
+    const vEl = document.getElementById(`${v}-view`); if(vEl) vEl.style.display = v === view ? '' : 'none';
+    const nEl = document.getElementById(`vnav-${v}`); if(nEl) nEl.classList.toggle('on', v === view);
   });
   if(view === 'insights') renderInsights();
   if(view === 'tasks') renderTasks();
