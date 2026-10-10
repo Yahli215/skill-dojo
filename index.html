@@ -6590,6 +6590,7 @@ function renderPtExpCard(probId, e){
     <div class="pt-exp-btns">
       <button class="ml-card-btn verdict-btn" onclick="event.stopPropagation();openPtVerdictModal('${probId}','${e.id}')">✓ Log verdict</button>
       <button class="ml-card-btn" onclick="event.stopPropagation();openPtExpModal('${probId}','${e.id}')">✎ Edit</button>
+      <button class="ml-card-btn" onclick="event.stopPropagation();sendExpToHabit('${probId}','${e.id}')" style="color:var(--green)" title="Add as habit">→ Habit</button>
       <button class="ml-card-btn" onclick="event.stopPropagation();deletePtExp('${probId}','${e.id}')" style="color:var(--muted)">✕</button>
     </div>
   </div>`;
@@ -6599,6 +6600,25 @@ function toggleProblemCard(id){
   if(_ptExpanded.has(id)) _ptExpanded.delete(id);
   else _ptExpanded.add(id);
   renderProblems();
+}
+
+function sendExpToHabit(probId, expId){
+  const probs = getProblems();
+  const p = probs.find(x=>x.id===probId);
+  const e = p?.experiments?.find(x=>x.id===expId);
+  if(!e) return;
+  const habits = getHabits();
+  // Avoid duplicates by checking if habit text already exists
+  const name = e.solution.trim();
+  if(habits.some(h=>h.name.trim()===name)){
+    toast('Already in habits.');
+    return;
+  }
+  habits.push({ id: uid(), name, emoji: '🔁', history: [] });
+  saveHabits(habits);
+  pushSync();
+  toast('Added to Habits ✓');
+  switchView('habits');
 }
 
 // ── Problem save helpers ──
