@@ -6607,16 +6607,15 @@ function sendExpToHabit(probId, expId){
   const p = probs.find(x=>x.id===probId);
   const e = p?.experiments?.find(x=>x.id===expId);
   if(!e) return;
-  const habits = getHabits();
-  // Avoid duplicates by checking if habit text already exists
-  const name = e.solution.trim();
-  if(habits.some(h=>h.name.trim()===name)){
-    toast('Already in habits.');
-    return;
+  const d = getHabitMgr();
+  const solution = e.solution.trim();
+  // Avoid duplicates
+  if(d.active.some(h=>(h.tool||h.problem||'').trim()===solution)){
+    toast('Already in habits.'); return;
   }
-  habits.push({ id: uid(), name, emoji: '🔁', history: [] });
-  saveHabits(habits);
-  pushSync();
+  const h = newHabit('trigger-replacement', (d.anchors||DEFAULT_ANCHORS)[0], solution, solution, e.hypothesis||'');
+  d.active.push(h);
+  saveHabitMgr(d);
   toast('Added to Habits ✓');
   switchView('habits');
 }
@@ -6711,7 +6710,8 @@ function openPtExpModal(probId, expId=null){
   document.getElementById('pt-exp-solution').value    = e?.solution||'';
   document.getElementById('pt-exp-hypothesis').value  = e?.hypothesis||'';
   document.getElementById('pt-exp-metric').value      = e?.metric||'';
-  document.getElementById('pt-exp-checkdate').value   = e?.checkDate||'';
+  const defaultDate = (()=>{ const d=new Date(); d.setDate(d.getDate()+14); return d.toISOString().slice(0,10); })();
+  document.getElementById('pt-exp-checkdate').value   = e?.checkDate||defaultDate;
   document.getElementById('pt-exp-modal-ov').classList.add('on');
   setTimeout(()=>document.getElementById('pt-exp-solution').focus(),60);
 }
