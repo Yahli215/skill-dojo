@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Skill Dojo Presence",
+  "version": "1.0",
+  "description": "Relays SwitchBot presence data to Skill Dojo (bypasses Chrome's Private Network Access restriction)",
+  "permissions": [],
+  "host_permissions": [
+    "http://127.0.0.1:8765/",
+    "https://yahli215.github.io/"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [{
+    "matches": ["https://yahli215.github.io/*"],
+    "js": ["relay.js"],
+    "run_at": "document_start"
+  }]
+}

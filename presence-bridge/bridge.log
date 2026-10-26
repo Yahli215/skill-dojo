@@ -8,3 +8,9 @@
 2026-10-26 15:18:09,186  INFO     Starting BLE scanner, watching B0:E9:FE:E9:08:C9
 2026-10-26 15:18:09,244  INFO     HTTPS bridge ready → https://127.0.0.1:8765/presence
 2026-10-26 15:18:09,245  INFO     FIRST-TIME SETUP: visit https://127.0.0.1:8765/presence in Chrome and click Advanced → Proceed to accept the self-signed cert.
+2026-10-26 15:18:24,247  INFO     Starting BLE scanner, watching B0:E9:FE:E9:08:C9
+2026-10-26 15:18:24,324  INFO     HTTPS bridge ready → https://127.0.0.1:8765/presence
+2026-10-26 15:18:24,325  INFO     FIRST-TIME SETUP: visit https://127.0.0.1:8765/presence in Chrome and click Advanced → Proceed to accept the self-signed cert.
+2026-10-26 15:18:32,580  INFO     Presence changed: False → True
+2026-10-26 15:19:10,925  INFO     127.0.0.1 [26/Oct/2026:15:19:10 +0200] "GET /presence HTTP/1.1" 200 474 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+2026-10-26 15:19:11,199  INFO     127.0.0.1 [26/Oct/2026:15:19:11 +0200] "GET /favicon.ico HTTP/1.1" 404 174 "https://127.0.0.1:8765/presence" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"

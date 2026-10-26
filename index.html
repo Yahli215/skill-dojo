@@ -6793,7 +6793,7 @@ function initMethodsSeed(){ /* no seed needed */ }
 // Auto-calls stopTimer() if unoccupied for 60 s straight during a work phase.
 // Does nothing if bridge is unreachable or sensor data is stale (>2 min).
 
-const _PRES_URL     = 'https://127.0.0.1:8765/presence';
+const _PRES_URL     = 'http://127.0.0.1:8765/presence';
 const _PRES_POLL_MS = 10_000;   // poll interval
 const _PRES_STOP_MS = 60_000;   // absent this long → stop session
 const _PRES_STALE_MS= 120_000;  // sensor not seen this long → treat as offline

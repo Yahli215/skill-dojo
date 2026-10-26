@@ -13,7 +13,6 @@ Setup:
 import asyncio
 import json
 import logging
-import ssl
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -141,20 +140,12 @@ async def main():
     scanner = BleakScanner(_on_adv)
     await scanner.start()
 
-    # HTTPS — needed because github.io is served over HTTPS and Chrome blocks
-    # HTTP fetches to loopback (Private Network Access policy).
-    cert_dir = Path(__file__).parent
-    ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    ssl_ctx.load_cert_chain(cert_dir / "cert.pem", cert_dir / "key.pem")
-
     app = web.Application()
     app.router.add_route("*", "/presence", _handle)
     runner = web.AppRunner(app)
     await runner.setup()
-    await web.TCPSite(runner, "127.0.0.1", PORT, ssl_context=ssl_ctx).start()
-    log.info("HTTPS bridge ready → https://127.0.0.1:%d/presence", PORT)
-    log.info("FIRST-TIME SETUP: visit https://127.0.0.1:%d/presence in Chrome "
-             "and click Advanced → Proceed to accept the self-signed cert.", PORT)
+    await web.TCPSite(runner, "127.0.0.1", PORT).start()
+    log.info("Bridge ready → http://127.0.0.1:%d/presence", PORT)
 
     # Heartbeat — warn if sensor goes quiet
     import datetime as dt
