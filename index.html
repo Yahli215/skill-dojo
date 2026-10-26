@@ -6849,11 +6849,17 @@ async function _presPoll(){
 
     const age = Date.now() - new Date(d.lastSeen).getTime();
 
-    // mmWave sensor goes SILENT when vacant (no "unoccupied" packet is sent).
-    // Treat silence longer than _PRES_STALE_MS the same as occupied=false.
-    const isAway = !d.occupied || age > _PRES_STALE_MS;
+    // mmWave sensor goes SILENT when vacant — it never sends an "unoccupied" packet.
+    // So we only trigger absence when the sensor has been QUIET for > _PRES_STALE_MS.
+    // We do NOT use d.occupied===false as an "away" signal (it just means the bridge
+    // hasn't confirmed presence yet, e.g. right after restart).
 
-    if(isAway){
+    if(age <= _PRES_STALE_MS && d.occupied){
+      // Sensor actively broadcasting presence
+      _absStart = null;
+      _presSetDot('ok');
+    } else if(age > _PRES_STALE_MS){
+      // Sensor has gone quiet → user is away
       if(!_absStart) _absStart = Date.now();
       _presSetDot('away');
       if(Date.now() - _absStart >= _PRES_STOP_MS){
@@ -6862,8 +6868,8 @@ async function _presPoll(){
         toast('Session stopped — away from desk for 60 s', 3000);
       }
     } else {
-      _absStart = null;           // confirmed present → reset counter
-      _presSetDot('ok');
+      // Fresh data but occupied=false (bridge just started / sensor transitioning)
+      _presSetDot('offline');
     }
   } catch(e){
     // Data unreadable — show offline dot but keep absence timer
