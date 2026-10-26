@@ -6835,12 +6835,12 @@ async function _presPoll(){
   if(!inWork){ _absStart = null; _presSetDot(null); return; }
 
   try{
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 4000);
-    const res = await fetch(_PRES_URL, { cache: 'no-store', signal: ctrl.signal });
-    clearTimeout(t);
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const d = await res.json();
+    // Read presence data written by the Skill Dojo Presence Chrome extension
+    // (extension content script polls localhost bridge and writes here, bypassing
+    //  Chrome's Private Network Access restriction on direct page fetches)
+    const raw = localStorage.getItem('__sdpres__');
+    if(!raw){ _presSetDot('offline'); return; }
+    const d = JSON.parse(raw);
 
     // Treat sensor as offline if it hasn't sent a packet recently
     const age = d.lastSeen ? Date.now() - new Date(d.lastSeen).getTime() : Infinity;
@@ -6859,7 +6859,7 @@ async function _presPoll(){
       }
     }
   } catch(e){
-    // Bridge unreachable — keep absence timer running but show offline dot
+    // Data unreadable — keep absence timer running but show offline dot
     // (only confirmed presence resets the counter)
     _presSetDot('offline');
   }
