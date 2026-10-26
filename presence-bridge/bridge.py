@@ -21,7 +21,7 @@ from aiohttp import web
 from bleak import BleakScanner
 
 # ── CONFIGURATION ────────────────────────────────────────────────────
-MAC  = "XX:XX:XX:XX:XX:XX"   # ← Replace with output from discover.py
+MAC  = "B0:E9:FE:E9:08:C9"   # SwitchBot mmWave sensor
 PORT = 8765
 
 # How long without a packet before we log a stale-sensor warning

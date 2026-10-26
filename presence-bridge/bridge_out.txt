@@ -1,0 +1,59 @@
+2026-10-26 12:38:31,144  INFO     Starting BLE scanner, watching B0:E9:FE:E9:08:C9
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\yahli\AppData\Local\Programs\Python\Python310\lib\logging\__init__.py", line 1101, in emit
+    stream.write(msg + self.terminator)
+  File "C:\Users\yahli\AppData\Local\Programs\Python\Python310\lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2192' in position 52: character maps to <undefined>
+Call stack:
+  File "C:\Users\yahli\skill-dojo\presence-bridge\bridge.py", line 163, in <module>
+    asyncio.run(main())
+  File "C:\Users\yahli\AppData\Local\Programs\Python\Python310\lib\asyncio\runners.py", line 44, in run
+    return loop.run_until_complete(main)
+  File "C:\Users\yahli\AppData\Local\Programs\Python\Python310\lib\asyncio\base_events.py", line 628, in run_until_complete
+    self.run_forever()
+  File "C:\Users\yahli\AppData\Local\Programs\Python\Python310\lib\asyncio\windows_events.py", line 316, in run_forever
+    super().run_forever()
+  File "C:\Users\yahli\AppData\Local\Programs\Python\Python310\lib\asyncio\base_events.py", line 595, in run_forever
+    self._run_once()
+  File "C:\Users\yahli\AppData\Local\Programs\Python\Python310\lib\asyncio\base_events.py", line 1881, in _run_once
+    handle._run()
+  File "C:\Users\yahli\AppData\Local\Programs\Python\Python310\lib\asyncio\events.py", line 80, in _run
+    self._context.run(self._callback, *self._args)
+  File "C:\Users\yahli\skill-dojo\presence-bridge\bridge.py", line 148, in main
+    log.info("HTTP bridge ready \u2192 http://127.0.0.1:%d/presence", PORT)
+Message: 'HTTP bridge ready \u2192 http://127.0.0.1:%d/presence'
+Arguments: (8765,)
+2026-10-26 12:38:31,653  INFO     127.0.0.1 [26/Oct/2026:12:38:31 +0200] "GET /presence HTTP/1.1" 200 444 "-" "curl/8.13.0"
+--- Logging error ---
+Traceback (most recent call last):
+  File "C:\Users\yahli\AppData\Local\Programs\Python\Python310\lib\logging\__init__.py", line 1101, in emit
+    stream.write(msg + self.terminator)
+  File "C:\Users\yahli\AppData\Local\Programs\Python\Python310\lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2192' in position 58: character maps to <undefined>
+Call stack:
+  File "C:\Users\yahli\skill-dojo\presence-bridge\bridge.py", line 163, in <module>
+    asyncio.run(main())
+  File "C:\Users\yahli\AppData\Local\Programs\Python\Python310\lib\asyncio\runners.py", line 44, in run
+    return loop.run_until_complete(main)
+  File "C:\Users\yahli\AppData\Local\Programs\Python\Python310\lib\asyncio\base_events.py", line 628, in run_until_complete
+    self.run_forever()
+  File "C:\Users\yahli\AppData\Local\Programs\Python\Python310\lib\asyncio\windows_events.py", line 316, in run_forever
+    super().run_forever()
+  File "C:\Users\yahli\AppData\Local\Programs\Python\Python310\lib\asyncio\base_events.py", line 595, in run_forever
+    self._run_once()
+  File "C:\Users\yahli\AppData\Local\Programs\Python\Python310\lib\asyncio\base_events.py", line 1881, in _run_once
+    handle._run()
+  File "C:\Users\yahli\AppData\Local\Programs\Python\Python310\lib\asyncio\events.py", line 80, in _run
+    self._context.run(self._callback, *self._args)
+  File "C:\Users\yahli\skill-dojo\presence-bridge\venv\lib\site-packages\bleak\backends\winrt\scanner.py", line 220, in _received_handler
+    self.call_detection_callbacks(device, advertisement_data)
+  File "C:\Users\yahli\skill-dojo\presence-bridge\venv\lib\site-packages\bleak\backends\scanner.py", line 235, in call_detection_callbacks
+    callback(device, advertisement_data)
+  File "C:\Users\yahli\skill-dojo\presence-bridge\bridge.py", line 108, in _on_adv
+    log.info("Presence changed: %s \u2192 %s", state["occupied"], occupied)
+Message: 'Presence changed: %s \u2192 %s'
+Arguments: (False, True)
+2026-10-26 12:39:24,046  INFO     127.0.0.1 [26/Oct/2026:12:39:24 +0200] "GET /presence HTTP/1.1" 200 474 "-" "curl/8.13.0"

@@ -1,0 +1,4 @@
+Scanning for 12 seconds — stay at your desk...
+
+No SwitchBot devices detected.
+Make sure the sensor is powered on and within ~3 m of this laptop.

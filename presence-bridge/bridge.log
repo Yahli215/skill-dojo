@@ -1,0 +1,5 @@
+2026-10-26 12:38:31,144  INFO     Starting BLE scanner, watching B0:E9:FE:E9:08:C9
+2026-10-26 12:38:31,296  INFO     HTTP bridge ready → http://127.0.0.1:8765/presence
+2026-10-26 12:38:31,653  INFO     127.0.0.1 [26/Oct/2026:12:38:31 +0200] "GET /presence HTTP/1.1" 200 444 "-" "curl/8.13.0"
+2026-10-26 12:39:18,845  INFO     Presence changed: False → True
+2026-10-26 12:39:24,046  INFO     127.0.0.1 [26/Oct/2026:12:39:24 +0200] "GET /presence HTTP/1.1" 200 474 "-" "curl/8.13.0"

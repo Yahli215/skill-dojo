@@ -6844,10 +6844,10 @@ async function _presPoll(){
 
     // Treat sensor as offline if it hasn't sent a packet recently
     const age = d.lastSeen ? Date.now() - new Date(d.lastSeen).getTime() : Infinity;
-    if(age > _PRES_STALE_MS){ _absStart = null; _presSetDot('offline'); return; }
+    if(age > _PRES_STALE_MS){ _presSetDot('offline'); return; }  // don't reset _absStart — keep counting
 
     if(d.occupied){
-      _absStart = null;
+      _absStart = null;           // confirmed present → reset counter
       _presSetDot('ok');
     } else {
       if(!_absStart) _absStart = Date.now();
@@ -6859,8 +6859,8 @@ async function _presPoll(){
       }
     }
   } catch(e){
-    // Bridge unreachable — don't stop the session, just show offline dot
-    _absStart = null;
+    // Bridge unreachable — keep absence timer running but show offline dot
+    // (only confirmed presence resets the counter)
     _presSetDot('offline');
   }
 }
