@@ -4,3 +4,7 @@
 2026-10-26 12:39:18,845  INFO     Presence changed: False → True
 2026-10-26 12:39:24,046  INFO     127.0.0.1 [26/Oct/2026:12:39:24 +0200] "GET /presence HTTP/1.1" 200 474 "-" "curl/8.13.0"
 2026-10-26 15:15:32,486  INFO     Starting BLE scanner, watching B0:E9:FE:E9:08:C9
+2026-10-26 15:17:23,341  INFO     Starting BLE scanner, watching B0:E9:FE:E9:08:C9
+2026-10-26 15:18:09,186  INFO     Starting BLE scanner, watching B0:E9:FE:E9:08:C9
+2026-10-26 15:18:09,244  INFO     HTTPS bridge ready → https://127.0.0.1:8765/presence
+2026-10-26 15:18:09,245  INFO     FIRST-TIME SETUP: visit https://127.0.0.1:8765/presence in Chrome and click Advanced → Proceed to accept the self-signed cert.

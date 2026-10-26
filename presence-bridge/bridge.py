@@ -151,7 +151,7 @@ async def main():
     app.router.add_route("*", "/presence", _handle)
     runner = web.AppRunner(app)
     await runner.setup()
-    await web.TCPSite(runner, "127.0.0.1", PORT, ssl=ssl_ctx).start()
+    await web.TCPSite(runner, "127.0.0.1", PORT, ssl_context=ssl_ctx).start()
     log.info("HTTPS bridge ready → https://127.0.0.1:%d/presence", PORT)
     log.info("FIRST-TIME SETUP: visit https://127.0.0.1:%d/presence in Chrome "
              "and click Advanced → Proceed to accept the self-signed cert.", PORT)
