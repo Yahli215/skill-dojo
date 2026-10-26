@@ -48,9 +48,10 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 state: dict = {
-    "occupied": False,
-    "since":    _now(),
-    "lastSeen": None,      # None until first packet
+    "occupied":     False,
+    "since":        _now(),
+    "lastSeen":     None,      # None until first packet (any packet from sensor)
+    "lastOccupied": None,      # None until first occupied=True packet
 }
 
 # ── PARSER ────────────────────────────────────────────────────────────
@@ -73,14 +74,16 @@ def _parse(adv) -> bool | None:
     for uuid, data in adv.service_data.items():
         if SERVICE_UUID_SUFFIX in uuid.lower() and len(data) >= 3:
             occupied = bool(data[2] & 0x40)
-            log.debug("fd3d svc %s → occupied=%s", data.hex(), occupied)
+            log.info("fd3d svc raw=%s byte2=0x%02x bit6=%s → occupied=%s",
+                     data.hex(), data[2], bool(data[2] & 0x40), occupied)
             return occupied
 
     # Fallback: manufacturer data 0x0969
     raw = adv.manufacturer_data.get(MFR_ID)
     if raw and len(raw) >= 3:
         occupied = bool(raw[2] & 0x40)
-        log.debug("mfr 0969 %s → occupied=%s", raw.hex(), occupied)
+        log.info("mfr 0969 raw=%s byte2=0x%02x bit6=%s → occupied=%s",
+                 raw.hex(), raw[2], bool(raw[2] & 0x40), occupied)
         return occupied
 
     # Cannot parse — log raw so the user can identify the correct byte
@@ -100,9 +103,13 @@ def _on_adv(device, adv):
     ts = _now()
 
     state["lastSeen"] = ts
+    log.info("BLE packet received from sensor (occupied=%s)", occupied)
 
     if occupied is None:
         return                          # packet seen but not parseable; still update lastSeen
+
+    if occupied:
+        state["lastOccupied"] = ts     # track last confirmed-presence packet
 
     if occupied != state["occupied"]:
         log.info("Presence changed: %s → %s", state["occupied"], occupied)
@@ -136,9 +143,22 @@ async def main():
         log.error("Set your sensor MAC in bridge.py (run discover.py first).")
         sys.exit(1)
 
-    log.info("Starting BLE scanner, watching %s", MAC)
-    scanner = BleakScanner(_on_adv)
-    await scanner.start()
+    # Restart BLE scanner every 60 s to prevent Windows BLE stack drift
+    # (scanner silently stops receiving packets after a while on Windows)
+    async def scanner_loop():
+        current = None
+        while True:
+            if current:
+                try:
+                    await current.stop()
+                except Exception:
+                    pass
+            current = BleakScanner(_on_adv)
+            await current.start()
+            log.info("BLE scanner started/restarted, watching %s", MAC)
+            await asyncio.sleep(60)
+
+    asyncio.ensure_future(scanner_loop())
 
     app = web.Application()
     app.router.add_route("*", "/presence", _handle)
