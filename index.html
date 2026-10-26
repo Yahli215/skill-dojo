@@ -6842,12 +6842,13 @@ async function _presPoll(){
     if(!raw){ _presSetDot('offline'); return; }
     const d = JSON.parse(raw);
 
-    // Use lastOccupied (last confirmed presence packet) if available;
-    // fall back to lastSeen for backward compat with old bridge versions.
-    const refTime = d.lastOccupied || (d.occupied ? d.lastSeen : null);
+    // Use lastOccupied (last confirmed occupied=true packet).
+    // Never fall back to lastSeen — old stale lastSeen from before bridge
+    // restart would cause false "away" detection.
+    const refTime = d.lastOccupied || null;
 
     if(!refTime){
-      // Bridge has never seen an occupied=true packet yet
+      // Bridge hasn't confirmed presence yet (offline / just started)
       _presSetDot('offline'); return;
     }
 
