@@ -37,7 +37,7 @@ MAC  = "B0:E9:FE:E9:08:C9"
 PORT = 8765
 OFFLINE_WARN_SECS = 120
 CORS_ORIGIN = "https://yahli215.github.io"
-OCC_CONFIRM_SECS = 60   # seconds of continuous occupied before lastOccupied updates
+OCC_CONFIRM_SECS = 10   # seconds of continuous occupied before lastOccupied updates
 # ─────────────────────────────────────────────────────────────────────
 
 log_file = Path(__file__).parent / "bridge.log"
