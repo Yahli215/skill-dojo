@@ -6796,7 +6796,7 @@ function initMethodsSeed(){ /* no seed needed */ }
 const _PRES_URL     = 'http://127.0.0.1:8765/presence';
 const _PRES_POLL_MS = 10_000;   // poll interval
 const _PRES_STOP_MS = 60_000;   // absent this long → stop session
-const _PRES_STALE_MS=120_000;   // no confirmed-presence packet in this long → treat as away
+const _PRES_STALE_MS=240_000;   // no confirmed-presence packet in this long → treat as away (4 min: sensor 3-min timer + 1 min buffer)
 
 let _presOn      = localStorage.getItem('sq_presence_on') === '1';
 let _absStart    = null;   // timestamp when absence began (null = present)

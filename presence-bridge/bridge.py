@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 """
 SwitchBot Presence Sensor (mmWave) -> HTTP bridge for Skill Dojo.
+Reads BLE advertisements directly — no hub required.
 Serves:  http://127.0.0.1:8765/presence
 Returns: {"occupied": bool, "since": "<iso>", "lastSeen": "<iso>", "lastOccupied": "<iso>"}
 
-Setup:
-  1. Run discover.py to find your sensor's MAC address.
-  2. Paste it into the MAC line below.
-  3. Run this script (or install.bat to auto-start on login).
+Occupancy encoding in manufacturer data (MFR_ID 0x0969), byte[8]:
+  Even value (0x00, 0x02, 0x04 ...) = OCCUPIED
+  Odd value  (0x01, 0x03, 0x05 ...) = UNOCCUPIED
+  byte[8] is a transition counter; parity flips on each state change.
+
+The sensor's unoccupied timer (set to ~3 min in app) means BLE goes odd after
+~3 min of stillness. The page uses a 4-min stale window so the session stays
+alive through brief inactivity.
 """
 
 import asyncio
@@ -21,17 +26,12 @@ from aiohttp import web
 from bleak import BleakScanner
 
 # ── CONFIGURATION ────────────────────────────────────────────────────
-MAC  = "B0:E9:FE:E9:08:C9"   # SwitchBot mmWave sensor
+MAC  = "B0:E9:FE:E9:08:C9"
 PORT = 8765
-
-# How long without a packet before we log a stale-sensor warning
 OFFLINE_WARN_SECS = 120
-
-# CORS: allow requests from Skill Dojo (GitHub Pages)
 CORS_ORIGIN = "https://yahli215.github.io"
 # ─────────────────────────────────────────────────────────────────────
 
-# ── LOGGING ──────────────────────────────────────────────────────────
 log_file = Path(__file__).parent / "bridge.log"
 logging.basicConfig(
     level=logging.INFO,
@@ -43,83 +43,41 @@ logging.basicConfig(
 )
 log = logging.getLogger("presence-bridge")
 
-# ── STATE ─────────────────────────────────────────────────────────────
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 state: dict = {
     "occupied":     False,
     "since":        _now(),
-    "lastSeen":     None,      # None until first packet (any packet from sensor)
-    "lastOccupied": None,      # None until first occupied=True packet
+    "lastSeen":     None,
+    "lastOccupied": None,
 }
 
-# ── PARSER ────────────────────────────────────────────────────────────
-# Manufacturer data (MFR_ID 0x0969), 16 bytes:
-#   [0-5]  MAC address (constant)
-#   [6]    state-change counter (increments on each transition)
-#   [7]    0x64 (constant)
-#   [8]    presence flag: 0x00 = OCCUPIED, 0x01 = UNOCCUPIED  ← KEY BYTE
-#   [9-15] other status (constant across states)
-#
-# Service data UUID fd3d is always 35 00 64 regardless of state — useless.
-
-SERVICE_UUID_SUFFIX = "fd3d"
 MFR_ID = 0x0969
 
-
 def _parse(adv) -> bool | None:
-    """Return True=occupied, False=empty, None=unrecognised packet.
-
-    byte[8] is a transition counter that increments on each state change.
-    Parity encodes state: even = occupied, odd = unoccupied.
-    Bit 0 is the unoccupied flag: 0=present, 1=absent.
-    Values seen: 0x00 (occupied), 0x01, 0x03, 0x05... (unoccupied), 0x02, 0x04... (occupied).
-    """
     raw = adv.manufacturer_data.get(MFR_ID)
     if raw and len(raw) >= 9:
-        occupied = not bool(raw[8] & 0x01)
-        log.info("mfr[8]=0x%02x -> occupied=%s  (full hex: %s)",
-                 raw[8], occupied, raw.hex())
+        occupied = not bool(raw[8] & 0x01)   # even = occupied, odd = unoccupied
+        log.info("mfr[8]=0x%02x -> occupied=%s  (full: %s)", raw[8], occupied, raw.hex())
         return occupied
-
-    # No mfr data — fall back to service data (less reliable, always 0x64)
-    for uuid, data in adv.service_data.items():
-        if SERVICE_UUID_SUFFIX in uuid.lower() and len(data) >= 3:
-            log.warning("No mfr data; falling back to svc byte[2]=0x%02x (unreliable)",
-                        data[2])
-            return bool(data[2] & 0x40)
-
-    svc = {k[-4:]: v.hex() for k, v in adv.service_data.items()}
-    mfr = {hex(k): v.hex() for k, v in adv.manufacturer_data.items()}
-    log.warning("Cannot parse: svc=%s mfr=%s", svc, mfr)
     return None
 
-
-# ── BLE CALLBACK ──────────────────────────────────────────────────────
 def _on_adv(device, adv):
     if device.address.upper() != MAC.upper():
         return
-
     occupied = _parse(adv)
     ts = _now()
-
     state["lastSeen"] = ts
-    log.info("BLE packet received from sensor (occupied=%s)", occupied)
-
     if occupied is None:
-        return                          # packet seen but not parseable; still update lastSeen
-
+        return
     if occupied:
-        state["lastOccupied"] = ts     # track last confirmed-presence packet
-
+        state["lastOccupied"] = ts
     if occupied != state["occupied"]:
         log.info("Presence changed: %s -> %s", state["occupied"], occupied)
         state["occupied"] = occupied
         state["since"] = ts
 
-
-# ── HTTP SERVER ───────────────────────────────────────────────────────
 _CORS_HEADERS = {
     "Access-Control-Allow-Origin":          CORS_ORIGIN,
     "Access-Control-Allow-Methods":         "GET, OPTIONS",
@@ -127,7 +85,6 @@ _CORS_HEADERS = {
     "Access-Control-Allow-Private-Network": "true",
     "Cache-Control":                        "no-store",
 }
-
 
 async def _handle(req: web.Request) -> web.Response:
     if req.method == "OPTIONS":
@@ -138,13 +95,7 @@ async def _handle(req: web.Request) -> web.Response:
         headers=_CORS_HEADERS,
     )
 
-
-# ── MAIN ──────────────────────────────────────────────────────────────
 async def main():
-    if "XX:XX" in MAC:
-        log.error("Set your sensor MAC in bridge.py (run discover.py first).")
-        sys.exit(1)
-
     log.info("Starting BLE scanner, watching %s", MAC)
     scanner = BleakScanner(_on_adv)
     await scanner.start()
@@ -156,7 +107,6 @@ async def main():
     await web.TCPSite(runner, "127.0.0.1", PORT).start()
     log.info("Bridge ready -> http://127.0.0.1:%d/presence", PORT)
 
-    # Heartbeat — warn if sensor goes quiet
     import datetime as dt
     while True:
         await asyncio.sleep(60)
@@ -165,8 +115,6 @@ async def main():
             age = (dt.datetime.now(dt.timezone.utc)
                    - dt.datetime.fromisoformat(ls)).total_seconds()
             if age > OFFLINE_WARN_SECS:
-                log.warning("No packet from %s for %.0f s — battery or range issue?",
-                            MAC, age)
-
+                log.warning("No packet from %s for %.0f s", MAC, age)
 
 asyncio.run(main())
