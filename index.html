@@ -6848,8 +6848,24 @@ async function _presPoll(){
     const refTime = d.lastOccupied || null;
 
     if(!refTime){
-      // Bridge hasn't confirmed presence yet (offline / just started)
-      _presSetDot('offline'); return;
+      // Bridge restarted while user was already absent — lastOccupied is null.
+      // Distinguish: sensor reachable (away) vs truly offline.
+      const sensorAge = d.lastSeen
+        ? Date.now() - new Date(d.lastSeen).getTime()
+        : Infinity;
+      if(sensorAge < _PRES_STALE_MS){
+        // Sensor online, just never seen us present → treat as away immediately.
+        if(!_absStart) _absStart = Date.now();
+        _presSetDot('away');
+        if(Date.now() - _absStart >= _PRES_STOP_MS){
+          _absStart = null;
+          stopTimer();
+          toast('Session stopped — away from desk for 60 s', 3000);
+        }
+      } else {
+        _presSetDot('offline');
+      }
+      return;
     }
 
     const age = Date.now() - new Date(refTime).getTime();

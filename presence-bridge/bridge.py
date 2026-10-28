@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-SwitchBot Presence Sensor (mmWave) → HTTP bridge for Skill Dojo.
+SwitchBot Presence Sensor (mmWave) -> HTTP bridge for Skill Dojo.
 Serves:  http://127.0.0.1:8765/presence
-Returns: {"occupied": bool, "since": "<iso>", "lastSeen": "<iso>"}
+Returns: {"occupied": bool, "since": "<iso>", "lastSeen": "<iso>", "lastOccupied": "<iso>"}
 
 Setup:
   1. Run discover.py to find your sensor's MAC address.
@@ -55,42 +55,44 @@ state: dict = {
 }
 
 # ── PARSER ────────────────────────────────────────────────────────────
-# SwitchBot mmWave Presence Sensor uses service data UUID fd3d:
-#   byte[0] = sequence / flags
-#   byte[1] = device type
-#   byte[2] = status bits  →  bit 6 (0x40) = person present
+# Manufacturer data (MFR_ID 0x0969), 16 bytes:
+#   [0-5]  MAC address (constant)
+#   [6]    state-change counter (increments on each transition)
+#   [7]    0x64 (constant)
+#   [8]    presence flag: 0x00 = OCCUPIED, 0x01 = UNOCCUPIED  ← KEY BYTE
+#   [9-15] other status (constant across states)
 #
-# If byte 2 bit 6 doesn't flip for you, the raw bytes are logged below
-# so you can identify the correct byte — let the developer know and it
-# can be updated to your revision's offset.
+# Service data UUID fd3d is always 35 00 64 regardless of state — useless.
 
 SERVICE_UUID_SUFFIX = "fd3d"
 MFR_ID = 0x0969
 
 
 def _parse(adv) -> bool | None:
-    """Return True=occupied, False=empty, None=unrecognised packet."""
-    # Primary: service data
-    for uuid, data in adv.service_data.items():
-        if SERVICE_UUID_SUFFIX in uuid.lower() and len(data) >= 3:
-            occupied = bool(data[2] & 0x40)
-            log.info("fd3d svc raw=%s byte2=0x%02x bit6=%s → occupied=%s",
-                     data.hex(), data[2], bool(data[2] & 0x40), occupied)
-            return occupied
+    """Return True=occupied, False=empty, None=unrecognised packet.
 
-    # Fallback: manufacturer data 0x0969
+    byte[8] is a transition counter that increments on each state change.
+    Parity encodes state: even = occupied, odd = unoccupied.
+    Bit 0 is the unoccupied flag: 0=present, 1=absent.
+    Values seen: 0x00 (occupied), 0x01, 0x03, 0x05... (unoccupied), 0x02, 0x04... (occupied).
+    """
     raw = adv.manufacturer_data.get(MFR_ID)
-    if raw and len(raw) >= 3:
-        occupied = bool(raw[2] & 0x40)
-        log.info("mfr 0969 raw=%s byte2=0x%02x bit6=%s → occupied=%s",
-                 raw.hex(), raw[2], bool(raw[2] & 0x40), occupied)
+    if raw and len(raw) >= 9:
+        occupied = not bool(raw[8] & 0x01)
+        log.info("mfr[8]=0x%02x -> occupied=%s  (full hex: %s)",
+                 raw[8], occupied, raw.hex())
         return occupied
 
-    # Cannot parse — log raw so the user can identify the correct byte
+    # No mfr data — fall back to service data (less reliable, always 0x64)
+    for uuid, data in adv.service_data.items():
+        if SERVICE_UUID_SUFFIX in uuid.lower() and len(data) >= 3:
+            log.warning("No mfr data; falling back to svc byte[2]=0x%02x (unreliable)",
+                        data[2])
+            return bool(data[2] & 0x40)
+
     svc = {k[-4:]: v.hex() for k, v in adv.service_data.items()}
     mfr = {hex(k): v.hex() for k, v in adv.manufacturer_data.items()}
-    log.warning("Cannot parse presence from %s — raw svc=%s mfr=%s",
-                adv.local_name or "?", svc, mfr)
+    log.warning("Cannot parse: svc=%s mfr=%s", svc, mfr)
     return None
 
 
@@ -112,7 +114,7 @@ def _on_adv(device, adv):
         state["lastOccupied"] = ts     # track last confirmed-presence packet
 
     if occupied != state["occupied"]:
-        log.info("Presence changed: %s → %s", state["occupied"], occupied)
+        log.info("Presence changed: %s -> %s", state["occupied"], occupied)
         state["occupied"] = occupied
         state["since"] = ts
 
@@ -143,29 +145,16 @@ async def main():
         log.error("Set your sensor MAC in bridge.py (run discover.py first).")
         sys.exit(1)
 
-    # Restart BLE scanner every 60 s to prevent Windows BLE stack drift
-    # (scanner silently stops receiving packets after a while on Windows)
-    async def scanner_loop():
-        current = None
-        while True:
-            if current:
-                try:
-                    await current.stop()
-                except Exception:
-                    pass
-            current = BleakScanner(_on_adv)
-            await current.start()
-            log.info("BLE scanner started/restarted, watching %s", MAC)
-            await asyncio.sleep(60)
-
-    asyncio.ensure_future(scanner_loop())
+    log.info("Starting BLE scanner, watching %s", MAC)
+    scanner = BleakScanner(_on_adv)
+    await scanner.start()
 
     app = web.Application()
     app.router.add_route("*", "/presence", _handle)
     runner = web.AppRunner(app)
     await runner.setup()
     await web.TCPSite(runner, "127.0.0.1", PORT).start()
-    log.info("Bridge ready → http://127.0.0.1:%d/presence", PORT)
+    log.info("Bridge ready -> http://127.0.0.1:%d/presence", PORT)
 
     # Heartbeat — warn if sensor goes quiet
     import datetime as dt
