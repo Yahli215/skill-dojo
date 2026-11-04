@@ -338,15 +338,31 @@ body.light::before { opacity: .06; }
 .tsr-meta { color: var(--muted2); font-family: var(--mono); font-size: 9px; margin-top: 1px; }
 .tsr-dur { font-family: var(--mono); font-weight: 700; font-size: 11px; flex-shrink: 0; }
 
-/* ── DAY TIMELINE ─────────────────────────────────────── */
-.day-tl-wrap { margin-top: 14px; }
-.day-tl-label { font-size: 9px; letter-spacing: 1px; font-family: var(--mono); color: var(--muted); text-transform: uppercase; margin-bottom: 5px; }
-.day-tl-track { position: relative; height: 32px; background: var(--s2); border: 1px solid var(--b1); overflow: hidden; }
-.day-tl-hour { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--b2); }
-.day-tl-sess { position: absolute; top: 3px; bottom: 3px; border-radius: 2px; min-width: 3px; }
-.day-tl-now { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--verm); z-index: 3; opacity: .85; }
-.day-tl-hlabels { position: relative; height: 14px; }
-.day-tl-hlbl { position: absolute; font-size: 8px; color: var(--muted); font-family: var(--mono); transform: translateX(-50%); }
+/* ── WEEK CALENDAR VIEW ───────────────────────────────── */
+.week-cal-wrap { margin-top: 14px; }
+.week-cal-sec-lbl { font-size: 9px; letter-spacing: 1px; font-family: var(--mono); color: var(--muted); text-transform: uppercase; margin-bottom: 6px; }
+.week-cal-outer { display: flex; }
+.week-cal-time-col { width: 28px; flex-shrink: 0; position: relative; }
+.week-cal-days { flex: 1; min-width: 0; display: flex; border-top: 1px solid var(--b2); }
+.week-cal-day-col { flex: 1; min-width: 0; border-left: 1px solid var(--b2); display: flex; flex-direction: column; }
+.week-cal-day-col.today-col { background: rgba(255,255,255,.018); }
+.week-cal-day-hdr { text-align: center; padding: 4px 0; border-bottom: 1px solid var(--b2); flex-shrink: 0; }
+.week-cal-day-name { font-size: 7px; color: var(--muted); font-family: var(--mono); letter-spacing: .8px; text-transform: uppercase; }
+.week-cal-day-num { font-size: 13px; font-weight: 700; line-height: 1.3; color: var(--fg); }
+.week-cal-day-num.today-num { color: var(--gold2); }
+.week-cal-scroll { overflow-y: auto; max-height: 380px; }
+.week-cal-scroll::-webkit-scrollbar { width: 3px; }
+.week-cal-scroll::-webkit-scrollbar-thumb { background: var(--b2); }
+.week-cal-body-row { display: flex; }
+.week-cal-time-body { width: 28px; flex-shrink: 0; position: relative; }
+.week-cal-time-lbl { position: absolute; right: 4px; font-size: 7.5px; color: var(--muted); font-family: var(--mono); transform: translateY(-50%); white-space: nowrap; }
+.week-cal-day-body { flex: 1; min-width: 0; border-left: 1px solid var(--b2); position: relative; }
+.week-cal-day-body.today-col { background: rgba(255,255,255,.018); }
+.week-cal-hour-line { position: absolute; left: 0; right: 0; border-top: 1px solid var(--b2); pointer-events: none; }
+.week-cal-half-line { position: absolute; left: 0; right: 0; border-top: 1px dashed var(--b1); pointer-events: none; }
+.week-cal-sess-block { position: absolute; left: 2px; right: 2px; border-radius: 2px; overflow: hidden; padding: 2px 3px; font-size: 7.5px; font-weight: 700; cursor: default; line-height: 1.25; color: #111; z-index: 2; }
+.week-cal-now-line { position: absolute; left: 0; right: 0; height: 2px; background: var(--verm); z-index: 10; pointer-events: none; }
+.week-cal-now-dot { position: absolute; left: -4px; top: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--verm); }
 
 /* ── SKILL DETAIL SHEET ─────────────────────────────── */
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.8); z-index: 600; display: flex; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity .3s; }
@@ -1460,12 +1476,8 @@ body.light .page-watermark { opacity: .2; }
       </div>
     </div>
 
-    <!-- Day Timeline -->
-    <div class="day-tl-wrap">
-      <div class="day-tl-label">Day Timeline 日課表</div>
-      <div class="day-tl-track" id="day-tl-track"></div>
-      <div class="day-tl-hlabels" id="day-tl-hlabels"></div>
-    </div>
+    <!-- Week Calendar Timeline -->
+    <div class="week-cal-wrap" id="week-cal-wrap"></div>
 
     <!-- Mastery Bottles -->
     <div class="sec-hdr" style="margin-top:8px">
@@ -2822,36 +2834,96 @@ function renderDaily(){
 }
 
 function renderDayTimeline(){
-  const track=document.getElementById('day-tl-track');
-  const hlabels=document.getElementById('day-tl-hlabels');
-  if(!track||!hlabels) return;
-  const SH=6, EH=24, SPAN=(EH-SH)*60;
-  const toX=ms=>{const d=new Date(ms);const mins=(d.getHours()-SH)*60+d.getMinutes();return Math.max(0,Math.min(100,mins/SPAN*100));};
-  track.innerHTML=''; hlabels.innerHTML='';
-  // Hour marks + labels
-  for(let h=SH;h<=EH;h+=2){
-    const pct=(h-SH)/(EH-SH)*100;
-    const mark=document.createElement('div'); mark.className='day-tl-hour'; mark.style.left=pct+'%'; track.appendChild(mark);
-    const lbl=document.createElement('div'); lbl.className='day-tl-hlbl'; lbl.style.left=pct+'%'; lbl.textContent=(h%24)+''; hlabels.appendChild(lbl);
-  }
-  // Session blocks
-  const todayStart=new Date(); todayStart.setHours(0,0,0,0);
-  const todaySess=sessions.filter(s=>s.stop&&new Date(s.stop)>=todayStart&&s.startTime&&s.endTime);
-  todaySess.forEach(s=>{
-    const x1=toX(s.startTime), x2=toX(s.endTime), w=Math.max(x2-x1,0.4);
-    const sk=skills.find(x=>x.id===s.skillId);
-    const rank=sk?getRank(sk.totalMins):RANKS[0];
-    const block=document.createElement('div'); block.className='day-tl-sess';
-    block.style.left=x1+'%'; block.style.width=w+'%'; block.style.background=rank.color;
-    const startStr=new Date(s.startTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-    block.title=(sk?.name||'Session')+' · '+fmtDur(s.duration)+' · '+startStr;
-    track.appendChild(block);
+  const wrap=document.getElementById('week-cal-wrap');
+  if(!wrap) return;
+  const PX_H=48, SH=6, EH=24, TOTAL=(EH-SH)*PX_H;
+  const DAY_NAMES=['MON','TUE','WED','THU','FRI','SAT','SUN'];
+  const today=new Date();
+  // Week: Mon-Sun of current week
+  const dow=today.getDay(); // 0=Sun
+  const mondayOff=dow===0?-6:1-dow;
+  const weekDays=Array.from({length:7},(_,i)=>{const d=new Date(today);d.setDate(today.getDate()+mondayOff+i);d.setHours(0,0,0,0);return d;});
+  const isToday=d=>d.toDateString()===today.toDateString();
+  const toTop=ms=>{const d=new Date(ms);return Math.max(0,((d.getHours()-SH)+d.getMinutes()/60)*PX_H);};
+  const allSess=getSess();
+
+  // Build header + scrollable body in one structure
+  let html=`<div class="week-cal-sec-lbl">Week Timeline 週間タイムライン</div>`;
+
+  // Header row (time gutter + 7 day headers)
+  html+=`<div style="display:flex">`;
+  html+=`<div style="width:28px;flex-shrink:0"></div>`;
+  weekDays.forEach((d,i)=>{
+    const tc=isToday(d)?' today-col':'';
+    const nc=isToday(d)?' today-num':'';
+    html+=`<div class="week-cal-day-col${tc}" style="flex:1;min-width:0;border-left:1px solid var(--b2)"><div class="week-cal-day-hdr"><div class="week-cal-day-name">${DAY_NAMES[i]}</div><div class="week-cal-day-num${nc}">${d.getDate()}</div></div></div>`;
   });
-  // "Now" line
-  const now=new Date(), nowH=now.getHours()+now.getMinutes()/60;
-  if(nowH>=SH&&nowH<=EH){
-    const nowLine=document.createElement('div'); nowLine.className='day-tl-now';
-    nowLine.style.left=((nowH-SH)/(EH-SH)*100)+'%'; track.appendChild(nowLine);
+  html+=`</div>`;
+
+  // Scrollable area
+  html+=`<div class="week-cal-scroll" id="week-cal-scroll"><div style="display:flex;position:relative">`;
+  // Time gutter
+  html+=`<div style="width:28px;flex-shrink:0;position:relative;height:${TOTAL}px">`;
+  for(let h=SH;h<=EH;h+=1){
+    const top=(h-SH)*PX_H;
+    if(h%2===0) html+=`<div class="week-cal-time-lbl" style="top:${top}px">${h}:00</div>`;
+  }
+  html+=`</div>`;
+  // Day body columns
+  weekDays.forEach((d,i)=>{
+    const tc=isToday(d)?' today-col':'';
+    html+=`<div class="week-cal-day-body${tc}" data-wcol="${i}" style="flex:1;min-width:0;height:${TOTAL}px;position:relative">`;
+    for(let h=SH;h<EH;h++){
+      const top=(h-SH)*PX_H;
+      html+=`<div class="week-cal-hour-line" style="top:${top}px"></div>`;
+      html+=`<div class="week-cal-half-line" style="top:${top+PX_H/2}px"></div>`;
+    }
+    html+=`</div>`;
+  });
+  html+=`</div></div>`;
+
+  wrap.innerHTML=html;
+
+  // Add session blocks into each column
+  weekDays.forEach((dayStart,i)=>{
+    const dayEnd=new Date(dayStart); dayEnd.setHours(23,59,59,999);
+    const col=wrap.querySelector(`[data-wcol="${i}"]`);
+    if(!col) return;
+    const daySess=allSess.filter(s=>s.startTime&&new Date(s.startTime)>=dayStart&&new Date(s.startTime)<=dayEnd);
+    daySess.forEach(s=>{
+      const st=new Date(s.startTime), et=new Date(s.endTime||s.startTime+(s.duration||0)*1000);
+      const top=toTop(s.startTime);
+      const bot=Math.min(toTop(et.getTime()),TOTAL);
+      const h=Math.max(bot-top,10);
+      const sk=skills.find(x=>x.id===s.skillId);
+      const rank=sk?getRank(sk.totalMins):RANKS[0];
+      const block=document.createElement('div');
+      block.className='week-cal-sess-block';
+      block.style.top=top+'px'; block.style.height=h+'px';
+      block.style.background=rank.color;
+      const tStr=st.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+      block.title=(sk?.name||'Session')+' · '+fmtDur(s.duration)+' · '+tStr;
+      block.textContent=h>18?(sk?.emoji||'⚡')+' '+(sk?.name||''):(sk?.emoji||'⚡');
+      col.appendChild(block);
+    });
+    // Now line in today column
+    if(isToday(dayStart)){
+      const nowH=today.getHours()+today.getMinutes()/60;
+      if(nowH>=SH&&nowH<=EH){
+        const nowTop=(nowH-SH)*PX_H;
+        const line=document.createElement('div'); line.className='week-cal-now-line'; line.style.top=nowTop+'px';
+        line.innerHTML='<div class="week-cal-now-dot"></div>';
+        col.appendChild(line);
+      }
+    }
+  });
+
+  // Scroll to show current time (or start of sessions if past)
+  const scroll=document.getElementById('week-cal-scroll');
+  if(scroll){
+    const nowH=today.getHours()+today.getMinutes()/60;
+    const scrollTo=Math.max(0,(nowH-SH-2)*PX_H);
+    setTimeout(()=>{ scroll.scrollTop=scrollTo; },50);
   }
 }
 
