@@ -328,6 +328,26 @@ body.light::before { opacity: .06; }
 .sess-del { position: absolute; right: -7px; top: -7px; width: 22px; height: 22px; background: var(--verm); border: none; border-radius: 50%; color: #fff; font-size: 10px; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 5; }
 .sess-row:hover .sess-del { display: flex; }
 
+/* ── TODAY SESSION LIST ───────────────────────────────── */
+.today-sess-list { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; }
+.today-sess-row { background: var(--s2); border: 1px solid var(--b1); padding: 6px 10px; display: flex; align-items: center; gap: 8px; position: relative; font-size: 10px; animation: fadeUp .2s ease-out both; }
+.today-sess-row:hover .sess-del { display: flex; }
+.tsr-emoji { font-size: 13px; flex-shrink: 0; }
+.tsr-info { flex: 1; min-width: 0; }
+.tsr-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tsr-meta { color: var(--muted2); font-family: var(--mono); font-size: 9px; margin-top: 1px; }
+.tsr-dur { font-family: var(--mono); font-weight: 700; font-size: 11px; flex-shrink: 0; }
+
+/* ── DAY TIMELINE ─────────────────────────────────────── */
+.day-tl-wrap { margin-top: 14px; }
+.day-tl-label { font-size: 9px; letter-spacing: 1px; font-family: var(--mono); color: var(--muted); text-transform: uppercase; margin-bottom: 5px; }
+.day-tl-track { position: relative; height: 32px; background: var(--s2); border: 1px solid var(--b1); overflow: hidden; }
+.day-tl-hour { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--b2); }
+.day-tl-sess { position: absolute; top: 3px; bottom: 3px; border-radius: 2px; min-width: 3px; }
+.day-tl-now { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--verm); z-index: 3; opacity: .85; }
+.day-tl-hlabels { position: relative; height: 14px; }
+.day-tl-hlbl { position: absolute; font-size: 8px; color: var(--muted); font-family: var(--mono); transform: translateX(-50%); }
+
 /* ── SKILL DETAIL SHEET ─────────────────────────────── */
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.8); z-index: 600; display: flex; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity .3s; }
 .overlay.on { opacity: 1; pointer-events: all; }
@@ -1411,6 +1431,7 @@ body.light .page-watermark { opacity: .2; }
             <div class="daily-sub"  id="daily-sub">頑張れ — Keep going.</div>
             <div class="strikes-disp" id="strikes-disp"></div>
             <div class="week-dots"  id="week-dots"></div>
+            <div class="today-sess-list" id="today-sess-list"></div>
           </div>
           <div class="streak-box">
             <div class="streak-num" id="streak-num">0</div>
@@ -1437,6 +1458,13 @@ body.light .page-watermark { opacity: .2; }
           <div class="report-rows" id="report-rows"></div>
         </div>
       </div>
+    </div>
+
+    <!-- Day Timeline -->
+    <div class="day-tl-wrap">
+      <div class="day-tl-label">Day Timeline 日課表</div>
+      <div class="day-tl-track" id="day-tl-track"></div>
+      <div class="day-tl-hlabels" id="day-tl-hlabels"></div>
     </div>
 
     <!-- Mastery Bottles -->
@@ -2772,6 +2800,58 @@ function renderDaily(){
       }
       slotsEl.appendChild(slot);
     }
+    // Today's session list with delete buttons
+    const listEl=document.getElementById('today-sess-list');
+    if(listEl){
+      listEl.innerHTML='';
+      if(!todaySess.length){
+        listEl.innerHTML='<div style="color:var(--muted);font-size:9px;text-align:center;padding:5px 0;font-family:var(--mono)">稽古なし — no sessions yet</div>';
+      } else {
+        todaySess.slice().reverse().forEach(s=>{
+          const sk=skills.find(x=>x.id===s.skillId);
+          const rank=sk?getRank(sk.totalMins):RANKS[0];
+          const timeStr=s.start?new Date(s.start).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
+          const row=document.createElement('div'); row.className='today-sess-row';
+          row.innerHTML=`<div class="tsr-emoji">${sk?.emoji||'⚡'}</div><div class="tsr-info"><div class="tsr-name" style="color:${rank.color}">${esc(sk?.name||'—')}</div><div class="tsr-meta">${timeStr}${s.description&&s.description!=='Session'?' · '+esc(s.description):''}</div></div><div class="tsr-dur">${fmtDur(s.duration)}</div><button class="sess-del" onclick="delSess('${s.id}')" title="Delete">✕</button>`;
+          listEl.appendChild(row);
+        });
+      }
+    }
+  }
+  renderDayTimeline();
+}
+
+function renderDayTimeline(){
+  const track=document.getElementById('day-tl-track');
+  const hlabels=document.getElementById('day-tl-hlabels');
+  if(!track||!hlabels) return;
+  const SH=6, EH=24, SPAN=(EH-SH)*60;
+  const toX=ms=>{const d=new Date(ms);const mins=(d.getHours()-SH)*60+d.getMinutes();return Math.max(0,Math.min(100,mins/SPAN*100));};
+  track.innerHTML=''; hlabels.innerHTML='';
+  // Hour marks + labels
+  for(let h=SH;h<=EH;h+=2){
+    const pct=(h-SH)/(EH-SH)*100;
+    const mark=document.createElement('div'); mark.className='day-tl-hour'; mark.style.left=pct+'%'; track.appendChild(mark);
+    const lbl=document.createElement('div'); lbl.className='day-tl-hlbl'; lbl.style.left=pct+'%'; lbl.textContent=(h%24)+''; hlabels.appendChild(lbl);
+  }
+  // Session blocks
+  const todayStart=new Date(); todayStart.setHours(0,0,0,0);
+  const todaySess=sessions.filter(s=>s.stop&&new Date(s.stop)>=todayStart&&s.startTime&&s.endTime);
+  todaySess.forEach(s=>{
+    const x1=toX(s.startTime), x2=toX(s.endTime), w=Math.max(x2-x1,0.4);
+    const sk=skills.find(x=>x.id===s.skillId);
+    const rank=sk?getRank(sk.totalMins):RANKS[0];
+    const block=document.createElement('div'); block.className='day-tl-sess';
+    block.style.left=x1+'%'; block.style.width=w+'%'; block.style.background=rank.color;
+    const startStr=new Date(s.startTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    block.title=(sk?.name||'Session')+' · '+fmtDur(s.duration)+' · '+startStr;
+    track.appendChild(block);
+  });
+  // "Now" line
+  const now=new Date(), nowH=now.getHours()+now.getMinutes()/60;
+  if(nowH>=SH&&nowH<=EH){
+    const nowLine=document.createElement('div'); nowLine.className='day-tl-now';
+    nowLine.style.left=((nowH-SH)/(EH-SH)*100)+'%'; track.appendChild(nowLine);
   }
 }
 
@@ -6795,8 +6875,8 @@ function initMethodsSeed(){ /* no seed needed */ }
 
 const _PRES_URL     = 'http://127.0.0.1:8765/presence';
 const _PRES_POLL_MS = 10_000;   // poll interval
-const _PRES_STOP_MS = 60_000;   // absent this long → stop session (1 min)
-const _PRES_STALE_MS=240_000;   // no confirmed-presence packet in this long → treat as away (4 min)
+const _PRES_STOP_MS = 300_000;  // absent this long → stop session (5 min)
+const _PRES_STALE_MS=600_000;   // no confirmed-presence packet in this long → treat as away (10 min)
 
 let _presOn      = localStorage.getItem('sq_presence_on') === '1';
 let _absStart    = null;   // timestamp when absence began (null = present)
@@ -6860,7 +6940,7 @@ async function _presPoll(){
         if(Date.now() - _absStart >= _PRES_STOP_MS){
           _absStart = null;
           stopTimer();
-          toast('Session stopped — away from desk for 60 s', 3000);
+          toast('Session stopped — away from desk for 5 min', 3000);
         }
       } else {
         _presSetDot('offline');
@@ -6884,7 +6964,7 @@ async function _presPoll(){
       if(Date.now() - _absStart >= _PRES_STOP_MS){
         _absStart = null;
         stopTimer();
-        toast('Session stopped — away from desk for 60 s', 3000);
+        toast('Session stopped — away from desk for 5 min', 3000);
       }
     }
   } catch(e){
