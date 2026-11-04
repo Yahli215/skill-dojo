@@ -3109,7 +3109,7 @@ function startTimer(){
   const eventId  = document.getElementById('desc-inp').dataset.eventId||'';
   document.getElementById('desc-inp').dataset.eventEnd='';
   document.getElementById('desc-inp').dataset.eventId='';
-  activeTimer = {skillId:selSkillId,desc,startTime:Date.now(),isPomo,pw,pb,phase:'work',round:1,phaseStart:Date.now(),eventEndTime:eventEnd?new Date(eventEnd).getTime():null,eventId};
+  activeTimer = {skillId:selSkillId,desc,startTime:Date.now(),isPomo,pw,originalPw:pw,pb,phase:'work',round:1,phaseStart:Date.now(),eventEndTime:eventEnd?new Date(eventEnd).getTime():null,eventId};
   _timerOwner = true; // this device owns the timer
   ls.set('sq_active_timer', activeTimer);
   const sk = skills.find(s=>s.id===selSkillId);
@@ -3251,6 +3251,7 @@ function saveNextRoundEdit(){
     if(remMins>=1) addBreakBank(remMins);
     activeTimer.round++;
     activeTimer.phase='work';
+    activeTimer.pw=activeTimer.originalPw||activeTimer.pw;
     activeTimer.phaseStart=Date.now();
     document.getElementById('timer-bar').classList.remove('break');
     sendNotif('💪 Work','Round '+activeTimer.round);
@@ -3406,7 +3407,7 @@ function tickTimer(){
           }
           activeTimer.phase='break'; activeTimer.phaseStart=Date.now(); document.getElementById('timer-bar').classList.add('break'); sendNotif('☕ Break','Round '+activeTimer.round+' done.');
         }
-        else{ activeTimer.round++; activeTimer.phase='work'; activeTimer.phaseStart=Date.now(); document.getElementById('timer-bar').classList.remove('break'); sendNotif('💪 Work','Round '+activeTimer.round); startCheckin(); }
+        else{ activeTimer.round++; activeTimer.phase='work'; activeTimer.pw=activeTimer.originalPw||activeTimer.pw; activeTimer.phaseStart=Date.now(); document.getElementById('timer-bar').classList.remove('break'); sendNotif('💪 Work','Round '+activeTimer.round); startCheckin(); }
         ls.set('sq_active_timer',activeTimer); playBeep();
       }
       const rm2=Math.max(0,rem),rmm=Math.floor(rm2/60),rss=rm2%60;
