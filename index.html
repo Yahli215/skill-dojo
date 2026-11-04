@@ -194,6 +194,13 @@ body.light::before { opacity: .06; }
 .t-switch-btn:hover { background: rgba(91,200,212,.1); }
 .timer-bar.on .t-switch-btn { display: block; }
 .timer-bar.break .t-switch-btn { display: none; }
+/* ── BREAK BANK ───────────────────────────────────────── */
+#break-bank-bar { background: var(--s2); border: 1px solid rgba(200,144,10,.3); border-top: none; padding: 5px 14px; display: flex; align-items: center; gap: 10px; font-size: 10px; font-family: var(--mono); color: var(--gold2); }
+.bb-label { flex: 1; }
+.bb-label strong { font-family: var(--serif); font-size: 13px; }
+.bb-use { background: none; border: 1px solid rgba(200,144,10,.5); border-radius: 4px; padding: 3px 10px; color: var(--gold2); font-size: 9px; cursor: pointer; font-family: var(--mono); letter-spacing: .5px; }
+.bb-use:hover { background: rgba(200,144,10,.12); }
+.bb-clear { background: none; border: none; color: var(--muted); font-size: 9px; cursor: pointer; padding: 3px 6px; }
 
 /* ── CHECK-IN BANNER ───────────────────────────────── */
 #checkin-banner { display:none; background:rgba(220,50,50,.07); border:1px solid rgba(220,50,50,.25); padding:14px 22px; margin-bottom:20px; align-items:center; gap:16px; }
@@ -1379,6 +1386,9 @@ body.light .page-watermark { opacity: .2; }
         <button class="t-next-btn" onclick="openNextRoundEdit()">✎ Next round</button>
       </div>
     </div>
+
+    <!-- Break bank -->
+    <div id="break-bank-bar" style="display:none"></div>
 
     <!-- Check-in banner: appears when new Pomodoro work round starts -->
     <div id="checkin-banner">
@@ -2737,7 +2747,8 @@ function renderApp(){
   try { renderWeekBars(); } catch(e){ console.error('renderWeekBars:', e); }
   try { renderReport(); }   catch(e){ console.error('renderReport:', e); }
   try { renderHabitMgr(); } catch(e){ console.error('renderHabitMgr:', e); }
-  try { renderBottles(); }        catch(e){ console.error('renderBottles:', e); }
+  try { renderBottles(); }  catch(e){ console.error('renderBottles:', e); }
+  try { renderBreakBank(); }catch(e){ console.error('renderBreakBank:', e); }
 }
 
 function renderPills(){
@@ -3232,6 +3243,22 @@ function saveNextRoundEdit(){
     toast(`${mins>=1?mins+'m saved to '+(oldSk?.name||'prev')+'  · ':''} Now on ${newSk?.name||'new topic'}`,2500);
   }
 
+  // During break phase: bank remaining break time and advance to next work round
+  if(activeTimer.isPomo && activeTimer.phase==='break'){
+    const breakElapsed=Math.floor((Date.now()-activeTimer.phaseStart)/1000);
+    const breakRemSecs=Math.max(0,(activeTimer.pb||5)*60 - breakElapsed);
+    const remMins=Math.floor(breakRemSecs/60);
+    if(remMins>=1) addBreakBank(remMins);
+    activeTimer.round++;
+    activeTimer.phase='work';
+    activeTimer.phaseStart=Date.now();
+    document.getElementById('timer-bar').classList.remove('break');
+    sendNotif('💪 Work','Round '+activeTimer.round);
+    startCheckin();
+    const bankStr=remMins>=1?' · 🏦 '+remMins+'m banked':'';
+    toast('Round '+activeTimer.round+' started'+bankStr, 2500);
+  }
+
   activeTimer.skillId=newSkillId;
   if(desc) activeTimer.desc=desc;
   ls.set('sq_active_timer',activeTimer);
@@ -3242,7 +3269,50 @@ function saveNextRoundEdit(){
   }
   const dEl=document.getElementById('t-desc'); if(dEl) dEl.textContent=activeTimer.desc;
   closeNextRoundEdit();
-  if(!_switchMode) toast('Next round updated.',1800);
+  if(!_switchMode && !(activeTimer.isPomo && activeTimer.phase==='work')) toast('Next round updated.',1800);
+}
+
+/* ── BREAK BANK ───────────────────────────────────────── */
+function getBreakBank(){ return ls.get('sq_break_bank',0)||0; }
+function addBreakBank(mins){
+  const cur=getBreakBank();
+  ls.set('sq_break_bank',cur+mins);
+  renderBreakBank();
+}
+function spendBreakBank(mins){
+  const cur=getBreakBank();
+  ls.set('sq_break_bank',Math.max(0,cur-mins));
+  renderBreakBank();
+}
+function clearBreakBank(){
+  ls.set('sq_break_bank',0);
+  renderBreakBank();
+}
+function renderBreakBank(){
+  const bar=document.getElementById('break-bank-bar');
+  if(!bar) return;
+  const mins=getBreakBank();
+  if(mins<=0){ bar.style.display='none'; return; }
+  bar.style.display='flex';
+  bar.innerHTML=`<div class="bb-label">🏦 Break bank: <strong>${mins}m</strong> saved</div><button class="bb-use" onclick="useBreakBank()">Take break now</button><button class="bb-clear" onclick="if(confirm('Clear break bank?'))clearBreakBank()" title="Clear">✕</button>`;
+}
+function useBreakBank(){
+  if(!activeTimer){ toast('Start a session first, then use banked break.'); return; }
+  const banked=getBreakBank();
+  if(banked<=0){ toast('No break minutes banked.'); return; }
+  // Start a break phase using banked minutes
+  if(activeTimer.isPomo){
+    // During work: bank current progress, switch to break using banked time
+    activeTimer.phase='break';
+    activeTimer.pb=banked;
+    activeTimer.phaseStart=Date.now();
+    document.getElementById('timer-bar').classList.add('break');
+    clearBreakBank();
+    toast('Taking your '+banked+'m banked break — enjoy it!');
+    ls.set('sq_active_timer',activeTimer);
+  } else {
+    toast('Start a Pomodoro session to use banked breaks.');
+  }
 }
 
 function resetTabIndicator(){
