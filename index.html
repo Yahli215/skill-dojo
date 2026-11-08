@@ -2926,9 +2926,10 @@ function renderDayTimeline(){
       block.style.top=top+'px'; block.style.height=h+'px';
       block.style.background=rank.color;
       const tStr=st.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-      block.title=(sk?.name||'Session')+' · '+fmtDur(s.duration)+' · '+tStr+' — click to delete';
+      block.title='';
       block.textContent=h>18?(sk?.emoji||'⚡')+' '+(sk?.name||''):(sk?.emoji||'⚡');
-      block.addEventListener('click',e=>{ e.stopPropagation(); _calBlockClick(s.id,sk?.name||'Session',s.duration); });
+      const etStr=et.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+      block.addEventListener('click',e=>{ e.stopPropagation(); _calBlockClick(s.id,sk?.name||'Session',s.duration,tStr,etStr,s.description||''); });
       col.appendChild(block);
     });
     // Now line in today column
@@ -2969,10 +2970,35 @@ function _yToCalTime(y,dayDate){
   d.setHours(_CAL_SH+Math.floor(snap/60),snap%60,0,0);
   return d;
 }
-function _calBlockClick(id, name, duration){
-  const tStr = fmtDur(duration);
-  if(!confirm('Delete "'+name+'" ('+tStr+')?\nThis cannot be undone.')) return;
-  const all=getSess().filter(s=>s.id!==id); ls.set('sq_sessions',all); sessions=all; recalc(); renderApp(); pushSync(); toast('Session deleted.');
+function _calBlockClick(id, name, duration, startStr, endStr, desc){
+  // Remove any existing popup
+  document.getElementById('cal-block-popup')?.remove();
+  const popup=document.createElement('div');
+  popup.id='cal-block-popup';
+  popup.style.cssText='position:fixed;z-index:9999;background:var(--b1);border:1px solid var(--b3);border-radius:10px;padding:14px 16px;box-shadow:0 4px 24px #0008;min-width:200px;max-width:280px;';
+  popup.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="font-weight:700;font-size:15px">${name}</div>
+      <button onclick="document.getElementById('cal-block-popup')?.remove()" style="background:none;border:none;color:var(--fg2);font-size:18px;cursor:pointer;padding:0 0 0 8px;line-height:1">✕</button>
+    </div>
+    <div style="color:var(--fg2);font-size:13px;margin-bottom:4px">${startStr} – ${endStr} · <b>${fmtDur(duration)}</b></div>
+    ${desc?`<div style="color:var(--fg2);font-size:12px;margin-bottom:8px;font-style:italic">${desc}</div>`:''}
+    <button id="cal-del-btn" style="margin-top:8px;width:100%;padding:7px;border-radius:7px;background:var(--verm);color:#fff;border:none;cursor:pointer;font-size:13px;font-weight:600">Delete session</button>
+  `;
+  // Position near click (will be corrected after append)
+  document.body.appendChild(popup);
+  // Position: center horizontally on screen, avoid edges
+  const pw=popup.offsetWidth, ph=popup.offsetHeight;
+  const vw=window.innerWidth, vh=window.innerHeight;
+  // We don't have event coords here — center in viewport
+  popup.style.left=Math.max(8,Math.min((vw-pw)/2, vw-pw-8))+'px';
+  popup.style.top=Math.max(8,Math.min((vh-ph)/2, vh-ph-8))+'px';
+  popup.querySelector('#cal-del-btn').onclick=()=>{
+    popup.remove();
+    const all=getSess().filter(s=>s.id!==id); ls.set('sq_sessions',all); sessions=all; recalc(); renderApp(); pushSync(); toast('Session deleted.');
+  };
+  // Close on outside click
+  setTimeout(()=>document.addEventListener('click',function h(){document.getElementById('cal-block-popup')?.remove();document.removeEventListener('click',h);},{ once:true }),10);
 }
 
 function _calDragStart(e){
