@@ -3056,7 +3056,7 @@ function renderWeekBars(){
   const mx = Math.max(DAILY_GOAL*1.1, ...days.map(d=>d.mins), 1);
   const bars = document.getElementById('week-bars'); bars.innerHTML='';
   const lbls = document.getElementById('wbar-labels'); lbls.innerHTML='';
-  const JP_DAYS = ['日','月','火','水','木','金','土'];
+  const JP_DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   days.forEach(({d,mins,isToday}) => {
     const pct = Math.round(mins/mx*100);
     const p = mins/DAILY_GOAL;
