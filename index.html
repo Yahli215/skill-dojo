@@ -4407,7 +4407,7 @@ function saveNewMethod(){
 }
 // ── End Mastery Bottles ─────────────────────────────────
 
-function todayKey(){ return new Date().toISOString().slice(0,10); }
+function todayKey(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 
 let habitViewDay = 'today'; // 'today' | 'yesterday'
 function habitKey(){
@@ -4752,7 +4752,7 @@ function fmtDur(s){ const h=Math.floor(s/3600),m=Math.floor((s%3600)/60); return
 function pad(n){ return String(n).padStart(2,'0'); }
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function uid(){ return Math.random().toString(36).slice(2,9); }
-function dayKey(d){ return d.toISOString().split('T')[0]; }
+function dayKey(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function dailyHistory(){ const b={}; sessions.forEach(s=>{if(!s.stop)return;const k=dayKey(new Date(s.stop));b[k]=(b[k]||0)+(s.mins||0);}); return b; }
 function todayMins(){ const d=new Date();d.setHours(0,0,0,0);return sessions.filter(s=>s.stop&&new Date(s.stop)>=d).reduce((a,s)=>a+(s.mins||0),0); }
 function calcStreak(byDay){ let streak=0; const today=new Date(); for(let i=1;i<=365;i++){const d=new Date(today);d.setDate(today.getDate()-i);if((byDay[dayKey(d)]||0)>=DAILY_GOAL)streak++;else break;} if((byDay[dayKey(today)]||0)>=DAILY_GOAL)streak++; return streak; }
@@ -4916,7 +4916,7 @@ function newExperiment(problem, tool, origin, provenId, behavior){
   h.toolOrigin = origin||'new'; h.provenId = provenId||null;
   return h;
 }
-function todayKey(){ return new Date().toISOString().slice(0,10); }
+function todayKey(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function isoWeekKey(d){
   const dt = d ? new Date(d) : new Date();
   dt.setHours(0,0,0,0); dt.setDate(dt.getDate()+4-(dt.getDay()||7));
@@ -5484,7 +5484,7 @@ function renderProblemsMap(){
 function getThoughtMgr(){ return ls.get('sq_thought_mgr', '{"captures":[],"sessions":[]}'); }
 function saveThoughtMgr(d){ ls.set('sq_thought_mgr', d); pushSync(); }
 
-function todayKey(){ return new Date().toISOString().slice(0,10); }
+function todayKey(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 
 function getTodaySession(){
   const d = getThoughtMgr();
