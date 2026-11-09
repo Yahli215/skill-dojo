@@ -373,6 +373,33 @@ body.light::before { opacity: .06; }
 .week-cal-now-dot { position: absolute; left: -4px; top: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--verm); }
 .week-cal-day-body { cursor: default; }
 
+/* ── SEASON ──────────────────────────────────────────── */
+#season-card { margin: 0 0 14px 0; }
+.season-no-setup { text-align:center; padding: 10px 0 6px; }
+.season-card-inner { background: var(--b1); border: 1px solid var(--b2); border-radius: 10px; padding: 14px 16px; }
+.season-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.season-title { font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px; color: var(--muted2); text-transform: uppercase; }
+.season-meta { font-family: var(--mono); font-size: 10px; color: var(--muted2); flex: 1; }
+.season-habit-name { font-family: var(--serif); font-weight: 900; font-size: 18px; color: var(--text); }
+.season-progress-track { height: 5px; background: var(--b2); border-radius: 3px; margin: 8px 0 5px; overflow: hidden; }
+.season-progress-fill { height: 100%; border-radius: 3px; transition: width .6s cubic-bezier(.34,1.56,.64,1); }
+.season-count { font-family: var(--mono); font-size: 10px; color: var(--muted2); margin-bottom: 6px; }
+.season-dose { font-family: var(--mono); font-size: 12px; font-weight: 700; padding: 4px 0; }
+.season-dose.on-track { color: var(--green2); }
+.season-dose.behind { color: var(--verm); }
+.season-dose.auto { color: var(--gold2); }
+.season-setup-btn { background: none; border: 1px solid var(--b2); color: var(--muted2); font-size: 10px; font-family: var(--mono); padding: 3px 9px; border-radius: 5px; cursor: pointer; }
+.season-setup-btn:hover { border-color: var(--gold); color: var(--gold2); }
+.season-tl-toggle { font-family: var(--mono); font-size: 9px; color: var(--muted2); cursor: pointer; border: none; background: none; margin-top: 10px; padding: 0; letter-spacing: 1px; text-transform: uppercase; }
+.season-tl-toggle:hover { color: var(--gold2); }
+.season-timeline { margin-top: 8px; display: none; }
+.season-tl-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--b2); font-family: var(--mono); font-size: 10px; }
+.season-tl-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.season-tl-name { flex: 1; color: var(--text); }
+.season-tl-dates { color: var(--muted2); font-size: 9px; }
+.season-tl-badge { font-size: 9px; padding: 1px 5px; border-radius: 3px; }
+.ssm-habit-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--b2); font-family: var(--mono); font-size: 11px; }
+
 /* ── SKILL DETAIL SHEET ─────────────────────────────── */
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.8); z-index: 600; display: flex; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity .3s; }
 .overlay.on { opacity: 1; pointer-events: all; }
@@ -1442,6 +1469,9 @@ body.light .page-watermark { opacity: .2; }
       </div>
     </div>
 
+    <!-- Season card -->
+    <div id="season-card"></div>
+
     <!-- Daily + report -->
     <div class="two-col">
       <div>
@@ -2472,6 +2502,7 @@ function boot(){
   const syncBtn = document.getElementById('sync-btn');
   if(syncBtn) syncBtn.style.display='inline-block';
   initMethodsSeed();
+  tickSeason();
   show('app'); renderApp();
   timerTick = setInterval(tickTimer, 1000);
   initGCal();
@@ -2733,6 +2764,7 @@ async function manualSync(){
 /* ── RENDER ─────────────────────────────────────────── */
 function renderApp(){
   try { renderPills(); }    catch(e){ console.error('renderPills:', e); }
+  try { renderSeason(); }   catch(e){ console.error('renderSeason:', e); }
   try { renderDaily(); }    catch(e){ console.error('renderDaily:', e); }
   try { renderWeekBars(); } catch(e){ console.error('renderWeekBars:', e); }
   try { renderReport(); }   catch(e){ console.error('renderReport:', e); }
@@ -3092,9 +3124,41 @@ function stopTimer(){
   if(sk){ sk.totalMins=data[sid].totalMins; sk.rank=newRank; if(newRank!==prevRank) luQueue.push({skill:sk,newRank}); }
   if(activeTimer.eventId) trackedEvIds.add(activeTimer.eventId);
   _lastSessionSkill=sk;
+  const _jacDesc=activeTimer.desc; const _jacSessId=session.id;
   cancelTimer();
   showRoundComplete(sk, mins);
   pushSync();
+  setTimeout(()=>_maybeAskJacobRatings(_jacSessId,_jacDesc),400);
+}
+
+function _maybeAskJacobRatings(sessionId, baseDesc){
+  if(!baseDesc.toLowerCase().includes('exercises jacob')) return;
+  document.getElementById('jacob-ratings-modal')?.remove();
+  const ov=document.createElement('div');
+  ov.id='jacob-ratings-modal';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:1000;display:flex;align-items:center;justify-content:center';
+  ov.innerHTML=`
+    <div style="background:var(--b1);border:1px solid var(--b3);border-radius:12px;padding:24px 22px;width:280px;max-width:90vw">
+      <div style="font-weight:900;font-size:16px;margin-bottom:4px">Exercises Jacob ♟</div>
+      <div style="color:var(--fg2);font-size:12px;margin-bottom:20px">Rate the session</div>
+      <div style="font-size:12px;color:var(--fg2);margin-bottom:4px">How hard was it? &nbsp;<span id="jac-hard-val" style="color:var(--gold2);font-weight:800;font-size:16px">5</span><span style="color:var(--fg2);font-size:11px"> / 10</span></div>
+      <input type="range" min="1" max="10" value="5" id="jac-hard" style="width:100%;margin-bottom:16px;accent-color:var(--gold2)" oninput="document.getElementById('jac-hard-val').textContent=this.value">
+      <div style="font-size:12px;color:var(--fg2);margin-bottom:4px">How focused were you? &nbsp;<span id="jac-focus-val" style="color:var(--gold2);font-weight:800;font-size:16px">5</span><span style="color:var(--fg2);font-size:11px"> / 10</span></div>
+      <input type="range" min="1" max="10" value="5" id="jac-focus" style="width:100%;margin-bottom:20px;accent-color:var(--gold2)" oninput="document.getElementById('jac-focus-val').textContent=this.value">
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button onclick="document.getElementById('jacob-ratings-modal').remove()" style="background:none;border:1px solid var(--b2);color:var(--fg2);padding:7px 14px;cursor:pointer;border-radius:6px;font-size:12px">Skip</button>
+        <button id="jac-save-btn" style="background:var(--gold2);border:none;color:#000;padding:7px 18px;cursor:pointer;border-radius:6px;font-size:13px;font-weight:800">Save</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  ov.querySelector('#jac-save-btn').onclick=()=>{
+    const hardness=parseInt(ov.querySelector('#jac-hard').value);
+    const focus=parseInt(ov.querySelector('#jac-focus').value);
+    ov.remove();
+    const all=getSess(), idx=all.findIndex(s=>s.id===sessionId);
+    if(idx>=0){ all[idx].jacob_hardness=hardness; all[idx].jacob_focus=focus; ls.set('sq_sessions',all); sessions=all; }
+    toast('Ratings saved ✓');
+  };
 }
 
 function cancelTimer(){
@@ -3964,6 +4028,333 @@ ${taskList}`;
 }
 // ── End Tasks ──────────────────────────────────────────
 
+
+/* ══════════════════════════════════════════════════════
+   SEASON SYSTEM
+══════════════════════════════════════════════════════ */
+
+function getSeason(){ try{ return JSON.parse(localStorage.getItem('sq_season')||'null'); }catch(e){ return null; } }
+function setSeason(s){ localStorage.setItem('sq_season', JSON.stringify(s)); }
+function _seasonDateKey(d){ if(typeof d==='string') return d.slice(0,10); const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${dd}`; }
+function _today(){ const d=new Date(); d.setHours(0,0,0,0); return d; }
+function _todaySdk(){ return _seasonDateKey(_today()); }
+
+function getActiveHabit(s){ return s?s.queue.find(h=>h.status==='active'||h.status==='testing')||null:null; }
+
+function habitProgress(h, s){
+  if(!h) return 0;
+  if(h.unit==='reps'){
+    if(!h.skillId) return h.progress||0;
+    const start=new Date(h.startDate+'T00:00:00').getTime();
+    return getSess().filter(ss=>ss.skillId===h.skillId&&ss.startTime&&ss.startTime>=start).length;
+  }
+  return h.progress||0;
+}
+
+function seasonDaysLeft(s){
+  if(!s) return 0;
+  const now=_today(), t=new Date(s.tournamentDate+'T00:00:00');
+  return Math.max(0, Math.round((t-now)/86400000));
+}
+
+function habitDaysLeft(h){
+  if(!h||!h.startDate) return 0;
+  const start=new Date(h.startDate+'T00:00:00');
+  const end=new Date(start.getTime()+h.length*86400000);
+  return Math.max(0, Math.round((end-_today())/86400000));
+}
+
+function tickSeason(){
+  const s=getSeason();
+  if(!s||s.status!=='active') return;
+  const today=_todaySdk();
+  if(today>=s.tournamentDate){ s.status='paused'; setSeason(s); return; }
+
+  if(!getActiveHabit(s)){ _activateNext(s); setSeason(s); }
+
+  const h=getActiveHabit(s);
+  if(h&&h.unit==='days'&&h.startDate){
+    const start=new Date(h.startDate+'T00:00:00');
+    h.progress=Math.min(h.length, Math.round((_today()-start)/86400000));
+    h.lastTickDate=today;
+    setSeason(s);
+  }
+
+  const h2=getActiveHabit(s);
+  if(h2&&h2.status==='active'){
+    const prog=habitProgress(h2,s);
+    if(prog>=h2.length){ h2.status='testing'; setSeason(s); setTimeout(()=>{ toast('🧪 Habit complete — see Season card for final test'); renderSeason(); },600); }
+  }
+}
+
+function _activateNext(s){
+  const next=s.queue.find(h=>h.status==='pending');
+  if(!next) return;
+  next.status='active'; next.startDate=_todaySdk(); next.progress=0; next.lastTickDate=_todaySdk();
+}
+
+function _autoplan(s){
+  let cursor=new Date(s.startDate+'T00:00:00');
+  const tournament=new Date(s.tournamentDate+'T00:00:00');
+  for(const h of s.queue){
+    if(h.status==='done'||h.status==='failed') continue;
+    if(h.status==='active'||h.status==='testing'){
+      if(h.unit==='days'&&h.startDate){ const end=new Date(new Date(h.startDate+'T00:00:00').getTime()+h.length*86400000); if(end>cursor) cursor=end; }
+      continue;
+    }
+    if(h.unit==='days'){
+      const end=new Date(cursor.getTime()+h.length*86400000);
+      h._fits=end<=tournament; h._pStart=_seasonDateKey(cursor); h._pEnd=_seasonDateKey(end);
+      if(h._fits) cursor=end;
+    } else {
+      h._fits=true; h._pStart=_seasonDateKey(cursor); h._pEnd=null;
+    }
+  }
+}
+
+let _seasonTlOpen=false;
+
+function renderSeason(){
+  const wrap=document.getElementById('season-card');
+  if(!wrap) return;
+  const s=getSeason();
+
+  if(!s){
+    wrap.innerHTML=`<div class="season-no-setup">
+      <button class="season-setup-btn" onclick="openSeasonSetup()">🏆 Set up a Season</button>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-top:4px">Enter your tournament date to track season habits</div>
+    </div>`;
+    return;
+  }
+
+  if(s.status==='paused'){
+    wrap.innerHTML=`<div class="season-card-inner" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div>
+        <div style="font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--gold2)">🏆 TOURNAMENT TIME</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:4px">Season paused. Good luck!</div>
+      </div>
+      <button class="season-setup-btn" onclick="openNewSeason()">Set next date →</button>
+    </div>`;
+    return;
+  }
+
+  _autoplan(s);
+  const dLeft=seasonDaysLeft(s);
+  const totalH=s.queue.length;
+  const doneH=s.queue.filter(h=>h.status==='done').length;
+  const ah=getActiveHabit(s);
+
+  if(ah&&ah.status==='active'&&ah.unit==='reps'){
+    const prog=habitProgress(ah,s);
+    if(prog>=ah.length){ ah.status='testing'; setSeason(s); }
+  }
+
+  let html=`<div class="season-card-inner">`;
+  html+=`<div class="season-header">
+    <span class="season-title">🏆 Season</span>
+    <span class="season-meta">Habit ${doneH+1} of ${totalH} &nbsp;·&nbsp; ${dLeft}d to tourney</span>
+    <button class="season-setup-btn" onclick="openSeasonSetup()">⚙</button>
+  </div>`;
+
+  if(!ah&&s.queue.every(h=>h.status==='done')){
+    html+=`<div style="font-family:var(--mono);font-size:11px;color:var(--green2);padding:6px 0">✓ All habits complete this season!</div>`;
+  } else if(!ah){
+    html+=`<div style="font-family:var(--mono);font-size:10px;color:var(--muted2);padding:4px 0">Queue empty — add habits in ⚙</div>`;
+  } else {
+    const prog=habitProgress(ah,s);
+    const pct=Math.min(100,Math.round(prog/ah.length*100));
+    const col=pct>=100?'var(--green2)':pct>=50?'var(--gold2)':'var(--indigo)';
+    const unitLabel=ah.unit==='days'?(prog===1?'clean day':'clean days'):'reps';
+
+    html+=`<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+      <div class="season-habit-name">${esc(ah.name)}</div>
+      <div style="text-align:right;flex-shrink:0">
+        <span style="font-family:var(--mono);font-size:24px;font-weight:800;color:${col}">${prog}</span>
+        <span style="font-family:var(--mono);font-size:12px;color:var(--muted2)"> / ${ah.length}</span>
+      </div>
+    </div>
+    <div class="season-progress-track"><div class="season-progress-fill" style="width:${pct}%;background:${col}"></div></div>
+    <div class="season-count">${prog} / ${ah.length} ${unitLabel}</div>`;
+
+    if(ah.unit==='reps'){
+      const rem=Math.max(0,ah.length-prog);
+      const needed=rem>0?Math.ceil(rem/Math.max(1,dLeft)):0;
+      const start=new Date(ah.startDate+'T00:00:00');
+      const elapsed=Math.max(1,Math.round((_today()-start)/86400000));
+      const onTrack=rem<=0||(prog/elapsed>=(ah.length/Math.max(1,elapsed+dLeft)));
+      const cls=rem<=0?'on-track':onTrack?'on-track':'behind';
+      const msg=rem<=0?'✓ Complete — final test ready':(onTrack?`Today: ${needed} rep${needed!==1?'s':''} · ✓ On track`:`Today: ${needed} rep${needed!==1?'s':''} · ⚠ Behind`);
+      html+=`<div class="season-dose ${cls}">${msg}</div>`;
+    } else {
+      const dl=habitDaysLeft(ah);
+      html+=`<div class="season-dose auto">Day ${prog+1} of ${ah.length} — keep going · ${dl} day${dl!==1?'s':''} left</div>`;
+    }
+
+    if(ah.status==='testing'){
+      html+=`<div style="margin-top:10px;padding:11px;background:var(--b2);border-radius:7px">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--gold2);font-weight:700;margin-bottom:4px">🧪 Final test</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:10px">${ah.testN} of ${ah.testM} training blocks without effort</div>
+        <div style="display:flex;gap:8px">
+          <button onclick="passFinalTest('${ah.id}')" style="flex:1;padding:8px;background:var(--green);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:var(--mono);font-size:11px;font-weight:700">✓ Pass</button>
+          <button onclick="failFinalTest('${ah.id}')" style="flex:1;padding:8px;background:var(--verm);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:var(--mono);font-size:11px;font-weight:700">✗ Fail — retry</button>
+        </div>
+      </div>`;
+    }
+  }
+
+  html+=`<button class="season-tl-toggle" onclick="_toggleSeasonTl()">${_seasonTlOpen?'▴':'▾'} Season plan</button>`;
+  html+=`<div class="season-timeline" id="season-tl" style="display:${_seasonTlOpen?'block':'none'}">`;
+  s.queue.forEach(h=>{
+    const isDone=h.status==='done', isActive=h.status==='active'||h.status==='testing';
+    const dot=isDone?'var(--green2)':isActive?'var(--gold2)':h.status==='failed'?'var(--verm)':'var(--muted)';
+    const badge=isDone?'done':isActive?'active':h._fits===false?'next season':'';
+    const badgeStyle=isDone?'background:var(--green);color:#fff':isActive?'background:var(--gold);color:#000':'color:var(--muted2)';
+    const dateStr=h._pStart||h.startDate||'—';
+    const endStr=h._pEnd?` → ${h._pEnd}`:h.unit==='reps'?' → TBD':'';
+    html+=`<div class="season-tl-row">
+      <div class="season-tl-dot" style="background:${dot}"></div>
+      <div class="season-tl-name">${esc(h.name)} <span style="color:var(--muted2);font-size:9px">${h.length}${h.unit==='days'?'d':'r'}</span></div>
+      <div class="season-tl-dates">${dateStr}${endStr}</div>
+      ${badge?`<div class="season-tl-badge" style="${badgeStyle}">${badge}</div>`:''}
+    </div>`;
+  });
+  html+=`</div></div>`;
+  wrap.innerHTML=html;
+}
+
+function _toggleSeasonTl(){
+  _seasonTlOpen=!_seasonTlOpen;
+  const tl=document.getElementById('season-tl'); if(tl) tl.style.display=_seasonTlOpen?'block':'none';
+  const btn=document.querySelector('.season-tl-toggle'); if(btn) btn.textContent=(_seasonTlOpen?'▴':'▾')+' Season plan';
+}
+
+function passFinalTest(habitId){
+  const s=getSeason(); if(!s) return;
+  const h=s.queue.find(x=>x.id===habitId); if(!h) return;
+  h.status='done'; _activateNext(s); setSeason(s);
+  toast('✓ Habit installed! Next habit started.'); renderSeason();
+}
+
+function failFinalTest(habitId){
+  const s=getSeason(); if(!s) return;
+  const h=s.queue.find(x=>x.id===habitId); if(!h) return;
+  h.status='failed';
+  const retryLen=Math.ceil((h.originalLength||h.length)/2);
+  const retry={ id:uid(), name:h.name+' ×retry', unit:h.unit, length:retryLen, testN:h.testN, testM:h.testM, skillId:h.skillId, status:'pending', startDate:null, progress:0, lastTickDate:null, originalLength:h.originalLength||h.length, isRetry:true };
+  s.queue.splice(s.queue.indexOf(h)+1,0,retry);
+  _activateNext(s); setSeason(s);
+  toast(`✗ Fail — retry: ${retryLen} ${h.unit}`); renderSeason();
+}
+
+function openSeasonSetup(){
+  document.getElementById('season-setup-ov')?.remove();
+  const s=getSeason()||{ tournamentDate:'', startDate:_todaySdk(), status:'active', queue:[] };
+  const qHTML=s.queue.length?s.queue.map(h=>{
+    const prog=habitProgress(h,s);
+    const dot=h.status==='done'?'🟢':h.status==='active'||h.status==='testing'?'🟡':h.status==='failed'?'🔴':'⚪';
+    const canEdit=h.status==='pending';
+    return `<div class="ssm-habit-row">
+      <span>${dot}</span>
+      <span style="flex:1;font-weight:700;color:var(--text)">${esc(h.name)}</span>
+      <span style="color:var(--muted2)">${h.length}${h.unit==='days'?'d':'r'}</span>
+      <span style="color:var(--muted2)">${prog}/${h.length}</span>
+      ${canEdit?`
+        <button onclick="_mvHabit('${h.id}',-1)" style="background:none;border:none;color:var(--muted2);cursor:pointer;padding:0 3px;font-size:14px">↑</button>
+        <button onclick="_mvHabit('${h.id}',1)" style="background:none;border:none;color:var(--muted2);cursor:pointer;padding:0 3px;font-size:14px">↓</button>
+        <button onclick="_delHabit('${h.id}')" style="background:none;border:none;color:var(--verm);cursor:pointer;padding:0 3px;font-size:14px">✕</button>
+      `:`<span style="font-family:var(--mono);font-size:9px;color:var(--muted2)">${h.status}</span>`}
+    </div>`;
+  }).join(''):`<div style="font-family:var(--mono);font-size:10px;color:var(--muted2);padding:8px 0">No habits — add one below</div>`;
+  const skillOpts=skills.map(sk=>`<option value="${sk.id}">${sk.emoji} ${esc(sk.name)}</option>`).join('');
+  const ov=document.createElement('div');
+  ov.id='season-setup-ov';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:900;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 0 60px';
+  ov.innerHTML=`
+    <div style="background:var(--b1);border:1px solid var(--b2);border-radius:12px;padding:24px 20px;width:340px;max-width:95vw;margin:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <div style="font-family:var(--serif);font-size:18px;font-weight:900">🏆 Season Setup</div>
+        <button onclick="document.getElementById('season-setup-ov').remove()" style="background:none;border:none;color:var(--muted2);font-size:20px;cursor:pointer">✕</button>
+      </div>
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;margin-bottom:4px">Tournament date</div>
+      <input type="date" id="ssm-date" value="${s.tournamentDate||''}" style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:8px;font-family:var(--mono);font-size:12px;border-radius:6px;margin-bottom:18px">
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;margin-bottom:8px">Habit queue</div>
+      <div id="ssm-q">${qHTML}</div>
+      <button onclick="_openAddHabit()" style="width:100%;margin:12px 0 0;padding:8px;background:var(--s2);border:1px solid var(--b2);color:var(--muted2);font-family:var(--mono);font-size:10px;cursor:pointer;border-radius:6px">＋ Add habit</button>
+      <div id="add-habit-panel" style="display:none;border:1px solid var(--b2);border-radius:8px;padding:12px;margin-top:10px;background:var(--s2)">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">Habit name</div>
+        <input id="ahf-name" placeholder="e.g. No YouTube" style="width:100%;box-sizing:border-box;background:var(--b1);border:1px solid var(--b2);color:var(--text);padding:7px;font-family:var(--mono);font-size:12px;border-radius:5px;margin-bottom:10px">
+        <div style="display:flex;gap:10px;margin-bottom:10px">
+          <div style="flex:1"><div style="font-family:var(--mono);font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">Length</div>
+            <input id="ahf-len" type="number" min="1" value="14" style="width:100%;box-sizing:border-box;background:var(--b1);border:1px solid var(--b2);color:var(--text);padding:7px;font-family:var(--mono);font-size:12px;border-radius:5px"></div>
+          <div style="flex:1"><div style="font-family:var(--mono);font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">Unit</div>
+            <select id="ahf-unit" onchange="_toggleSkillRow()" style="width:100%;background:var(--b1);border:1px solid var(--b2);color:var(--text);padding:7px;font-family:var(--mono);font-size:11px;border-radius:5px"><option value="days">days</option><option value="reps">reps</option></select></div>
+        </div>
+        <div id="ahf-skill-row" style="display:none;margin-bottom:10px">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">Count reps from skill</div>
+          <select id="ahf-skill" style="width:100%;background:var(--b1);border:1px solid var(--b2);color:var(--text);padding:7px;font-family:var(--mono);font-size:11px;border-radius:5px">${skillOpts}</select>
+        </div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">Final test (N of M blocks)</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+          <input id="ahf-testN" type="number" min="1" value="8" style="width:55px;background:var(--b1);border:1px solid var(--b2);color:var(--text);padding:7px;font-family:var(--mono);font-size:12px;border-radius:5px">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--muted2)">of</span>
+          <input id="ahf-testM" type="number" min="1" value="10" style="width:55px;background:var(--b1);border:1px solid var(--b2);color:var(--text);padding:7px;font-family:var(--mono);font-size:12px;border-radius:5px">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--muted2)">training blocks</span>
+        </div>
+        <button onclick="_saveHabit()" style="width:100%;padding:8px;background:var(--gold2);color:#000;border:none;font-family:var(--mono);font-size:11px;font-weight:700;cursor:pointer;border-radius:6px">Add to queue</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button onclick="document.getElementById('season-setup-ov').remove()" style="flex:1;padding:9px;background:none;border:1px solid var(--b2);color:var(--muted2);font-family:var(--mono);font-size:11px;cursor:pointer;border-radius:6px">Cancel</button>
+        <button onclick="_saveSeasonSetup()" style="flex:1;padding:9px;background:var(--gold2);color:#000;border:none;font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer;border-radius:6px">Save</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); });
+}
+
+function openNewSeason(){
+  const s=getSeason()||{};
+  s.tournamentDate=''; s.startDate=_todaySdk(); s.status='active'; if(!s.queue) s.queue=[];
+  setSeason(s); openSeasonSetup();
+}
+
+function _openAddHabit(){ document.getElementById('add-habit-panel').style.display='block'; document.getElementById('ahf-name')?.focus(); }
+function _toggleSkillRow(){ const u=document.getElementById('ahf-unit')?.value; const r=document.getElementById('ahf-skill-row'); if(r) r.style.display=u==='reps'?'block':'none'; }
+
+function _saveHabit(){
+  const name=document.getElementById('ahf-name')?.value.trim();
+  const length=parseInt(document.getElementById('ahf-len')?.value)||14;
+  const unit=document.getElementById('ahf-unit')?.value||'days';
+  const skillId=unit==='reps'?(document.getElementById('ahf-skill')?.value||null):null;
+  const testN=parseInt(document.getElementById('ahf-testN')?.value)||8;
+  const testM=parseInt(document.getElementById('ahf-testM')?.value)||10;
+  if(!name){ toast('Enter a habit name'); return; }
+  const s=getSeason()||{ tournamentDate:'', startDate:_todaySdk(), status:'active', queue:[] };
+  s.queue.push({ id:uid(), name, unit, length, testN, testM, skillId, status:'pending', startDate:null, progress:0, lastTickDate:null, originalLength:length, isRetry:false });
+  setSeason(s); document.getElementById('season-setup-ov')?.remove(); openSeasonSetup(); toast('Habit added ✓');
+}
+
+function _saveSeasonSetup(){
+  const date=document.getElementById('ssm-date')?.value;
+  if(!date){ toast('Pick a tournament date'); return; }
+  const s=getSeason()||{ startDate:_todaySdk(), status:'active', queue:[] };
+  s.tournamentDate=date; if(!s.startDate) s.startDate=_todaySdk(); s.status='active';
+  if(!getActiveHabit(s)) _activateNext(s);
+  setSeason(s); document.getElementById('season-setup-ov')?.remove(); tickSeason(); renderSeason(); toast('Season saved ✓');
+}
+
+function _delHabit(id){
+  const s=getSeason(); if(!s) return;
+  s.queue=s.queue.filter(h=>h.id!==id); setSeason(s);
+  document.getElementById('season-setup-ov')?.remove(); openSeasonSetup();
+}
+
+function _mvHabit(id, dir){
+  const s=getSeason(); if(!s) return;
+  const idx=s.queue.findIndex(h=>h.id===id), to=idx+dir;
+  if(to<0||to>=s.queue.length) return;
+  [s.queue[idx],s.queue[to]]=[s.queue[to],s.queue[idx]];
+  setSeason(s); document.getElementById('season-setup-ov')?.remove(); openSeasonSetup();
+}
 
 /* ── MASTERY BOTTLES ─────────────────────────────────── */
 function getBottles(){
