@@ -375,6 +375,7 @@ body.light::before { opacity: .06; }
 
 /* ── SEASON ──────────────────────────────────────────── */
 #season-card { margin: 0 0 14px 0; }
+#season-daily-dose { margin-top: 8px; padding: 7px 10px; background: var(--b2); border-radius: 6px; font-family: var(--mono); font-size: 11px; }
 .season-no-setup { text-align:center; padding: 10px 0 6px; }
 .season-card-inner { background: var(--b1); border: 1px solid var(--b2); border-radius: 10px; padding: 14px 16px; }
 .season-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
@@ -1490,6 +1491,7 @@ body.light .page-watermark { opacity: .2; }
             <div class="strikes-disp" id="strikes-disp"></div>
             <div class="week-dots"  id="week-dots"></div>
             <div class="today-sess-list" id="today-sess-list"></div>
+            <div id="season-daily-dose" style="display:none"></div>
           </div>
           <div class="streak-box">
             <div class="streak-num" id="streak-num">0</div>
@@ -4120,6 +4122,7 @@ function renderSeason(){
   const s=getSeason();
 
   if(!s){
+    const dEl=document.getElementById('season-daily-dose'); if(dEl) dEl.style.display='none';
     wrap.innerHTML=`<div class="season-no-setup">
       <button class="season-setup-btn" onclick="openSeasonSetup()">🏆 Set up a Season</button>
       <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-top:4px">Enter your tournament date to track season habits</div>
@@ -4128,13 +4131,19 @@ function renderSeason(){
   }
 
   if(s.status==='paused'){
-    wrap.innerHTML=`<div class="season-card-inner" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
-      <div>
-        <div style="font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--gold2)">🏆 TOURNAMENT TIME</div>
-        <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:4px">Season paused. Good luck!</div>
+    const draft=getReviewDraft();
+    const btnLabel=draft?'Continue review →':'Start review →';
+    wrap.innerHTML=`<div class="season-card-inner">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px">
+        <div>
+          <div style="font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--gold2)">🏆 TOURNAMENT TIME</div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:3px">Season paused · review to start the next one</div>
+        </div>
+        <button class="season-setup-btn" onclick="openTournamentReview()">${btnLabel}</button>
       </div>
-      <button class="season-setup-btn" onclick="openNewSeason()">Set next date →</button>
+      <div id="season-history-preview"></div>
     </div>`;
+    _renderHistoryPreview();
     return;
   }
 
@@ -4156,6 +4165,9 @@ function renderSeason(){
     <button class="season-setup-btn" onclick="openSeasonSetup()">⚙</button>
   </div>`;
 
+  // Helper to build dose text for the daily goal widget
+  let _doseTxt='', _doseColor='var(--gold2)';
+
   if(!ah&&s.queue.every(h=>h.status==='done')){
     html+=`<div style="font-family:var(--mono);font-size:11px;color:var(--green2);padding:6px 0">✓ All habits complete this season!</div>`;
   } else if(!ah){
@@ -4166,8 +4178,14 @@ function renderSeason(){
     const col=pct>=100?'var(--green2)':pct>=50?'var(--gold2)':'var(--indigo)';
     const unitLabel=ah.unit==='days'?(prog===1?'clean day':'clean days'):'reps';
 
+    // Linked problem
+    const linkedProb=ah.problemId?getProblems().find(p=>p.id===ah.problemId):null;
+
     html+=`<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
-      <div class="season-habit-name">${esc(ah.name)}</div>
+      <div>
+        <div class="season-habit-name">${esc(ah.name)}</div>
+        ${linkedProb?`<div style="font-family:var(--mono);font-size:10px;color:var(--indigo);margin-top:1px">🎯 ${esc(linkedProb.title)}</div>`:''}
+      </div>
       <div style="text-align:right;flex-shrink:0">
         <span style="font-family:var(--mono);font-size:24px;font-weight:800;color:${col}">${prog}</span>
         <span style="font-family:var(--mono);font-size:12px;color:var(--muted2)"> / ${ah.length}</span>
@@ -4185,9 +4203,13 @@ function renderSeason(){
       const cls=rem<=0?'on-track':onTrack?'on-track':'behind';
       const msg=rem<=0?'✓ Complete — final test ready':(onTrack?`Today: ${needed} rep${needed!==1?'s':''} · ✓ On track`:`Today: ${needed} rep${needed!==1?'s':''} · ⚠ Behind`);
       html+=`<div class="season-dose ${cls}">${msg}</div>`;
+      _doseTxt=`${esc(ah.name)}: ${needed} rep${needed!==1?'s':''} today`;
+      _doseColor=onTrack?'var(--green2)':'var(--verm)';
     } else {
       const dl=habitDaysLeft(ah);
       html+=`<div class="season-dose auto">Day ${prog+1} of ${ah.length} — keep going · ${dl} day${dl!==1?'s':''} left</div>`;
+      _doseTxt=`${esc(ah.name)}: Day ${prog+1} / ${ah.length}`;
+      _doseColor='var(--gold2)';
     }
 
     if(ah.status==='testing'){
@@ -4200,6 +4222,13 @@ function renderSeason(){
         </div>
       </div>`;
     }
+  }
+
+  // Update daily goal dose widget
+  const doseEl=document.getElementById('season-daily-dose');
+  if(doseEl){
+    if(_doseTxt){ doseEl.style.display='block'; doseEl.innerHTML=`<span style="color:var(--muted2)">🎯 Habit · </span><span style="color:${_doseColor};font-weight:700">${_doseTxt}</span>`; }
+    else doseEl.style.display='none';
   }
 
   html+=`<button class="season-tl-toggle" onclick="_toggleSeasonTl()">${_seasonTlOpen?'▴':'▾'} Season plan</button>`;
@@ -4218,8 +4247,14 @@ function renderSeason(){
       ${badge?`<div class="season-tl-badge" style="${badgeStyle}">${badge}</div>`:''}
     </div>`;
   });
+  // History link
+  const reviews=getReviews();
+  if(reviews.length) html+=`<button class="season-tl-toggle" style="margin-top:4px" onclick="_toggleSeasonHistory()">📚 ${reviews.length} past season${reviews.length!==1?'s':''}</button>
+  <div id="season-history-inline" style="display:none"></div>`;
+
   html+=`</div></div>`;
   wrap.innerHTML=html;
+  if(document.getElementById('season-history-inline')&&_seasonHistoryOpen) _renderHistoryInline();
 }
 
 function _toggleSeasonTl(){
@@ -4293,6 +4328,13 @@ function openSeasonSetup(){
           <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">Count reps from skill</div>
           <select id="ahf-skill" style="width:100%;background:var(--b1);border:1px solid var(--b2);color:var(--text);padding:7px;font-family:var(--mono);font-size:11px;border-radius:5px">${skillOpts}</select>
         </div>
+        <div id="ahf-prob-row" style="margin-bottom:10px">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">Linked problem (optional)</div>
+          <select id="ahf-problem" style="width:100%;background:var(--b1);border:1px solid var(--b2);color:var(--text);padding:7px;font-family:var(--mono);font-size:11px;border-radius:5px">
+            <option value="">— None —</option>
+            ${getProblems().filter(p=>p.status!=='solved').map(p=>`<option value="${p.id}">${esc(p.title)}</option>`).join('')}
+          </select>
+        </div>
         <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">Final test (N of M blocks)</div>
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
           <input id="ahf-testN" type="number" min="1" value="8" style="width:55px;background:var(--b1);border:1px solid var(--b2);color:var(--text);padding:7px;font-family:var(--mono);font-size:12px;border-radius:5px">
@@ -4327,9 +4369,10 @@ function _saveHabit(){
   const skillId=unit==='reps'?(document.getElementById('ahf-skill')?.value||null):null;
   const testN=parseInt(document.getElementById('ahf-testN')?.value)||8;
   const testM=parseInt(document.getElementById('ahf-testM')?.value)||10;
+  const problemId=document.getElementById('ahf-problem')?.value||null;
   if(!name){ toast('Enter a habit name'); return; }
   const s=getSeason()||{ tournamentDate:'', startDate:_todaySdk(), status:'active', queue:[] };
-  s.queue.push({ id:uid(), name, unit, length, testN, testM, skillId, status:'pending', startDate:null, progress:0, lastTickDate:null, originalLength:length, isRetry:false });
+  s.queue.push({ id:uid(), name, unit, length, testN, testM, skillId, problemId:problemId||null, status:'pending', startDate:null, progress:0, lastTickDate:null, originalLength:length, isRetry:false });
   setSeason(s); document.getElementById('season-setup-ov')?.remove(); openSeasonSetup(); toast('Habit added ✓');
 }
 
@@ -4354,6 +4397,286 @@ function _mvHabit(id, dir){
   if(to<0||to>=s.queue.length) return;
   [s.queue[idx],s.queue[to]]=[s.queue[to],s.queue[idx]];
   setSeason(s); document.getElementById('season-setup-ov')?.remove(); openSeasonSetup();
+}
+
+/* ══════════════════════════════════════════════════════
+   TOURNAMENT REVIEW SYSTEM
+══════════════════════════════════════════════════════ */
+
+function getReviews(){ try{ return JSON.parse(localStorage.getItem('sq_reviews')||'[]'); }catch(e){ return []; } }
+function saveReviews(arr){ localStorage.setItem('sq_reviews', JSON.stringify(arr)); }
+function getReviewDraft(){ try{ return JSON.parse(localStorage.getItem('sq_review_draft')||'null'); }catch(e){ return null; } }
+function saveReviewDraft(d){ if(d) localStorage.setItem('sq_review_draft',JSON.stringify(d)); else localStorage.removeItem('sq_review_draft'); }
+
+let _seasonHistoryOpen=false;
+
+function _renderHistoryPreview(){
+  const el=document.getElementById('season-history-preview'); if(!el) return;
+  const reviews=getReviews();
+  if(!reviews.length){ el.innerHTML=''; return; }
+  el.innerHTML=`<button class="season-tl-toggle" onclick="_toggleSeasonHistory()">📚 ${reviews.length} past season${reviews.length!==1?'s':''}</button>
+  <div id="season-history-inline" style="display:${_seasonHistoryOpen?'block':'none'}"></div>`;
+  if(_seasonHistoryOpen) _renderHistoryInline();
+}
+
+function _toggleSeasonHistory(){
+  _seasonHistoryOpen=!_seasonHistoryOpen;
+  const el=document.getElementById('season-history-inline');
+  if(el){ el.style.display=_seasonHistoryOpen?'block':'none'; if(_seasonHistoryOpen) _renderHistoryInline(); }
+  document.querySelectorAll('.season-tl-toggle').forEach(b=>{ if(b.textContent.includes('past season')) b.textContent=(b.textContent.startsWith('📚')?'':'')+'📚 '+getReviews().length+' past season'+(getReviews().length!==1?'s':''); });
+}
+
+function _renderHistoryInline(){
+  const el=document.getElementById('season-history-inline'); if(!el) return;
+  const reviews=getReviews().slice().reverse();
+  if(!reviews.length){ el.innerHTML=''; return; }
+  el.innerHTML=reviews.map(r=>{
+    const installed=(r.seasonSummary?.installed||[]).length;
+    const failed=(r.seasonSummary?.failed||[]).length;
+    return `<div style="padding:8px;margin-top:6px;background:var(--b2);border-radius:6px;cursor:pointer" onclick="openReviewDetail('${r.id}')">
+      <div style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text)">${esc(r.tournamentName||r.tournamentDate)}</div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-top:2px">${r.tournamentDate} · ${installed} installed · ${failed} failed</div>
+    </div>`;
+  }).join('');
+}
+
+function openTournamentReview(){
+  const s=getSeason(); if(!s) return;
+  let draft=getReviewDraft();
+  if(!draft){
+    // Build season summary from current season
+    const installed=(s.queue||[]).filter(h=>h.status==='done').map(h=>h.name);
+    const failed=(s.queue||[]).filter(h=>h.status==='failed').map(h=>h.name);
+    // Keep pending habits that didn't fit
+    const overflow=(s.queue||[]).filter(h=>h.status==='pending').map(h=>({
+      id:h.id, name:h.name, unit:h.unit, length:h.length, testN:h.testN, testM:h.testM, skillId:h.skillId, problemId:h.problemId||null, originalLength:h.originalLength||h.length
+    }));
+    draft={ tournamentName:'', tournamentDate:s.tournamentDate||_todaySdk(), seasonStartDate:s.startDate||_todaySdk(),
+      seasonSummary:{ installed, failed }, overflowHabits:overflow, chessItems:[], lifeItems:[] };
+    saveReviewDraft(draft);
+  }
+  _openReviewModal(draft);
+}
+
+function _openReviewModal(draft){
+  document.getElementById('tr-modal')?.remove();
+  const skillOpts=skills.map(sk=>`<option value="${sk.id}">${sk.emoji} ${esc(sk.name)}</option>`).join('');
+  const probOpts='<option value="">— None —</option>'+getProblems().filter(p=>p.status!=='solved').map(p=>`<option value="${p.id}">${esc(p.title)}</option>`).join('');
+
+  const ov=document.createElement('div');
+  ov.id='tr-modal';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:950;overflow-y:auto;padding:0 0 60px';
+  ov.innerHTML=`
+    <div style="max-width:500px;margin:0 auto;padding:24px 16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div style="font-family:var(--serif);font-size:20px;font-weight:900">🏆 Tournament Review</div>
+        <button onclick="document.getElementById('tr-modal').remove()" style="background:none;border:none;color:var(--muted2);font-size:22px;cursor:pointer">✕</button>
+      </div>
+
+      <!-- Tournament name -->
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;margin-bottom:4px">Tournament name</div>
+      <input id="tr-name" value="${esc(draft.tournamentName||'')}" placeholder="e.g. World Open 2026" style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:8px;font-family:var(--mono);font-size:12px;border-radius:6px;margin-bottom:18px" oninput="_saveTrField('tournamentName',this.value)">
+
+      <!-- Season summary -->
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;margin-bottom:8px">Season summary (${draft.seasonStartDate||'?'} → ${draft.tournamentDate})</div>
+      <div style="padding:10px;background:var(--b2);border-radius:7px;margin-bottom:18px">
+        ${draft.seasonSummary?.installed?.length?`<div style="font-family:var(--mono);font-size:10px;color:var(--green2);margin-bottom:4px">✓ Installed: ${draft.seasonSummary.installed.map(esc).join(', ')}</div>`:''}
+        ${draft.seasonSummary?.failed?.length?`<div style="font-family:var(--mono);font-size:10px;color:var(--verm);margin-bottom:4px">✗ Failed: ${draft.seasonSummary.failed.map(esc).join(', ')}</div>`:''}
+        ${!draft.seasonSummary?.installed?.length&&!draft.seasonSummary?.failed?.length?`<div style="font-family:var(--mono);font-size:10px;color:var(--muted2)">No completed habits this season</div>`:''}
+        ${draft.overflowHabits?.length?`<div style="font-family:var(--mono);font-size:10px;color:var(--gold2);margin-top:4px">⏭ Carried over: ${draft.overflowHabits.map(h=>esc(h.name)).join(', ')}</div>`:''}
+      </div>
+
+      <!-- Chess items -->
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;margin-bottom:4px">♟ Chess skills (Jacob's review — ranked)</div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-bottom:10px">What cost points? Add each issue, in Jacob's priority order.</div>
+      <div id="tr-chess-list"></div>
+      <button onclick="_addTrItem('chess')" style="width:100%;padding:7px;background:var(--s2);border:1px solid var(--b2);color:var(--muted2);font-family:var(--mono);font-size:10px;cursor:pointer;border-radius:6px;margin-bottom:18px">＋ Add chess skill</button>
+
+      <!-- Life items -->
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;margin-bottom:4px">🌿 Life habits</div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-bottom:10px">What patterns from this season's logs should you work on?</div>
+      <div id="tr-life-list"></div>
+      <button onclick="_addTrItem('life')" style="width:100%;padding:7px;background:var(--s2);border:1px solid var(--b2);color:var(--muted2);font-family:var(--mono);font-size:10px;cursor:pointer;border-radius:6px;margin-bottom:24px">＋ Add life habit</button>
+
+      <!-- Complete -->
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;margin-bottom:8px">Items checked below will fill the next season's queue (in order)</div>
+      <button onclick="_completeReview()" style="width:100%;padding:12px;background:var(--gold2);color:#000;border:none;font-family:var(--serif);font-size:15px;font-weight:900;cursor:pointer;border-radius:8px">Complete review &amp; set up next season →</button>
+    </div>`;
+  document.body.appendChild(ov);
+
+  _renderTrItems('chess', draft.chessItems, skillOpts, probOpts);
+  _renderTrItems('life', draft.lifeItems, skillOpts, probOpts);
+}
+
+function _saveTrField(field, val){
+  const d=getReviewDraft(); if(!d) return;
+  d[field]=val; saveReviewDraft(d);
+}
+
+function _addTrItem(type){
+  const d=getReviewDraft(); if(!d) return;
+  const list=type==='chess'?d.chessItems:d.lifeItems;
+  list.push({ id:uid(), text:'', addToQueue:false, habit:{ name:'', unit:'days', length:14, testN:8, testM:10, skillId:null, problemId:null } });
+  saveReviewDraft(d);
+  const skillOpts=skills.map(sk=>`<option value="${sk.id}">${sk.emoji} ${esc(sk.name)}</option>`).join('');
+  const probOpts='<option value="">— None —</option>'+getProblems().filter(p=>p.status!=='solved').map(p=>`<option value="${p.id}">${esc(p.title)}</option>`).join('');
+  _renderTrItems(type, type==='chess'?d.chessItems:d.lifeItems, skillOpts, probOpts);
+}
+
+function _renderTrItems(type, items, skillOpts, probOpts){
+  const el=document.getElementById(`tr-${type}-list`); if(!el) return;
+  if(!items.length){ el.innerHTML=''; return; }
+  el.innerHTML=items.map((item,i)=>{
+    const expanded=item.addToQueue;
+    return `<div style="border:1px solid var(--b2);border-radius:8px;padding:11px;margin-bottom:8px;background:var(--b1)">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:${expanded?'10px':'0'}">
+        <span style="font-family:var(--mono);font-size:10px;color:var(--muted2);flex-shrink:0;width:16px">${i+1}.</span>
+        <input value="${esc(item.text)}" placeholder="Describe the issue…" style="flex:1;background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:6px 8px;font-family:var(--mono);font-size:11px;border-radius:5px" oninput="_updateTrItemText('${type}','${item.id}',this.value)">
+        <label style="display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:10px;color:var(--gold2);cursor:pointer;flex-shrink:0">
+          <input type="checkbox" ${item.addToQueue?'checked':''} onchange="_toggleTrItemQueue('${type}','${item.id}',this.checked)" style="accent-color:var(--gold2)"> Queue
+        </label>
+        <button onclick="_delTrItem('${type}','${item.id}')" style="background:none;border:none;color:var(--verm);cursor:pointer;font-size:14px;padding:0 2px">✕</button>
+      </div>
+      ${expanded?`
+      <div style="border-top:1px solid var(--b2);padding-top:9px">
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <div style="flex:2">
+            <div style="font-family:var(--mono);font-size:8px;color:var(--muted2);margin-bottom:3px;text-transform:uppercase;letter-spacing:1px">Habit name</div>
+            <input value="${esc(item.habit.name||item.text)}" placeholder="Habit name" style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:6px;font-family:var(--mono);font-size:11px;border-radius:5px" oninput="_updateTrHabit('${type}','${item.id}','name',this.value)">
+          </div>
+          <div style="flex:1">
+            <div style="font-family:var(--mono);font-size:8px;color:var(--muted2);margin-bottom:3px;text-transform:uppercase;letter-spacing:1px">Length</div>
+            <input type="number" min="1" value="${item.habit.length||14}" style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:6px;font-family:var(--mono);font-size:11px;border-radius:5px" oninput="_updateTrHabit('${type}','${item.id}','length',+this.value)">
+          </div>
+          <div style="flex:1">
+            <div style="font-family:var(--mono);font-size:8px;color:var(--muted2);margin-bottom:3px;text-transform:uppercase;letter-spacing:1px">Unit</div>
+            <select style="width:100%;background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:6px;font-family:var(--mono);font-size:10px;border-radius:5px" onchange="_updateTrHabit('${type}','${item.id}','unit',this.value);_renderTrItems('${type}',getReviewDraft()?.${type==='chess'?'chess':'life'}Items||[],\`${skillOpts}\`,\`${probOpts}\`)">
+              <option value="days"${item.habit.unit==='days'?' selected':''}>days</option>
+              <option value="reps"${item.habit.unit==='reps'?' selected':''}>reps</option>
+            </select>
+          </div>
+        </div>
+        ${item.habit.unit==='reps'?`<div style="margin-bottom:8px">
+          <div style="font-family:var(--mono);font-size:8px;color:var(--muted2);margin-bottom:3px;text-transform:uppercase;letter-spacing:1px">Count reps from skill</div>
+          <select style="width:100%;background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:6px;font-family:var(--mono);font-size:10px;border-radius:5px" onchange="_updateTrHabit('${type}','${item.id}','skillId',this.value||null)">
+            <option value="">— any / manual —</option>${skillOpts}
+          </select></div>`:''}
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+          <div style="font-family:var(--mono);font-size:8px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;white-space:nowrap">Final test</div>
+          <input type="number" min="1" value="${item.habit.testN||8}" style="width:50px;background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:5px;font-family:var(--mono);font-size:11px;border-radius:5px" oninput="_updateTrHabit('${type}','${item.id}','testN',+this.value)">
+          <span style="font-family:var(--mono);font-size:9px;color:var(--muted2)">of</span>
+          <input type="number" min="1" value="${item.habit.testM||10}" style="width:50px;background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:5px;font-family:var(--mono);font-size:11px;border-radius:5px" oninput="_updateTrHabit('${type}','${item.id}','testM',+this.value)">
+          <span style="font-family:var(--mono);font-size:9px;color:var(--muted2)">blocks</span>
+        </div>
+        <div>
+          <div style="font-family:var(--mono);font-size:8px;color:var(--muted2);margin-bottom:3px;text-transform:uppercase;letter-spacing:1px">Linked problem</div>
+          <select style="width:100%;background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:6px;font-family:var(--mono);font-size:10px;border-radius:5px" onchange="_updateTrHabit('${type}','${item.id}','problemId',this.value||null)">${probOpts}</select>
+        </div>
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function _updateTrItemText(type, id, val){
+  const d=getReviewDraft(); if(!d) return;
+  const list=type==='chess'?d.chessItems:d.lifeItems;
+  const item=list.find(x=>x.id===id); if(!item) return;
+  item.text=val; if(!item.habit.name) item.habit.name=val;
+  saveReviewDraft(d);
+}
+
+function _toggleTrItemQueue(type, id, checked){
+  const d=getReviewDraft(); if(!d) return;
+  const list=type==='chess'?d.chessItems:d.lifeItems;
+  const item=list.find(x=>x.id===id); if(!item) return;
+  item.addToQueue=checked;
+  if(checked&&!item.habit.name) item.habit.name=item.text;
+  saveReviewDraft(d);
+  const skillOpts=skills.map(sk=>`<option value="${sk.id}">${sk.emoji} ${esc(sk.name)}</option>`).join('');
+  const probOpts='<option value="">— None —</option>'+getProblems().filter(p=>p.status!=='solved').map(p=>`<option value="${p.id}">${esc(p.title)}</option>`).join('');
+  _renderTrItems(type, list, skillOpts, probOpts);
+}
+
+function _delTrItem(type, id){
+  const d=getReviewDraft(); if(!d) return;
+  if(type==='chess') d.chessItems=d.chessItems.filter(x=>x.id!==id);
+  else d.lifeItems=d.lifeItems.filter(x=>x.id!==id);
+  saveReviewDraft(d);
+  const skillOpts=skills.map(sk=>`<option value="${sk.id}">${sk.emoji} ${esc(sk.name)}</option>`).join('');
+  const probOpts='<option value="">— None —</option>'+getProblems().filter(p=>p.status!=='solved').map(p=>`<option value="${p.id}">${esc(p.title)}</option>`).join('');
+  _renderTrItems(type, type==='chess'?d.chessItems:d.lifeItems, skillOpts, probOpts);
+}
+
+function _updateTrHabit(type, id, field, val){
+  const d=getReviewDraft(); if(!d) return;
+  const list=type==='chess'?d.chessItems:d.lifeItems;
+  const item=list.find(x=>x.id===id); if(!item) return;
+  item.habit[field]=val; saveReviewDraft(d);
+}
+
+function _completeReview(){
+  const d=getReviewDraft(); if(!d) return;
+  if(!d.tournamentName.trim()){ toast('Enter a tournament name'); return; }
+
+  // Build new queue: overflow habits first, then checked items in order
+  const newHabits=[];
+  // Carry-over from previous season
+  (d.overflowHabits||[]).forEach(h=>{
+    newHabits.push({ id:uid(), name:h.name, unit:h.unit, length:h.length, testN:h.testN, testM:h.testM, skillId:h.skillId||null, problemId:h.problemId||null, status:'pending', startDate:null, progress:0, lastTickDate:null, originalLength:h.originalLength||h.length, isRetry:false });
+  });
+  // Chess items (ranked = already in order)
+  d.chessItems.filter(x=>x.addToQueue).forEach(item=>{
+    if(!item.habit.name.trim()) return;
+    newHabits.push({ id:uid(), name:item.habit.name, unit:item.habit.unit, length:item.habit.length||14, testN:item.habit.testN||8, testM:item.habit.testM||10, skillId:item.habit.skillId||null, problemId:item.habit.problemId||null, status:'pending', startDate:null, progress:0, lastTickDate:null, originalLength:item.habit.length||14, isRetry:false });
+  });
+  // Life items
+  d.lifeItems.filter(x=>x.addToQueue).forEach(item=>{
+    if(!item.habit.name.trim()) return;
+    newHabits.push({ id:uid(), name:item.habit.name, unit:item.habit.unit, length:item.habit.length||14, testN:item.habit.testN||8, testM:item.habit.testM||10, skillId:item.habit.skillId||null, problemId:item.habit.problemId||null, status:'pending', startDate:null, progress:0, lastTickDate:null, originalLength:item.habit.length||14, isRetry:false });
+  });
+
+  // Save to review history
+  const review={ id:uid(), tournamentName:d.tournamentName, tournamentDate:d.tournamentDate, seasonStartDate:d.seasonStartDate, completedAt:new Date().toISOString(), chessItems:d.chessItems, lifeItems:d.lifeItems, seasonSummary:d.seasonSummary||{installed:[],failed:[]} };
+  const reviews=getReviews(); reviews.push(review); saveReviews(reviews);
+
+  // Clear draft
+  saveReviewDraft(null);
+
+  // Kick off new season setup with pre-filled queue
+  const newSeason={ tournamentDate:'', startDate:_todaySdk(), status:'active', queue:newHabits };
+  setSeason(newSeason);
+
+  document.getElementById('tr-modal')?.remove();
+  toast('Review saved ✓ — now set your next tournament date');
+  openSeasonSetup();
+  renderSeason();
+}
+
+function openReviewDetail(reviewId){
+  const r=getReviews().find(x=>x.id===reviewId); if(!r) return;
+  document.getElementById('review-detail-ov')?.remove();
+  const ov=document.createElement('div');
+  ov.id='review-detail-ov';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:960;overflow-y:auto;padding:0 0 60px';
+  const chessHTML=r.chessItems?.length?r.chessItems.map((x,i)=>`<div style="font-family:var(--mono);font-size:11px;padding:5px 0;border-bottom:1px solid var(--b2)">${i+1}. ${esc(x.text)} ${x.addToQueue?`<span style="color:var(--gold2)">→ ${esc(x.habit?.name||'')}</span>`:''}</div>`).join(''):'<div style="font-family:var(--mono);font-size:10px;color:var(--muted2)">None</div>';
+  const lifeHTML=r.lifeItems?.length?r.lifeItems.map((x,i)=>`<div style="font-family:var(--mono);font-size:11px;padding:5px 0;border-bottom:1px solid var(--b2)">${i+1}. ${esc(x.text)} ${x.addToQueue?`<span style="color:var(--gold2)">→ ${esc(x.habit?.name||'')}</span>`:''}</div>`).join(''):'<div style="font-family:var(--mono);font-size:10px;color:var(--muted2)">None</div>';
+  ov.innerHTML=`<div style="max-width:480px;margin:0 auto;padding:24px 16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="font-family:var(--serif);font-size:18px;font-weight:900">📋 ${esc(r.tournamentName||r.tournamentDate)}</div>
+      <button onclick="document.getElementById('review-detail-ov').remove()" style="background:none;border:none;color:var(--muted2);font-size:22px;cursor:pointer">✕</button>
+    </div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:16px">${r.seasonStartDate||'?'} → ${r.tournamentDate} · Reviewed ${r.completedAt?r.completedAt.slice(0,10):''}</div>
+    <div style="padding:10px;background:var(--b2);border-radius:7px;margin-bottom:16px">
+      ${r.seasonSummary?.installed?.length?`<div style="font-family:var(--mono);font-size:10px;color:var(--green2)">✓ Installed: ${r.seasonSummary.installed.map(esc).join(', ')}</div>`:''}
+      ${r.seasonSummary?.failed?.length?`<div style="font-family:var(--mono);font-size:10px;color:var(--verm);margin-top:3px">✗ Failed: ${r.seasonSummary.failed.map(esc).join(', ')}</div>`:''}
+    </div>
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;margin-bottom:8px">♟ Chess skills</div>
+    ${chessHTML}
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;margin-top:14px;margin-bottom:8px">🌿 Life habits</div>
+    ${lifeHTML}
+  </div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); });
 }
 
 /* ── MASTERY BOTTLES ─────────────────────────────────── */
