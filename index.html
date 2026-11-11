@@ -4744,11 +4744,27 @@ function openWeeklyReview(){
 
     ${!lever?`
     <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;margin-bottom:8px">Pick a lever for the next 2 weeks</div>
-    <div style="display:flex;gap:8px;margin-bottom:10px">
+    <div style="display:flex;gap:8px;margin-bottom:12px">
       ${['HOW LONG','HOW WELL','WHAT'].map(c=>`<button class="lv-pick-cat" data-c="${c}" onclick="_lvPickCat('${c}')" style="flex:1;padding:8px;background:var(--s2);border:1px solid var(--b2);color:var(--muted2);font-family:var(--mono);font-size:9px;cursor:pointer;border-radius:6px">${c}</button>`).join('')}
     </div>
-    <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Concrete target (e.g. "deep h 5.0 → 6.0")</div>
-    <input id="lv-target-input" placeholder="Describe your target" style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:8px;font-family:var(--mono);font-size:12px;border-radius:6px;margin-bottom:12px">
+    <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Description</div>
+    <input id="lv-target-input" placeholder="e.g. Focus better" style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:8px;font-family:var(--mono);font-size:12px;border-radius:6px;margin-bottom:10px">
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <div style="flex:2">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Track metric</div>
+        <select id="lv-metric" style="width:100%;background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:7px;font-family:var(--mono);font-size:10px;border-radius:6px">
+          <option value="">— none —</option>
+          <option value="avgQ">Avg focus (1–10)</option>
+          <option value="avgE">Avg energy (1–10)</option>
+          <option value="deepH">Deep hours/day</option>
+          <option value="pctTagged">% sessions tagged</option>
+        </select>
+      </div>
+      <div style="flex:1">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Target ≥</div>
+        <input id="lv-goal-val" type="number" min="0" step="0.1" placeholder="e.g. 6" style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:7px;font-family:var(--mono);font-size:12px;border-radius:6px">
+      </div>
+    </div>
     <button onclick="_saveLever()" style="width:100%;padding:10px;background:var(--gold2);color:#000;border:none;font-family:var(--serif);font-size:14px;font-weight:900;cursor:pointer;border-radius:8px">Set lever →</button>`:''}
 
     <div style="margin-top:20px">
@@ -4773,7 +4789,12 @@ function _saveLever(){
   const start=_todaySdk();
   const endDate=new Date(_today()); endDate.setDate(endDate.getDate()+14);
   const end=endDate.toISOString().slice(0,10);
-  setActiveLever({ id:uid(), category:cat, description:desc, startDate:start, endDate:end, status:'active' });
+  const metric=document.getElementById('lv-metric')?.value||'';
+  const goalVal=parseFloat(document.getElementById('lv-goal-val')?.value);
+  const obj={ id:uid(), category:cat, description:desc, startDate:start, endDate:end, status:'active' };
+  if(metric) obj.targetMetric=metric;
+  if(metric&&!isNaN(goalVal)) obj.targetValue=goalVal;
+  setActiveLever(obj);
   ov.remove(); toast('Lever set ✓ — 2 weeks'); renderLevers();
 }
 function _clearLever(){
@@ -4843,10 +4864,41 @@ function renderLevers(){
     const now=_today().getTime();
     const pct=Math.min(100,Math.round((now-start)/(end-start)*100));
     const daysLeft=Math.max(0,Math.round((end-now)/86400000));
+    // compute goal badge if metric + target set
+    let goalBadge='';
+    if(activeLever.targetMetric&&activeLever.targetValue!=null){
+      const daysElapsed=Math.max(1,Math.round((now-start)/86400000));
+      const w=_lvStats(daysElapsed,0);
+      let cur=null;
+      if(activeLever.targetMetric==='avgQ') cur=w.avgQ;
+      else if(activeLever.targetMetric==='avgE') cur=w.avgE;
+      else if(activeLever.targetMetric==='deepH') cur=w.deepH;
+      else if(activeLever.targetMetric==='pctTagged'){
+        const deep=w.deep||[];
+        cur=deep.length?+(deep.filter(s=>s.trainingTag).length/deep.length*100).toFixed(0):null;
+      }
+      const metricLabels={avgQ:'Focus',avgE:'Energy',deepH:'Deep h/day',pctTagged:'% tagged'};
+      const label=metricLabels[activeLever.targetMetric]||activeLever.targetMetric;
+      const target=activeLever.targetValue;
+      if(cur!=null){
+        const hit=cur>=target;
+        const curFmt=activeLever.targetMetric==='pctTagged'?cur+'%':cur;
+        const tgtFmt=activeLever.targetMetric==='pctTagged'?target+'%':target;
+        goalBadge=`<div style="margin-top:7px;display:flex;align-items:center;gap:8px">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--muted2)">${esc(label)}</span>
+          <span style="font-family:var(--mono);font-size:13px;font-weight:800;color:${hit?'var(--green)':'var(--verm)'}">${curFmt}</span>
+          <span style="font-family:var(--mono);font-size:10px;color:var(--muted2)">/ goal ${tgtFmt}</span>
+          <span style="font-size:14px">${hit?'✓':'✗'}</span>
+        </div>`;
+      } else {
+        goalBadge=`<div style="margin-top:7px;font-family:var(--mono);font-size:10px;color:var(--muted2)">Goal: ${activeLever.targetMetric==='pctTagged'?target+'%':target} ${metricLabels[activeLever.targetMetric]||''} — no data yet</div>`;
+      }
+    }
     leverHtml=`<div class="lv-lever-bar">
-      <div class="lv-lever-label">🎯 ${esc(activeLever.category)} lever · ${daysLeft}d left</div>
+      <div class="lv-lever-label">🎯 ${esc(activeLever.category)} lever · ${daysLeft} days left</div>
       <div class="lv-lever-desc">${esc(activeLever.description)}</div>
       <div class="lv-lever-track"><div class="lv-lever-fill" style="width:${pct}%"></div></div>
+      ${goalBadge}
     </div>`;
   }
 
