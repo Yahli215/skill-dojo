@@ -4276,6 +4276,21 @@ function renderSeason(){
     html+=`</div>`;
   }
 
+  // ── Season focus problem ──────────────────────────────
+  if(s.focusProblemId){
+    const fp=getProblems().find(p=>p.id===s.focusProblemId);
+    if(fp){
+      const fpSolved=fp.status==='solved';
+      html+=`<div style="margin-bottom:12px;padding:9px 11px;background:var(--b2);border-radius:7px;display:flex;align-items:center;gap:10px">
+        <div style="flex:1;min-width:0">
+          <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;margin-bottom:2px">🎯 Focus problem</div>
+          <div style="font-family:var(--mono);font-size:12px;color:${fpSolved?'var(--green2)':'var(--indigo)'};font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(fp.title)}</div>
+        </div>
+        ${fpSolved?`<span style="font-family:var(--mono);font-size:11px;color:var(--green2)">✓ solved</span>`:`<span style="font-family:var(--mono);font-size:9px;color:var(--muted2)">${fp.status||'active'}</span>`}
+      </div>`;
+    }
+  }
+
   // Helper to build dose text for the daily goal widget
   let _doseTxt='', _doseColor='var(--gold2)';
 
@@ -4449,6 +4464,12 @@ function openSeasonSetup(){
         <button onclick="_saveChessSkill()" style="width:100%;padding:7px;background:var(--gold2);color:#000;border:none;font-family:var(--mono);font-size:11px;font-weight:700;cursor:pointer;border-radius:6px">Add</button>
       </div>
 
+      <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;margin-bottom:4px">🎯 Season focus problem</div>
+      <select id="ssm-focus-prob" style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:8px;font-family:var(--mono);font-size:11px;border-radius:6px;margin-bottom:18px">
+        <option value="">— None —</option>
+        ${getProblems().filter(p=>p.status!=='solved').map(p=>`<option value="${p.id}"${s.focusProblemId===p.id?' selected':''}>${esc(p.title)}</option>`).join('')}
+      </select>
+
       <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;margin-bottom:8px">🌿 Habit queue (Kaizen)</div>
       <div id="ssm-q">${qHTML}</div>
       <button onclick="_openAddHabit()" style="width:100%;margin:12px 0 0;padding:8px;background:var(--s2);border:1px solid var(--b2);color:var(--muted2);font-family:var(--mono);font-size:10px;cursor:pointer;border-radius:6px">＋ Add habit</button>
@@ -4519,6 +4540,7 @@ function _saveSeasonSetup(){
   const s=getSeason()||{ startDate:_todaySdk(), status:'active', queue:[] };
   s.tournamentDate=date; if(!s.startDate) s.startDate=_todaySdk(); s.status='active';
   const hv=parseFloat(document.getElementById('ssm-hours')?.value); s.dailyHoursGoal=isNaN(hv)||hv<=0?0:hv;
+  s.focusProblemId=document.getElementById('ssm-focus-prob')?.value||null;
   if(!getActiveHabit(s)) _activateNext(s);
   setSeason(s); document.getElementById('season-setup-ov')?.remove(); tickSeason(); renderSeason(); toast('Season saved ✓');
 }
