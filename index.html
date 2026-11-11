@@ -187,6 +187,8 @@ body.light::before { opacity: .06; }
 .t-right { text-align: right; flex-shrink: 0; }
 .t-time  { font-family: var(--serif); font-size: 28px; font-weight: 900; color: var(--green2); font-variant-numeric: tabular-nums; }
 .t-stop  { margin-top: 5px; background: var(--verm); border: none; padding: 5px 13px; color: #fff; font-family: var(--serif); font-size: 10px; font-weight: 700; cursor: pointer; letter-spacing: 2px; }
+.t-pause-btn { margin-top: 5px; background: var(--s2); border: 1px solid var(--b2); padding: 5px 10px; color: var(--muted2); font-size: 13px; cursor: pointer; border-radius: 4px; }
+.t-pause-btn.paused { background: var(--gold2); color: #000; border-color: var(--gold2); }
 .t-next-btn { display: none; margin-top: 5px; background: none; border: 1px solid rgba(200,144,10,.4); border-radius: 5px; padding: 4px 10px; color: var(--gold2); font-size: 9px; cursor: pointer; letter-spacing: 1px; transition: all .15s; }
 .t-next-btn:hover { background: rgba(200,144,10,.1); }
 .timer-bar.break .t-next-btn { display: block; }
@@ -1425,6 +1427,7 @@ body.light .page-watermark { opacity: .2; }
       <div class="t-right">
         <div class="t-time" id="t-time">00:00</div>
         <button class="t-stop" onclick="stopTimer()">■ 止める</button>
+        <button class="t-pause-btn" id="t-pause-btn" onclick="togglePauseTimer()">⏸</button>
         <button class="t-switch-btn" onclick="openSwitchTopic()">⇄ Switch</button>
         <button class="t-next-btn" onclick="openNextRoundEdit()">✎ Next round</button>
       </div>
@@ -2525,7 +2528,9 @@ function boot(){
     totalMins: data[d.id]?.totalMins||0, rank: data[d.id]?.rank||'Novice'}));
   sessions = getSess();
   const saved = getTimer();
-  if(saved){ activeTimer = saved; document.getElementById('timer-bar').classList.add('on'); document.getElementById('quick-timer').style.display='none'; }
+  if(saved){ activeTimer = saved; document.getElementById('timer-bar').classList.add('on'); document.getElementById('quick-timer').style.display='none';
+    if(saved.paused){ const btn=document.getElementById('t-pause-btn'); if(btn){ btn.textContent='▶'; btn.classList.add('paused'); } }
+  }
   // Show user email in header
   const userBtn = document.getElementById('user-btn');
   if(userBtn){ userBtn.style.display='inline-block'; userBtn.textContent = ls.raw('sq_guser_name') || 'sign out'; }
@@ -3197,6 +3202,29 @@ function _maybeAskJacobRatings(sessionId, baseDesc){
   };
 }
 
+function togglePauseTimer(){
+  if(!activeTimer) return;
+  const btn=document.getElementById('t-pause-btn');
+  if(!activeTimer.paused){
+    // Pause
+    activeTimer.paused=true;
+    activeTimer.pausedAt=Date.now();
+    localStorage.setItem('sq_active_timer',JSON.stringify(activeTimer));
+    if(btn){ btn.textContent='▶'; btn.classList.add('paused'); }
+    const tEl=document.getElementById('t-time');
+    if(tEl) tEl.textContent='⏸';
+  } else {
+    // Resume — shift startTime and phaseStart forward so elapsed stays accurate
+    const gap=Date.now()-activeTimer.pausedAt;
+    activeTimer.startTime+=gap;
+    if(activeTimer.phaseStart) activeTimer.phaseStart+=gap;
+    activeTimer.paused=false;
+    activeTimer.pausedAt=null;
+    localStorage.setItem('sq_active_timer',JSON.stringify(activeTimer));
+    if(btn){ btn.textContent='⏸'; btn.classList.remove('paused'); }
+  }
+}
+
 function cancelTimer(){
   activeTimer=null; localStorage.removeItem('sq_active_timer');
   document.getElementById('timer-bar').classList.remove('on','break');
@@ -3392,6 +3420,7 @@ function updateTabIndicator(elapsedSec,targetSec){
 
 function tickTimer(){
   if(!activeTimer) return;
+  if(activeTimer.paused) return; // frozen while paused
   try {
     const elapsed=Math.floor((Date.now()-activeTimer.startTime)/1000);
     const h=Math.floor(elapsed/3600),m=Math.floor((elapsed%3600)/60),s=elapsed%60;
