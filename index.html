@@ -401,6 +401,31 @@ body.light::before { opacity: .06; }
 .season-tl-badge { font-size: 9px; padding: 1px 5px; border-radius: 3px; }
 .ssm-habit-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--b2); font-family: var(--mono); font-size: 11px; }
 
+/* ── TRAINING LEVERS ─────────────────────────────────── */
+#levers-card { margin: 0 0 14px 0; }
+.lv-card { background: var(--b1); border: 1px solid var(--b2); border-radius: 10px; padding: 14px 16px; }
+.lv-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.lv-title { font-family: var(--mono); font-size: 10px; letter-spacing: 1.5px; color: var(--muted2); text-transform: uppercase; }
+.lv-cols { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.lv-col { background: var(--b2); border-radius: 7px; padding: 9px 10px; }
+.lv-col-label { font-family: var(--mono); font-size: 8px; letter-spacing: 1px; color: var(--muted2); text-transform: uppercase; margin-bottom: 6px; }
+.lv-big { font-family: var(--mono); font-size: 18px; font-weight: 800; color: var(--text); line-height: 1; }
+.lv-sub { font-family: var(--mono); font-size: 9px; color: var(--muted2); margin-top: 3px; }
+.lv-trend { font-family: var(--mono); font-size: 9px; margin-top: 2px; }
+.lv-trend.up { color: var(--green2); }
+.lv-trend.down { color: var(--verm); }
+.lv-trend.flat { color: var(--muted2); }
+.lv-lever-bar { background: var(--b2); border-radius: 7px; padding: 9px 11px; margin-bottom: 10px; }
+.lv-lever-label { font-family: var(--mono); font-size: 9px; color: var(--muted2); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+.lv-lever-desc { font-family: var(--mono); font-size: 11px; color: var(--text); margin-bottom: 6px; }
+.lv-lever-track { height: 4px; background: var(--b1); border-radius: 2px; }
+.lv-lever-fill { height: 4px; background: var(--gold2); border-radius: 2px; transition: width .3s; }
+.lv-actions { display: flex; gap: 8px; }
+.lv-action-btn { flex: 1; padding: 7px; background: var(--s2); border: 1px solid var(--b2); color: var(--muted2); font-family: var(--mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; border-radius: 6px; }
+.lv-action-btn.primary { background: var(--gold2); color: #000; border-color: var(--gold2); font-weight: 700; }
+.star-btn { background: none; border: none; font-size: 24px; cursor: pointer; padding: 2px 4px; opacity: .3; transition: opacity .15s, transform .15s; }
+.star-btn.sel { opacity: 1; transform: scale(1.15); }
+
 /* ── SKILL DETAIL SHEET ─────────────────────────────── */
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.8); z-index: 600; display: flex; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity .3s; }
 .overlay.on { opacity: 1; pointer-events: all; }
@@ -1472,6 +1497,9 @@ body.light .page-watermark { opacity: .2; }
 
     <!-- Season card -->
     <div id="season-card"></div>
+
+    <!-- Training Levers card -->
+    <div id="levers-card"></div>
 
     <!-- Daily + report -->
     <div class="two-col">
@@ -2767,6 +2795,7 @@ async function manualSync(){
 function renderApp(){
   try { renderPills(); }    catch(e){ console.error('renderPills:', e); }
   try { renderSeason(); }   catch(e){ console.error('renderSeason:', e); }
+  try { renderLevers(); }   catch(e){ console.error('renderLevers:', e); }
   try { renderDaily(); }    catch(e){ console.error('renderDaily:', e); }
   try { renderWeekBars(); } catch(e){ console.error('renderWeekBars:', e); }
   try { renderReport(); }   catch(e){ console.error('renderReport:', e); }
@@ -3126,11 +3155,15 @@ function stopTimer(){
   if(sk){ sk.totalMins=data[sid].totalMins; sk.rank=newRank; if(newRank!==prevRank) luQueue.push({skill:sk,newRank}); }
   if(activeTimer.eventId) trackedEvIds.add(activeTimer.eventId);
   _lastSessionSkill=sk;
-  const _jacDesc=activeTimer.desc; const _jacSessId=session.id;
+  const _jacDesc=activeTimer.desc; const _jacSessId=session.id; const _jacMins=mins;
   cancelTimer();
   showRoundComplete(sk, mins);
   pushSync();
-  setTimeout(()=>_maybeAskJacobRatings(_jacSessId,_jacDesc),400);
+  setTimeout(()=>{
+    const isJacob=_jacDesc.toLowerCase().includes('exercises jacob');
+    _maybeAskJacobRatings(_jacSessId,_jacDesc); // chains to _askSessionQuality if jacob
+    if(!isJacob&&_jacMins>=45) _askSessionQuality(_jacSessId);
+  },400);
 }
 
 function _maybeAskJacobRatings(sessionId, baseDesc){
@@ -3160,6 +3193,7 @@ function _maybeAskJacobRatings(sessionId, baseDesc){
     const all=getSess(), idx=all.findIndex(s=>s.id===sessionId);
     if(idx>=0){ all[idx].jacob_hardness=hardness; all[idx].jacob_focus=focus; ls.set('sq_sessions',all); sessions=all; }
     toast('Ratings saved ✓');
+    setTimeout(()=>_askSessionQuality(sessionId),300);
   };
 }
 
@@ -4490,6 +4524,394 @@ function _mvHabit(id, dir){
   if(to<0||to>=s.queue.length) return;
   [s.queue[idx],s.queue[to]]=[s.queue[to],s.queue[idx]];
   setSeason(s); document.getElementById('season-setup-ov')?.remove(); openSeasonSetup();
+}
+
+/* ══════════════════════════════════════════════════════
+   TRAINING LEVERS (Noël Studer: WHAT × HOW WELL × HOW LONG)
+══════════════════════════════════════════════════════ */
+
+// ── Storage helpers ──────────────────────────────────
+function getLeversCfg(){
+  try{ return JSON.parse(localStorage.getItem('sq_levers_cfg')||'null'); }catch(e){ return null; }
+}
+function setLeversCfg(c){ localStorage.setItem('sq_levers_cfg',JSON.stringify(c)); }
+function _defaultLeversCfg(){ return { deepMinThreshold:45, plCauses:['Opening','Calculation','Time trouble','Endgame','Evaluation','Tactics'] }; }
+function lcfg(){ return getLeversCfg()||_defaultLeversCfg(); }
+
+function getGames(){ try{ return JSON.parse(localStorage.getItem('sq_games')||'[]'); }catch(e){ return []; } }
+function saveGames(g){ localStorage.setItem('sq_games',JSON.stringify(g)); }
+function getActiveLever(){ try{ return JSON.parse(localStorage.getItem('sq_lever')||'null'); }catch(e){ return null; } }
+function setActiveLever(l){ if(l) localStorage.setItem('sq_lever',JSON.stringify(l)); else localStorage.removeItem('sq_lever'); }
+function getLeverHistory(){ try{ return JSON.parse(localStorage.getItem('sq_lever_history')||'[]'); }catch(e){ return []; } }
+function saveLeverHistory(h){ localStorage.setItem('sq_lever_history',JSON.stringify(h)); }
+
+function isDeepSess(s){ return (s.mins||0)>=(lcfg().deepMinThreshold||45); }
+
+// ── Stats engine ─────────────────────────────────────
+function _lvStats(daysBack, offset){ // offset=0 → last N days; offset=N → previous window
+  const now=new Date(_today());
+  const endDate=new Date(now); endDate.setDate(endDate.getDate()-offset);
+  const startDate=new Date(endDate); startDate.setDate(startDate.getDate()-daysBack);
+  endDate.setHours(23,59,59,999); startDate.setHours(0,0,0,0);
+  const endMs=endDate.getTime(), startMs=startDate.getTime();
+
+  const inRange=sessions.filter(s=>{
+    const t=s.startTime||(s.start?new Date(s.start).getTime():0);
+    return t>=startMs&&t<=endMs;
+  });
+  const deep=inRange.filter(s=>isDeepSess(s));
+  const light=inRange.filter(s=>!isDeepSess(s));
+  const deepMins=deep.reduce((a,s)=>a+(s.mins||0),0);
+  const lightMins=light.reduce((a,s)=>a+(s.mins||0),0);
+  const deepH=+(deepMins/60/daysBack).toFixed(2);
+  const lightH=+(lightMins/60/daysBack).toFixed(2);
+
+  // HOW WELL
+  const withQ=deep.filter(s=>s.quality);
+  const avgQ=withQ.length?+(withQ.reduce((a,s)=>a+s.quality,0)/withQ.length).toFixed(1):null;
+  const withSolv=deep.filter(s=>s.solvingTotal>0);
+  const solvAcc=withSolv.length?Math.round(withSolv.reduce((a,s)=>a+(s.solvingCorrect||0),0)/withSolv.reduce((a,s)=>a+(s.solvingTotal||0),0)*100):null;
+  const earlyQ=withQ.filter(s=>new Date(s.startTime||(s.start?new Date(s.start).getTime():0)).getHours()<13);
+  const lateQ=withQ.filter(s=>new Date(s.startTime||(s.start?new Date(s.start).getTime():0)).getHours()>=13);
+  const earlyAvg=earlyQ.length?+(earlyQ.reduce((a,s)=>a+s.quality,0)/earlyQ.length).toFixed(1):null;
+  const lateAvg=lateQ.length?+(lateQ.reduce((a,s)=>a+s.quality,0)/lateQ.length).toFixed(1):null;
+
+  // WHAT
+  const inGames=getGames().filter(g=>{ const t=new Date(g.date+'T12:00:00').getTime(); return t>=startMs&&t<=endMs; });
+
+  return { deepH, lightH, deepMins, avgQ, solvAcc, earlyAvg, lateAvg, games:inGames, deep };
+}
+
+function _topCauses(n){ // top N point-loss causes from last 50 games
+  const games=getGames().filter(g=>g.result!=='win').slice(-50);
+  const counts={};
+  games.forEach(g=>{ if(g.cause) counts[g.cause]=(counts[g.cause]||0)+1; });
+  return Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,n).map(([c,n])=>({cause:c,count:n}));
+}
+
+function _trendArrow(curr, prev){ // returns {sym, cls}
+  if(curr==null||prev==null||prev===0) return {sym:'—',cls:'flat'};
+  const pct=(curr-prev)/prev*100;
+  if(pct>3) return {sym:'↑ +'+Math.abs(pct).toFixed(0)+'%',cls:'up'};
+  if(pct<-3) return {sym:'↓ −'+Math.abs(pct).toFixed(0)+'%',cls:'down'};
+  return {sym:'→',cls:'flat'};
+}
+
+// ── Quality modal (post deep session) ────────────────
+function _askSessionQuality(sessionId){
+  if(document.getElementById('sq-quality-modal')) return; // already open
+  const cfg=lcfg();
+  const causesOpts=cfg.plCauses.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  const ov=document.createElement('div');
+  ov.id='sq-quality-modal';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:flex;align-items:center;justify-content:center';
+  let _selQ=0;
+  ov.innerHTML=`<div style="background:var(--b1);border:1px solid var(--b2);border-radius:12px;padding:20px 20px 16px;width:290px;max-width:92vw">
+    <div style="font-family:var(--serif);font-size:16px;font-weight:900;margin-bottom:3px">Session quality</div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-bottom:14px;text-transform:uppercase;letter-spacing:1px">~10 seconds · all optional</div>
+    <div style="display:flex;justify-content:center;gap:2px;margin-bottom:14px" id="sq-stars">
+      ${[1,2,3,4,5].map(i=>`<button class="star-btn" data-v="${i}" onclick="_sqStar(${i})">★</button>`).join('')}
+    </div>
+    <div style="margin-bottom:10px">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">What did you work on?</div>
+      <select id="sq-tag" style="width:100%;background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:7px;font-family:var(--mono);font-size:10px;border-radius:6px">
+        <option value="">— skip —</option>${causesOpts}
+      </select>
+    </div>
+    <div id="sq-solving-toggle" style="margin-bottom:12px">
+      <label style="display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10px;color:var(--muted2);cursor:pointer">
+        <input type="checkbox" id="sq-is-solving" onchange="_sqToggleSolving()" style="accent-color:var(--gold2)"> Solving session?
+      </label>
+      <div id="sq-solving-row" style="display:none;margin-top:7px;display:none">
+        <div style="display:flex;align-items:center;gap:7px">
+          <input id="sq-correct" type="number" min="0" placeholder="✓" style="width:60px;background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:6px;font-family:var(--mono);font-size:12px;border-radius:5px;text-align:center">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--muted2)">of</span>
+          <input id="sq-total" type="number" min="0" placeholder="N" style="width:60px;background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:6px;font-family:var(--mono);font-size:12px;border-radius:5px;text-align:center">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--muted2)">correct</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="document.getElementById('sq-quality-modal').remove()" style="flex:1;padding:8px;background:none;border:1px solid var(--b2);color:var(--muted2);font-family:var(--mono);font-size:10px;cursor:pointer;border-radius:6px">Skip</button>
+      <button onclick="_saveSessionQuality('${sessionId}')" style="flex:1;padding:8px;background:var(--gold2);color:#000;border:none;font-family:var(--mono);font-size:11px;font-weight:800;cursor:pointer;border-radius:6px">Save</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+
+function _sqStar(v){
+  document.querySelectorAll('.star-btn').forEach(b=>{ b.classList.toggle('sel',+b.dataset.v<=v); });
+  document.getElementById('sq-quality-modal')._selQ=v;
+}
+function _sqToggleSolving(){
+  const on=document.getElementById('sq-is-solving')?.checked;
+  const row=document.getElementById('sq-solving-row');
+  if(row) row.style.display=on?'block':'none';
+}
+function _saveSessionQuality(sessionId){
+  const ov=document.getElementById('sq-quality-modal'); if(!ov) return;
+  const q=ov._selQ||0;
+  const tag=document.getElementById('sq-tag')?.value||null;
+  const isSolving=document.getElementById('sq-is-solving')?.checked;
+  const correct=isSolving?parseInt(document.getElementById('sq-correct')?.value)||0:0;
+  const total=isSolving?parseInt(document.getElementById('sq-total')?.value)||0:0;
+  ov.remove();
+  const all=getSess(), idx=all.findIndex(s=>s.id===sessionId);
+  if(idx>=0){
+    if(q) all[idx].quality=q;
+    if(tag) all[idx].trainingTag=tag;
+    if(isSolving&&total>0){ all[idx].solvingCorrect=correct; all[idx].solvingTotal=total; }
+    ls.set('sq_sessions',all); sessions=all;
+  }
+  if(q||tag) toast('Quality logged ✓');
+  renderLevers();
+}
+
+// ── Log game modal ────────────────────────────────────
+function openLogGame(){
+  document.getElementById('sq-log-game-modal')?.remove();
+  const cfg=lcfg();
+  const causesOpts=cfg.plCauses.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  const todayStr=_todaySdk();
+  const ov=document.createElement('div');
+  ov.id='sq-log-game-modal';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:950;display:flex;align-items:center;justify-content:center';
+  ov.innerHTML=`<div style="background:var(--b1);border:1px solid var(--b2);border-radius:12px;padding:22px 20px;width:300px;max-width:92vw">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-family:var(--serif);font-size:16px;font-weight:900">Log game result</div>
+      <button onclick="document.getElementById('sq-log-game-modal').remove()" style="background:none;border:none;color:var(--muted2);font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Date</div>
+    <input type="date" id="lgm-date" value="${todayStr}" style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:7px;font-family:var(--mono);font-size:12px;border-radius:6px;margin-bottom:12px">
+    <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Result</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      ${['win','draw','loss'].map(r=>`<button class="lgm-result-btn" data-r="${r}" onclick="_lgmSetResult('${r}')" style="flex:1;padding:8px;background:var(--s2);border:1px solid var(--b2);color:var(--muted2);font-family:var(--mono);font-size:10px;cursor:pointer;border-radius:6px">${r==='win'?'✓ Win':r==='draw'?'½ Draw':'✗ Loss'}</button>`).join('')}
+    </div>
+    <div id="lgm-cause-row" style="display:none;margin-bottom:12px">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Main cause of lost points</div>
+      <select id="lgm-cause" style="width:100%;background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:7px;font-family:var(--mono);font-size:10px;border-radius:6px">
+        <option value="">— select —</option>${causesOpts}
+      </select>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="document.getElementById('sq-log-game-modal').remove()" style="flex:1;padding:8px;background:none;border:1px solid var(--b2);color:var(--muted2);font-family:var(--mono);font-size:10px;cursor:pointer;border-radius:6px">Cancel</button>
+      <button onclick="_saveGame()" style="flex:1;padding:8px;background:var(--gold2);color:#000;border:none;font-family:var(--mono);font-size:11px;font-weight:800;cursor:pointer;border-radius:6px">Save</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); });
+}
+
+function _lgmSetResult(r){
+  document.querySelectorAll('.lgm-result-btn').forEach(b=>b.style.background=b.dataset.r===r?'var(--gold2)':'var(--s2)');
+  document.querySelectorAll('.lgm-result-btn').forEach(b=>b.style.color=b.dataset.r===r?'#000':'var(--muted2)');
+  document.getElementById('sq-log-game-modal')._result=r;
+  document.getElementById('lgm-cause-row').style.display=r==='win'?'none':'block';
+}
+function _saveGame(){
+  const ov=document.getElementById('sq-log-game-modal'); if(!ov) return;
+  const date=document.getElementById('lgm-date')?.value||_todaySdk();
+  const result=ov._result;
+  if(!result){ toast('Pick a result'); return; }
+  const cause=result!=='win'?(document.getElementById('lgm-cause')?.value||null):null;
+  const games=getGames();
+  games.push({ id:uid(), date, result, cause, loggedAt:new Date().toISOString() });
+  saveGames(games); ov.remove(); toast('Game logged ✓'); renderLevers();
+}
+
+// ── Lever setup (weekly review) ───────────────────────
+function openWeeklyReview(){
+  document.getElementById('sq-weekly-review')?.remove();
+  const w=_lvStats(7,0), prev=_lvStats(28,7);
+  const top3=_topCauses(3);
+  const lever=getActiveLever();
+  const cfg=lcfg();
+
+  // Check if active lever has expired
+  if(lever&&lever.endDate&&_todaySdk()>lever.endDate){
+    _expireLever(lever);
+  }
+
+  const ov=document.createElement('div');
+  ov.id='sq-weekly-review';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:950;overflow-y:auto;padding:0 0 60px';
+
+  const statRow=(label,val7,valPrev,unit)=>{
+    if(val7==null) return `<div style="font-family:var(--mono);font-size:10px;color:var(--muted2)">${label}: no data</div>`;
+    const tr=valPrev!=null?_trendArrow(val7,valPrev):{sym:'—',cls:'flat'};
+    return `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--b2)">
+      <span style="font-family:var(--mono);font-size:10px;color:var(--muted2)">${label}</span>
+      <span style="font-family:var(--mono);font-size:10px"><b style="color:var(--text)">${val7}${unit}</b> <span class="lv-trend ${tr.cls}">${tr.sym}</span></span>
+    </div>`;
+  };
+
+  // Deep % on top causes
+  const deepSessAll=sessions.filter(s=>isDeepSess(s)).slice(-200);
+  const top3ids=top3.map(x=>x.cause);
+  const pctOnTop3=deepSessAll.length?Math.round(deepSessAll.filter(s=>top3ids.includes(s.trainingTag)).length/deepSessAll.length*100):null;
+
+  const leverSection=lever?`
+    <div style="padding:12px;background:var(--b2);border-radius:8px;margin-bottom:14px">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--gold2);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">🎯 Active lever · expires ${lever.endDate}</div>
+      <div style="font-family:var(--mono);font-size:12px;color:var(--text);margin-bottom:6px">${esc(lever.description)}</div>
+      <div style="display:flex;gap:8px">
+        <button onclick="_clearLever()" style="flex:1;padding:7px;background:none;border:1px solid var(--b2);color:var(--verm);font-family:var(--mono);font-size:10px;cursor:pointer;border-radius:6px">Switch lever</button>
+        <button onclick="_extendLever()" style="flex:1;padding:7px;background:none;border:1px solid var(--b2);color:var(--muted2);font-family:var(--mono);font-size:10px;cursor:pointer;border-radius:6px">Keep +2 wks</button>
+      </div>
+    </div>`:
+    `<div style="font-family:var(--mono);font-size:9px;color:var(--muted2);margin-bottom:10px">No active lever — pick one below.</div>`;
+
+  ov.innerHTML=`<div style="max-width:480px;margin:0 auto;padding:24px 16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="font-family:var(--serif);font-size:20px;font-weight:900">📊 Weekly Review</div>
+      <button onclick="document.getElementById('sq-weekly-review').remove()" style="background:none;border:none;color:var(--muted2);font-size:22px;cursor:pointer">✕</button>
+    </div>
+
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;margin-bottom:8px">⏱ HOW LONG · 7-day avg vs prior 28d</div>
+    <div style="padding:10px;background:var(--b2);border-radius:7px;margin-bottom:16px">
+      ${statRow('Deep h/day',w.deepH,prev.deepH,'h')}
+      ${statRow('Light h/day',w.lightH,prev.lightH,'h')}
+    </div>
+
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;margin-bottom:8px">★ HOW WELL · quality & accuracy</div>
+    <div style="padding:10px;background:var(--b2);border-radius:7px;margin-bottom:16px">
+      ${statRow('Avg quality',w.avgQ,prev.avgQ,'★')}
+      ${w.solvAcc!=null?statRow('Solving acc',w.solvAcc,prev.solvAcc,'%'):'<div style="font-family:var(--mono);font-size:10px;color:var(--muted2)">Solving: no data</div>'}
+      ${w.earlyAvg!=null||w.lateAvg!=null?statRow('Morning quality',w.earlyAvg,prev.earlyAvg,'★'):''}
+      ${w.lateAvg!=null?statRow('Evening quality',w.lateAvg,prev.lateAvg,'★'):''}
+    </div>
+
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;margin-bottom:8px">♟ WHAT · top point-loss causes (last 50 games)</div>
+    <div style="padding:10px;background:var(--b2);border-radius:7px;margin-bottom:16px">
+      ${top3.length?top3.map((x,i)=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--b1)">
+        <span style="font-family:var(--mono);font-size:10px;color:var(--text)">${i+1}. ${esc(x.cause)}</span>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--muted2)">${x.count} games</span>
+      </div>`).join(''):'<div style="font-family:var(--mono);font-size:10px;color:var(--muted2)">No games logged yet</div>'}
+      ${pctOnTop3!=null?`<div style="font-family:var(--mono);font-size:9px;color:var(--gold2);margin-top:6px">${pctOnTop3}% of deep sessions targeted top-3 causes</div>`:''}
+    </div>
+
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;margin-bottom:8px">🎯 Active lever</div>
+    ${leverSection}
+
+    ${!lever?`
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;margin-bottom:8px">Pick a lever for the next 2 weeks</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      ${['HOW LONG','HOW WELL','WHAT'].map(c=>`<button class="lv-pick-cat" data-c="${c}" onclick="_lvPickCat('${c}')" style="flex:1;padding:8px;background:var(--s2);border:1px solid var(--b2);color:var(--muted2);font-family:var(--mono);font-size:9px;cursor:pointer;border-radius:6px">${c}</button>`).join('')}
+    </div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Concrete target (e.g. "deep h 5.0 → 6.0")</div>
+    <input id="lv-target-input" placeholder="Describe your target" style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:8px;font-family:var(--mono);font-size:12px;border-radius:6px;margin-bottom:12px">
+    <button onclick="_saveLever()" style="width:100%;padding:10px;background:var(--gold2);color:#000;border:none;font-family:var(--serif);font-size:14px;font-weight:900;cursor:pointer;border-radius:8px">Set lever →</button>`:''}
+
+    <div style="margin-top:20px">
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Edit causes list</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:6px">Current: ${cfg.plCauses.map(esc).join(', ')}</div>
+      <input id="lv-causes-input" value="${cfg.plCauses.join(', ')}" placeholder="Comma-separated" style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:7px;font-family:var(--mono);font-size:11px;border-radius:6px;margin-bottom:8px">
+      <button onclick="_saveCauses()" style="width:100%;padding:8px;background:var(--s2);border:1px solid var(--b2);color:var(--muted2);font-family:var(--mono);font-size:10px;cursor:pointer;border-radius:6px">Save causes</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); });
+}
+
+function _lvPickCat(c){
+  document.querySelectorAll('.lv-pick-cat').forEach(b=>{ b.style.background=b.dataset.c===c?'var(--gold2)':'var(--s2)'; b.style.color=b.dataset.c===c?'#000':'var(--muted2)'; });
+  document.getElementById('sq-weekly-review')._cat=c;
+}
+function _saveLever(){
+  const ov=document.getElementById('sq-weekly-review');
+  const cat=ov?._cat; if(!cat){ toast('Pick a lever category'); return; }
+  const desc=document.getElementById('lv-target-input')?.value.trim(); if(!desc){ toast('Describe the target'); return; }
+  const start=_todaySdk();
+  const endDate=new Date(_today()); endDate.setDate(endDate.getDate()+14);
+  const end=endDate.toISOString().slice(0,10);
+  setActiveLever({ id:uid(), category:cat, description:desc, startDate:start, endDate:end, status:'active' });
+  ov.remove(); toast('Lever set ✓ — 2 weeks'); renderLevers();
+}
+function _clearLever(){
+  const lever=getActiveLever(); if(!lever) return;
+  lever.status='switched'; const h=getLeverHistory(); h.push(lever); saveLeverHistory(h);
+  setActiveLever(null); document.getElementById('sq-weekly-review')?.remove(); openWeeklyReview();
+}
+function _extendLever(){
+  const lever=getActiveLever(); if(!lever) return;
+  const nd=new Date(lever.endDate+'T12:00:00'); nd.setDate(nd.getDate()+14);
+  lever.endDate=nd.toISOString().slice(0,10);
+  setActiveLever(lever); document.getElementById('sq-weekly-review')?.remove(); toast('Extended +2 weeks'); renderLevers();
+}
+function _expireLever(lever){
+  lever.status='expired'; const h=getLeverHistory(); h.push(lever); saveLeverHistory(h);
+  setActiveLever(null);
+}
+function _saveCauses(){
+  const raw=document.getElementById('lv-causes-input')?.value||'';
+  const causes=raw.split(',').map(s=>s.trim()).filter(Boolean);
+  if(!causes.length){ toast('Enter at least one cause'); return; }
+  const cfg=lcfg(); cfg.plCauses=causes; setLeversCfg(cfg);
+  toast('Causes saved ✓'); document.getElementById('sq-weekly-review')?.remove(); openWeeklyReview();
+}
+
+// ── Render levers card ────────────────────────────────
+function renderLevers(){
+  const wrap=document.getElementById('levers-card'); if(!wrap) return;
+  const w=_lvStats(7,0), prev=_lvStats(28,7);
+  const lever=getActiveLever();
+  if(lever&&lever.endDate&&_todaySdk()>lever.endDate) _expireLever(lever);
+  const top3=_topCauses(3);
+
+  const trend=(c,p)=>{ const t=_trendArrow(c,p); return `<div class="lv-trend ${t.cls}">${t.sym}</div>`; };
+
+  // HOW LONG col
+  const longCol=`<div class="lv-col">
+    <div class="lv-col-label">⏱ How Long</div>
+    <div class="lv-big">${w.deepH!=null?w.deepH.toFixed(1):'—'}<span style="font-size:10px;color:var(--muted2)">h</span></div>
+    <div class="lv-sub">deep/day</div>
+    ${trend(w.deepH,prev.deepH)}
+    <div class="lv-sub" style="margin-top:4px">${w.lightH!=null?w.lightH.toFixed(1):'—'}h light</div>
+  </div>`;
+
+  // HOW WELL col
+  const wellCol=`<div class="lv-col">
+    <div class="lv-col-label">★ How Well</div>
+    <div class="lv-big">${w.avgQ!=null?w.avgQ:'—'}<span style="font-size:10px;color:var(--muted2)">★</span></div>
+    <div class="lv-sub">avg quality</div>
+    ${trend(w.avgQ,prev.avgQ)}
+    ${w.solvAcc!=null?`<div class="lv-sub" style="margin-top:4px">${w.solvAcc}% solving</div>`:''}
+  </div>`;
+
+  // WHAT col
+  const whatCol=`<div class="lv-col">
+    <div class="lv-col-label">♟ What</div>
+    ${top3.length?`<div class="lv-big" style="font-size:11px;line-height:1.3">${top3.slice(0,2).map(x=>esc(x.cause)).join('<br>')}</div>`:'<div class="lv-big" style="font-size:10px;color:var(--muted2)">log games</div>'}
+    <div class="lv-sub">top causes</div>
+  </div>`;
+
+  // Active lever bar
+  let leverHtml='';
+  const activeLever=getActiveLever();
+  if(activeLever){
+    const start=new Date(activeLever.startDate+'T00:00:00').getTime();
+    const end=new Date(activeLever.endDate+'T00:00:00').getTime();
+    const now=_today().getTime();
+    const pct=Math.min(100,Math.round((now-start)/(end-start)*100));
+    const daysLeft=Math.max(0,Math.round((end-now)/86400000));
+    leverHtml=`<div class="lv-lever-bar">
+      <div class="lv-lever-label">🎯 ${esc(activeLever.category)} lever · ${daysLeft}d left</div>
+      <div class="lv-lever-desc">${esc(activeLever.description)}</div>
+      <div class="lv-lever-track"><div class="lv-lever-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }
+
+  wrap.innerHTML=`<div class="lv-card">
+    <div class="lv-header">
+      <div class="lv-title">Training Levers</div>
+      <div style="display:flex;gap:6px">
+        <button class="lv-action-btn" onclick="openLogGame()">＋ Game</button>
+        <button class="lv-action-btn primary" onclick="openWeeklyReview()">Review</button>
+      </div>
+    </div>
+    <div class="lv-cols">${longCol}${wellCol}${whatCol}</div>
+    ${leverHtml}
+  </div>`;
 }
 
 /* ══════════════════════════════════════════════════════
