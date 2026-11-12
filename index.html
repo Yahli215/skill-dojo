@@ -4113,6 +4113,8 @@ function habitProgress(h, s){
     const start=new Date(h.startDate+'T00:00:00').getTime();
     return getSess().filter(ss=>ss.skillId===h.skillId&&ss.startTime&&ss.startTime>=start).length;
   }
+  // days habit: use explicit checkedDates if available, else legacy progress
+  if(h.checkedDates) return h.checkedDates.length;
   return h.progress||0;
 }
 
@@ -4139,8 +4141,10 @@ function tickSeason(){
 
   const h=getActiveHabit(s);
   if(h&&h.unit==='days'&&h.startDate){
-    const start=new Date(h.startDate+'T00:00:00');
-    h.progress=Math.min(h.length, Math.round((_today()-start)/86400000));
+    if(!h.checkedDates){
+      // legacy: migrate old auto-progress to checkedDates if progress>0
+      if(!h.checkedDates) h.checkedDates=[];
+    }
     h.lastTickDate=today;
     setSeason(s);
   }
@@ -4240,7 +4244,10 @@ function renderSeason(){
     const prog=habitProgress(ah,s);
     const pct=Math.min(100,Math.round(prog/ah.length*100));
     const col=pct>=100?'var(--green2)':pct>=50?'var(--gold2)':'var(--indigo)';
+    const isHabitDays=ah.unit==='days';
+    const checkedToday=isHabitDays&&(ah.checkedDates||[]).includes(_todaySdk());
 
+    html+=`<div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;margin-bottom:4px">🌿 Habit</div>`;
     html+=`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
       <div class="season-habit-name" style="margin:0">${esc(ah.name)}</div>
       <div style="text-align:right;flex-shrink:0">
@@ -4248,9 +4255,19 @@ function renderSeason(){
         <span style="font-family:var(--mono);font-size:12px;color:var(--muted2)"> / ${ah.length}</span>
       </div>
     </div>
-    <div class="season-progress-track" style="margin-bottom:5px"><div class="season-progress-fill" style="width:${pct}%;background:${col}"></div></div>`;
+    <div class="season-progress-track" style="margin-bottom:8px"><div class="season-progress-fill" style="width:${pct}%;background:${col}"></div></div>`;
 
-    if(ah.unit==='reps'){
+    if(isHabitDays){
+      const dl=habitDaysLeft(ah);
+      html+=`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <div class="season-dose auto" style="margin-bottom:0">${prog} / ${ah.length} clean days · ${dl} left</div>
+        <button onclick="checkInHabitToday('${ah.id}')" style="flex-shrink:0;padding:6px 12px;background:${checkedToday?'var(--green)':'var(--b2)'};border:1px solid ${checkedToday?'var(--green)':'var(--b2)'};color:${checkedToday?'#fff':'var(--muted2)'};font-family:var(--mono);font-size:11px;font-weight:700;cursor:${checkedToday?'default':'pointer'};border-radius:6px" ${checkedToday?'disabled':''}>
+          ${checkedToday?'✓ Done today':'Mark today ✓'}
+        </button>
+      </div>`;
+      _doseTxt=`${esc(ah.name)}: ${checkedToday?'Done today ✓':'Mark as done today'}`;
+      _doseColor=checkedToday?'var(--green2)':'var(--gold2)';
+    } else {
       const rem=Math.max(0,ah.length-prog);
       const needed=rem>0?Math.ceil(rem/Math.max(1,dLeft)):0;
       const start=new Date(ah.startDate+'T00:00:00');
@@ -4261,11 +4278,6 @@ function renderSeason(){
       html+=`<div class="season-dose ${cls}" style="margin-bottom:0">${msg}</div>`;
       _doseTxt=`${esc(ah.name)}: ${needed} rep${needed!==1?'s':''} today`;
       _doseColor=onTrack?'var(--green2)':'var(--verm)';
-    } else {
-      const dl=habitDaysLeft(ah);
-      html+=`<div class="season-dose auto" style="margin-bottom:0">Day ${prog+1} of ${ah.length} · ${dl} day${dl!==1?'s':''} left</div>`;
-      _doseTxt=`${esc(ah.name)}: Day ${prog+1} / ${ah.length}`;
-      _doseColor='var(--gold2)';
     }
 
     if(ah.status==='testing'){
@@ -4288,6 +4300,7 @@ function renderSeason(){
   if(_hasChess||_hasHours){
     html+=`<div style="margin-top:10px;border-top:1px solid var(--b2);padding-top:9px;display:flex;flex-direction:column;gap:5px">`;
     if(_hasChess){
+      html+=`<div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;margin-bottom:1px">♟ Skill</div>`;
       s.chessSkills.forEach(cs=>{
         const totalReps=cs.totalReps||cs.weeklyReps||0;
         if(!totalReps){ html+=`<div style="font-family:var(--mono);font-size:10px;color:var(--muted2)">♟ ${esc(cs.name)}</div>`; return; }
@@ -4351,6 +4364,23 @@ function _toggleSeasonTl(){
   _seasonTlOpen=!_seasonTlOpen;
   const tl=document.getElementById('season-tl'); if(tl) tl.style.display=_seasonTlOpen?'block':'none';
   const btn=document.querySelector('.season-tl-toggle'); if(btn) btn.textContent=(_seasonTlOpen?'▴':'▾')+' Season plan';
+}
+
+function checkInHabitToday(habitId){
+  const s=getSeason(); if(!s) return;
+  const h=s.queue.find(x=>x.id===habitId); if(!h||h.unit!=='days') return;
+  if(!h.checkedDates) h.checkedDates=[];
+  const today=_todaySdk();
+  if(h.checkedDates.includes(today)){ toast('Already marked today ✓'); return; }
+  h.checkedDates.push(today);
+  // check if habit now complete
+  if(h.checkedDates.length>=h.length&&h.status==='active'){
+    h.status='testing';
+    setSeason(s); renderSeason();
+    setTimeout(()=>toast('🧪 Habit complete — see Season card for final test'),400);
+  } else {
+    setSeason(s); renderSeason(); toast('✓ Day marked clean');
+  }
 }
 
 function passFinalTest(habitId){
