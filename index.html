@@ -3167,7 +3167,7 @@ function stopTimer(){
   setTimeout(()=>{
     const isJacob=_jacDesc.toLowerCase().includes('exercises jacob');
     _maybeAskJacobRatings(_jacSessId,_jacDesc); // chains to _askSessionQuality if jacob
-    if(!isJacob&&_jacMins>=45) _askSessionQuality(_jacSessId);
+    if(!isJacob) _askSessionQuality(_jacSessId);
   },400);
 }
 
