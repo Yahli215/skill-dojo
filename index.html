@@ -4228,72 +4228,10 @@ function renderSeason(){
     <button class="season-setup-btn" onclick="openSeasonSetup()">⚙</button>
   </div>`;
 
-  // ── Daily hours goal ──────────────────────────────────
-  const _goalH=parseFloat(s.dailyHoursGoal)||0;
-  if(_goalH>0){
-    const _todayMins=dailyHistory()[todayKey()]||0;
-    const _todayH=(_todayMins/60).toFixed(1);
-    const _hPct=Math.min(100,Math.round(_todayMins/(_goalH*60)*100));
-    const _hCol=_hPct>=100?'var(--green2)':_hPct>=60?'var(--gold2)':'var(--indigo)';
-    html+=`<div style="margin-bottom:12px;padding:9px 11px;background:var(--b2);border-radius:7px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
-        <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase">⏱ Today</div>
-        <div style="font-family:var(--mono);font-size:14px;font-weight:800;color:${_hCol}">${_todayH}h<span style="font-size:10px;color:var(--muted2);font-weight:400"> / ${_goalH}h</span></div>
-      </div>
-      <div style="height:5px;background:var(--b1);border-radius:3px"><div style="height:5px;width:${_hPct}%;background:${_hCol};border-radius:3px;transition:width .3s"></div></div>
-    </div>`;
-  }
-
-  // ── Chess skills focus ────────────────────────────────
-  if(s.chessSkills&&s.chessSkills.length){
-    const _now=_today();
-    const _dow=_now.getDay();
-    const _daysSinceMon=_dow===0?6:_dow-1;
-    const _weekStart=new Date(_now); _weekStart.setDate(_weekStart.getDate()-_daysSinceMon); _weekStart.setHours(0,0,0,0);
-    const _weekMs=_weekStart.getTime();
-    html+=`<div style="margin-bottom:12px">
-      <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;margin-bottom:5px">♟ Chess focus</div>`;
-    const _seasonStartMs=s.startDate?new Date(s.startDate+'T00:00:00').getTime():0;
-    s.chessSkills.forEach(cs=>{
-      const totalReps=cs.totalReps||cs.weeklyReps||0; // compat with old weeklyReps field
-      let repsInfo='';
-      if(totalReps>0){
-        const done=cs.skillId?sessions.filter(ss=>ss.skillId===cs.skillId&&(ss.startTime||0)>=_seasonStartMs).length:0;
-        const remaining=Math.max(0,totalReps-done);
-        const perDay=dLeft>0?Math.ceil(remaining/dLeft):remaining;
-        const rCol=done>=totalReps?'var(--green2)':perDay<=1?'var(--gold2)':'var(--muted2)';
-        const doneCol=done>=totalReps?'var(--green2)':'var(--text)';
-        repsInfo=`<div style="text-align:right">
-          <div style="font-family:var(--mono);font-size:11px;font-weight:700;color:${doneCol}">${done}<span style="color:var(--muted2);font-weight:400"> / ${totalReps}</span></div>
-          ${done<totalReps?`<div style="font-family:var(--mono);font-size:9px;color:${rCol}">${perDay}/day needed</div>`:'<div style="font-family:var(--mono);font-size:9px;color:var(--green2)">✓ done</div>'}
-        </div>`;
-      }
-      html+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--b2)">
-        <span style="font-family:var(--mono);font-size:11px;color:var(--text)">${esc(cs.name)}</span>
-        ${repsInfo}
-      </div>`;
-    });
-    html+=`</div>`;
-  }
-
-  // ── Season focus problem ──────────────────────────────
-  if(s.focusProblemId){
-    const fp=getProblems().find(p=>p.id===s.focusProblemId);
-    if(fp){
-      const fpSolved=fp.status==='solved';
-      html+=`<div style="margin-bottom:12px;padding:9px 11px;background:var(--b2);border-radius:7px;display:flex;align-items:center;gap:10px">
-        <div style="flex:1;min-width:0">
-          <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;margin-bottom:2px">🎯 Focus problem</div>
-          <div style="font-family:var(--mono);font-size:12px;color:${fpSolved?'var(--green2)':'var(--indigo)'};font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(fp.title)}</div>
-        </div>
-        ${fpSolved?`<span style="font-family:var(--mono);font-size:11px;color:var(--green2)">✓ solved</span>`:`<span style="font-family:var(--mono);font-size:9px;color:var(--muted2)">${fp.status||'active'}</span>`}
-      </div>`;
-    }
-  }
-
   // Helper to build dose text for the daily goal widget
   let _doseTxt='', _doseColor='var(--gold2)';
 
+  // ── Active habit ──────────────────────────────────────
   if(!ah&&s.queue.every(h=>h.status==='done')){
     html+=`<div style="font-family:var(--mono);font-size:11px;color:var(--green2);padding:6px 0">✓ All habits complete this season!</div>`;
   } else if(!ah){
@@ -4302,23 +4240,15 @@ function renderSeason(){
     const prog=habitProgress(ah,s);
     const pct=Math.min(100,Math.round(prog/ah.length*100));
     const col=pct>=100?'var(--green2)':pct>=50?'var(--gold2)':'var(--indigo)';
-    const unitLabel=ah.unit==='days'?(prog===1?'clean day':'clean days'):'reps';
 
-    // Linked problem
-    const linkedProb=ah.problemId?getProblems().find(p=>p.id===ah.problemId):null;
-
-    html+=`<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
-      <div>
-        <div class="season-habit-name">${esc(ah.name)}</div>
-        ${linkedProb?`<div style="font-family:var(--mono);font-size:10px;color:var(--indigo);margin-top:1px">🎯 ${esc(linkedProb.title)}</div>`:''}
-      </div>
+    html+=`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
+      <div class="season-habit-name" style="margin:0">${esc(ah.name)}</div>
       <div style="text-align:right;flex-shrink:0">
-        <span style="font-family:var(--mono);font-size:24px;font-weight:800;color:${col}">${prog}</span>
+        <span style="font-family:var(--mono);font-size:22px;font-weight:800;color:${col}">${prog}</span>
         <span style="font-family:var(--mono);font-size:12px;color:var(--muted2)"> / ${ah.length}</span>
       </div>
     </div>
-    <div class="season-progress-track"><div class="season-progress-fill" style="width:${pct}%;background:${col}"></div></div>
-    <div class="season-count">${prog} / ${ah.length} ${unitLabel}</div>`;
+    <div class="season-progress-track" style="margin-bottom:5px"><div class="season-progress-fill" style="width:${pct}%;background:${col}"></div></div>`;
 
     if(ah.unit==='reps'){
       const rem=Math.max(0,ah.length-prog);
@@ -4327,13 +4257,13 @@ function renderSeason(){
       const elapsed=Math.max(1,Math.round((_today()-start)/86400000));
       const onTrack=rem<=0||(prog/elapsed>=(ah.length/Math.max(1,elapsed+dLeft)));
       const cls=rem<=0?'on-track':onTrack?'on-track':'behind';
-      const msg=rem<=0?'✓ Complete — final test ready':(onTrack?`Today: ${needed} rep${needed!==1?'s':''} · ✓ On track`:`Today: ${needed} rep${needed!==1?'s':''} · ⚠ Behind`);
-      html+=`<div class="season-dose ${cls}">${msg}</div>`;
+      const msg=rem<=0?'✓ Complete — final test ready':(onTrack?`${needed} rep${needed!==1?'s':''} today · on track`:`${needed} rep${needed!==1?'s':''} today · ⚠ behind`);
+      html+=`<div class="season-dose ${cls}" style="margin-bottom:0">${msg}</div>`;
       _doseTxt=`${esc(ah.name)}: ${needed} rep${needed!==1?'s':''} today`;
       _doseColor=onTrack?'var(--green2)':'var(--verm)';
     } else {
       const dl=habitDaysLeft(ah);
-      html+=`<div class="season-dose auto">Day ${prog+1} of ${ah.length} — keep going · ${dl} day${dl!==1?'s':''} left</div>`;
+      html+=`<div class="season-dose auto" style="margin-bottom:0">Day ${prog+1} of ${ah.length} · ${dl} day${dl!==1?'s':''} left</div>`;
       _doseTxt=`${esc(ah.name)}: Day ${prog+1} / ${ah.length}`;
       _doseColor='var(--gold2)';
     }
@@ -4348,6 +4278,40 @@ function renderSeason(){
         </div>
       </div>`;
     }
+  }
+
+  // ── Today's numbers row (chess reps + hours) ──────────
+  const _seasonStartMs=s.startDate?new Date(s.startDate+'T00:00:00').getTime():0;
+  const _goalH=parseFloat(s.dailyHoursGoal)||0;
+  const _hasChess=s.chessSkills&&s.chessSkills.length>0;
+  const _hasHours=_goalH>0;
+  if(_hasChess||_hasHours){
+    html+=`<div style="margin-top:10px;border-top:1px solid var(--b2);padding-top:9px;display:flex;flex-direction:column;gap:5px">`;
+    if(_hasChess){
+      s.chessSkills.forEach(cs=>{
+        const totalReps=cs.totalReps||cs.weeklyReps||0;
+        if(!totalReps){ html+=`<div style="font-family:var(--mono);font-size:10px;color:var(--muted2)">♟ ${esc(cs.name)}</div>`; return; }
+        const done=cs.skillId?sessions.filter(ss=>ss.skillId===cs.skillId&&(ss.startTime||0)>=_seasonStartMs).length:0;
+        const rem=Math.max(0,totalReps-done);
+        const perDay=dLeft>0?Math.ceil(rem/dLeft):rem;
+        const rCol=done>=totalReps?'var(--green2)':perDay>5?'var(--verm)':'var(--muted2)';
+        html+=`<div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--muted2)">♟ ${esc(cs.name)}</span>
+          <span style="font-family:var(--mono);font-size:10px;color:${rCol}">${done>=totalReps?'✓ done':`${done}/${totalReps} · ${perDay}/day`}</span>
+        </div>`;
+      });
+    }
+    if(_hasHours){
+      const _todayMins=dailyHistory()[todayKey()]||0;
+      const _todayH=(_todayMins/60).toFixed(1);
+      const _hPct=Math.min(100,Math.round(_todayMins/(_goalH*60)*100));
+      const _hCol=_hPct>=100?'var(--green2)':_hPct>=60?'var(--gold2)':'var(--muted2)';
+      html+=`<div style="display:flex;align-items:center;justify-content:space-between">
+        <span style="font-family:var(--mono);font-size:10px;color:var(--muted2)">⏱ Hours today</span>
+        <span style="font-family:var(--mono);font-size:10px;color:${_hCol}">${_todayH}h / ${_goalH}h</span>
+      </div>`;
+    }
+    html+=`</div>`;
   }
 
   // Update daily goal dose widget
