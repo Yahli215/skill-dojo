@@ -1,4 +1,4 @@
-const VERSION = '122';
+const VERSION = '123';
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(
   caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))))

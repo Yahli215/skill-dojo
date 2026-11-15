@@ -3470,6 +3470,8 @@ function tickTimer(){
             try{renderDaily();}catch(e){}
             showRoundComplete(rSk,rMins);
             pushSync();
+            const _rSessId=rSess.id;
+            setTimeout(()=>_askSessionQuality(_rSessId),400);
           }
           activeTimer.phase='break'; activeTimer.phaseStart=Date.now(); document.getElementById('timer-bar').classList.add('break'); sendNotif('☕ Break','Round '+activeTimer.round+' done.');
         }
