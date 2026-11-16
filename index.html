@@ -8987,7 +8987,7 @@ function start3D(THREE){
   var floor=mesh(new THREE.PlaneGeometry(10,6),new THREE.MeshStandardMaterial({map:floorT.t,roughness:.6,metalness:.05}),0,0,.6,room); floor.rotation.x=-Math.PI/2;
   mesh(box(2.7,.04,2.3),mat(0x14131a),0,.02,0,room);
   mesh(box(2.5,.06,2.1),mat(0x8b8550,{roughness:1}),0,.03,0,room);
-  mesh(new THREE.PlaneGeometry(10,5),mat(0x2a1e12,{roughness:1}),0,2.5,-1.6,room);
+  var WALLM=mat(0x2a1e12,{roughness:1}); mesh(new THREE.PlaneGeometry(10,5),WALLM,0,2.5,-1.6,room);
   [-1.95,1.95].forEach(function(x){ mesh(box(.16,5,.16),mat(0x170f08),x,2.5,-1.52,room); });
   mesh(box(10,.16,.16),mat(0x170f08),0,3.25,-1.52,room); mesh(box(10,.2,.1),mat(0x170f08),0,.1,-1.55,room);
   /* shoji window — its light is the time of day */
@@ -9040,9 +9040,9 @@ function start3D(THREE){
     dusk:{label:'夕暮れ dusk',sky:0xff8a4a,hs:0xffc090,hg:0x2a1810,hi:.95,kc:0xff9050,ki:2.0,lan:2.2,lc:0xffc060},
     night:{label:'夜 night',  sky:0x18224e,hs:0x6878b8,hg:0x0c0a10,hi:.5, kc:0x8898e0,ki:.8, lan:7,  lc:0xffc060}
   };
-  var todName='';
+  var todName='', zenV=false;
   function setTOD(force){
-    var h=new Date().getHours(), n=force||(h>=5&&h<8?'dawn':h>=8&&h<16?'day':h>=16&&h<19?'dusk':'night');
+    var h=new Date().getHours(), n=force||(zenV?'day':h>=5&&h<8?'dawn':h>=8&&h<16?'day':h>=16&&h<19?'dusk':'night');
     if(n===todName) return; todName=n; var p=TOD[n];
     skyM.color.set(p.sky); hemi.color.set(p.hs); hemi.groundColor.set(p.hg); hemi.intensity=p.hi; key.color.set(p.kc); key.intensity=p.ki; lanL.intensity=p.lan; lanM.color.set(p.lc);
     var el=document.getElementById('fg-tod'); if(el) el.textContent=p.label;
@@ -9237,7 +9237,8 @@ function start3D(THREE){
     trophies:function(n){ shelf.visible=n>0; cups.forEach(function(c,i){ c.visible=i<n; }); },
     warm:function(v){ warm=!!v; },
     outside:function(season,weather){ setOutside(season,weather); },
-    calm:function(v){ calmV=!!v; var t0=tier; tier=-1; setTier(t0<0?0:t0); }};
+    calm:function(v){ calmV=!!v; var t0=tier; tier=-1; setTier(t0<0?0:t0); },
+    zen:function(v){ v=!!v; if(v===zenV) return; zenV=v; WALLM.color.set(v?0xd9d3c4:0x2a1e12); scene.background.set(v?0xd8d3c6:0x0c0a08); todName=''; setTOD(); }};
   setOutside((function(){ var m=new Date().getMonth(); return m>=2&&m<=4?'spring':m>=5&&m<=7?'summer':m>=8&&m<=10?'autumn':'winter'; })(),'clear');
   setTier(state?state.tier:0); setTOD(); pollState(); size(); go();
   try{ if(window.__look) window.__look.outside(); }catch(e){}
@@ -10022,14 +10023,14 @@ function $(id){ return document.getElementById(id); }
 function paper(){ if($('lk-paper')) return; var d=document.createElement('div'); d.id='lk-paper'; document.body.insertBefore(d,document.body.firstChild); }
 
 /* ════ 9. palettes ════ */
-var PALS=['dojo','ink','autumn'], PAL_LBL={dojo:'🎨 dojo',ink:'🎨 night ink',autumn:'🎨 autumn'};
-function applyPal(p){ document.body.classList.toggle('th-ink',p==='ink'); document.body.classList.toggle('th-autumn',p==='autumn'); var b=$('lk-pal'); if(b) b.textContent=PAL_LBL[p]; }
+var PALS=['dojo','ink','autumn','zen'], PAL_LBL={dojo:'🎨 dojo',ink:'🎨 night ink',autumn:'🎨 autumn',zen:'禅 zen garden'};
+function applyPal(p){ document.body.classList.toggle('th-ink',p==='ink'); document.body.classList.toggle('th-autumn',p==='autumn'); document.body.classList.toggle('th-zen',p==='zen'); try{ var zf=window.__fighter, zs=zf&&zf.scene&&zf.scene(); if(zs&&zs.zen) zs.zen(p==='zen'); }catch(e){} var b=$('lk-pal'); if(b) b.textContent=PAL_LBL[p]; }
 function palette(){
   var p=lsGet('jx_palette','dojo'); if(PALS.indexOf(p)<0) p='dojo';
   var hdr=document.querySelector('.hdr-right'), tb=$('theme-btn');
   if(hdr&&!$('lk-pal')){
     var b=document.createElement('button'); b.className='sm-btn'; b.id='lk-pal'; b.title='Colour palette (dark themes)';
-    b.addEventListener('click',function(){ p=PALS[(PALS.indexOf(p)+1)%PALS.length]; lsSet('jx_palette',p); applyPal(p); });
+    b.addEventListener('click',function(){ p=PALS[(PALS.indexOf(p)+1)%PALS.length]; lsSet('jx_palette',p); applyPal(p); if(p==='zen'&&window.__calm) window.__calm.set(true); });
     if(tb&&tb.parentNode===hdr) hdr.insertBefore(b,tb.nextSibling); else hdr.insertBefore(b,hdr.firstChild);
   }
   applyPal(p);
@@ -10122,7 +10123,7 @@ function wxKind(code,cloud){ if(code>=95) return 'storm'; if((code>=51&&code<=67
 function outside(){
   var s=season(), w=(lsGet('jx_wx',null)||{}).kind||'clear';
   ['spring','summer','autumn','winter'].forEach(function(x){ document.body.classList.toggle('sz-'+x,x===s); });
-  var f=window.__fighter, sc=f&&f.scene&&f.scene(); if(sc&&sc.outside) sc.outside(s,w);
+  var f=window.__fighter, sc=f&&f.scene&&f.scene(); if(sc&&sc.outside) sc.outside(s,w); if(sc&&sc.zen) sc.zen(document.body.classList.contains('th-zen'));
   var st=$('fg-stage'); if(st){ var l=st.querySelector('.fg-wx'); if(!l){ l=document.createElement('div'); l.className='fg-wx'; st.appendChild(l); } l.textContent=WX_LBL[w]||''; }
   return !!(sc&&sc.outside);
 }
@@ -10256,5 +10257,63 @@ try{ boot(); }catch(e){ if(window.console) console.warn('calm layer failed',e); 
 })();
 </script>
 <!-- ═══ CALM LAYER END ═══ -->
+<!-- ═══ ZEN LAYER START (v133) — additive: 禅 zen-garden palette. Raked sand, stone, moss. Delete from here to "ZEN LAYER END" to remove it. ═══ -->
+<style id="zn-css">
+body.th-zen{--bg:#d9d4c7;--s1:#d0cabc;--s2:#c6c0b1;--b1:#b8b1a1;--b2:#9c9686;--text:#2b2d29;--muted:#8d8878;--muted2:#5d5a4e;
+  --gold:#5d7343;--gold2:#485c32;--verm:#a5412d;--green:#5d7343;--green2:#485c32;--indigo:#55606a;--purple:#6a6470;
+  --mono:'Noto Serif JP',serif;--jx-glow:rgba(93,115,67,.35);--jx-glow-soft:rgba(93,115,67,.1);}
+body.th-zen.calm{--gold:#5d7343 !important;--gold2:#485c32 !important;--green:#5d7343 !important;--green2:#485c32 !important;--indigo:#5d5a4e !important;--purple:#5d5a4e !important;}
+body.th-zen{font-size:13.5px;letter-spacing:.2px;}
+body.th-zen .page-watermark,body.th-zen #jx-embers{display:none !important;}
+body.th-zen #lk-paper{opacity:.35;mix-blend-mode:multiply;}
+body.th-zen .round-overlay.on{background:rgba(217,212,199,.975);}
+body.th-zen .lu-overlay{background:rgba(60,58,48,.55);}
+body.th-zen .fg-stage{border-color:transparent;box-shadow:0 18px 40px -22px rgba(40,40,30,.55);}
+body.th-zen .view-nav-btn.on{border-bottom-color:var(--gold);color:var(--text);text-shadow:none;box-shadow:none;}
+body.th-zen .sec-hdr .sec-line{background:var(--b2);opacity:.7;}
+body.th-zen .btn-primary,body.th-zen .t-stop,body.th-zen .skill-pill.sel,body.th-zen .lu-close{background:var(--muted2);border-color:var(--muted2);color:#ecE8dc;}
+body.th-zen .start-btn{background:var(--gold);color:#eef0e4;}
+body.th-zen .start-btn:hover{background:var(--gold2);}
+body.th-zen .enso{color:var(--gold);}
+body.th-zen.calm .enso{color:var(--gold2);}
+body.th-zen .timer-bar.on .t-time{color:var(--text);}
+body.th-zen .inp,body.th-zen .desc-inp,body.th-zen .pomo-inp{background:rgba(255,255,255,.28);}
+body.th-zen #cm-leaf{background:#7d8f55;}
+body.th-zen .lr-t{background:var(--s2);}
+body.th-zen .sm-btn{color:var(--muted2);}
+/* the garden */
+#zen-garden{display:none;position:fixed;inset:0;z-index:0;pointer-events:none;}
+body.th-zen #zen-garden{display:block;}
+#zen-garden svg{width:100%;height:100%;display:block;}
+@media (max-width:1180px){ #zen-garden .zg-st{display:none;} }
+</style>
+<script id="zn-js">
+(function(){
+'use strict';
+function garden(){
+  if(document.getElementById('zen-garden')) return;
+  var SAND='#d9d4c7', LINE='rgba(70,66,52,.15)', o='', y, i;
+  /* raked sand: long parallel furrows with a slow drift */
+  for(y=14;y<1000;y+=17){ var a=(Math.sin(y*.013)*7).toFixed(1), b=(Math.cos(y*.017)*6).toFixed(1);
+    o+='<path d="M-20 '+y+' C400 '+(y+ +a)+' 800 '+(y- +b)+' 1200 '+(y+ +b)+' S1500 '+(y- +a)+' 1620 '+y+'" fill="none" stroke="'+LINE+'" stroke-width="1.5"/>'; }
+  /* stones: rings raked around each, a patch of moss, a soft shadow */
+  function stone(cx,cy,R,w,h,rot,moss){
+    var s='<g class="zg-st"><circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="'+SAND+'"/>';
+    for(var r=Math.max(w,h)*.62+14;r<R;r+=16) s+='<ellipse cx="'+cx+'" cy="'+cy+'" rx="'+r+'" ry="'+(r*.93).toFixed(1)+'" fill="none" stroke="'+LINE+'" stroke-width="1.5"/>';
+    s+='<ellipse cx="'+(cx+6)+'" cy="'+(cy+h*.42)+'" rx="'+(w*.56)+'" ry="'+(h*.2)+'" fill="rgba(40,38,30,.22)"/>';
+    s+='<g transform="rotate('+rot+' '+cx+' '+cy+')"><path d="M'+(cx-w*.5)+' '+(cy+h*.3)+' C'+(cx-w*.56)+' '+(cy-h*.2)+' '+(cx-w*.25)+' '+(cy-h*.55)+' '+(cx+w*.05)+' '+(cy-h*.5)+' S'+(cx+w*.55)+' '+(cy-h*.2)+' '+(cx+w*.5)+' '+(cy+h*.22)+' S'+(cx-w*.3)+' '+(cy+h*.52)+' '+(cx-w*.5)+' '+(cy+h*.3)+'Z" fill="url(#zg-rock)"/>'+
+       '<path d="M'+(cx-w*.3)+' '+(cy-h*.28)+' C'+(cx-w*.1)+' '+(cy-h*.46)+' '+(cx+w*.18)+' '+(cy-h*.42)+' '+(cx+w*.3)+' '+(cy-h*.22)+'" fill="none" stroke="rgba(255,255,255,.16)" stroke-width="3" stroke-linecap="round"/>';
+    if(moss) s+='<path d="M'+(cx-w*.46)+' '+(cy+h*.12)+' C'+(cx-w*.52)+' '+(cy-h*.22)+' '+(cx-w*.3)+' '+(cy-h*.5)+' '+(cx-w*.02)+' '+(cy-h*.47)+' C'+(cx-w*.12)+' '+(cy-h*.2)+' '+(cx-w*.26)+' '+(cy+h*.02)+' '+(cx-w*.46)+' '+(cy+h*.12)+'Z" fill="#6b8249" opacity=".92"/><circle cx="'+(cx-w*.3)+'" cy="'+(cy-h*.22)+'" r="'+(w*.05)+'" fill="#8aa35f" opacity=".7"/>';
+    return s+'</g></g>';
+  }
+  o+=stone(1360,760,230,150,104,-8,true)+stone(1492,838,0,62,44,14,false)+stone(176,236,160,88,66,10,true)+stone(1448,178,118,56,42,-16,false)+stone(96,842,100,46,34,6,true);
+  var d=document.createElement('div'); d.id='zen-garden';
+  d.innerHTML='<svg viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="zg-rock" x1="0" y1="0" x2=".4" y2="1"><stop offset="0" stop-color="#70726a"/><stop offset=".55" stop-color="#4a4c45"/><stop offset="1" stop-color="#33352f"/></linearGradient></defs>'+o+'</svg>';
+  document.body.insertBefore(d,document.body.firstChild);
+}
+try{ garden(); }catch(e){ if(window.console) console.warn('zen layer failed',e); }
+})();
+</script>
+<!-- ═══ ZEN LAYER END ═══ -->
 </body>
 </html>
