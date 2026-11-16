@@ -8568,13 +8568,13 @@ function ensure(){
 function resize(){ var d=Math.min(window.devicePixelRatio||1,2); W=innerWidth; H=innerHeight; cv.width=W*d; cv.height=H*d; ctx.setTransform(d,0,0,d,0,0); }
 function kick(){ if(!raf){ prev=performance.now(); raf=requestAnimationFrame(loop); } }
 function loop(t){
-  var dt=Math.min((t-prev)/1000,.05); prev=t;
+  var dt=Math.max(0,Math.min((t-prev)/1000,.05)); prev=t;
   ctx.clearRect(0,0,W,H);
   ctx.globalCompositeOperation=isLight()?'source-over':'lighter';
   var i,p,a;
   for(i=rings.length-1;i>=0;i--){
     p=rings[i]; p.life-=dt; if(p.life<=0){ rings.splice(i,1); continue; }
-    a=p.life/p.max; var r=p.r0+(p.r1-p.r0)*(1-a*a);
+    a=Math.min(1,p.life/p.max); var r=Math.max(0,p.r0+(p.r1-p.r0)*(1-a*a));
     ctx.globalAlpha=a*.8; ctx.strokeStyle=p.color; ctx.lineWidth=1+2.5*a; ctx.beginPath(); ctx.arc(p.x,p.y,r,0,6.2832); ctx.stroke();
   }
   for(i=parts.length-1;i>=0;i--){
@@ -9090,6 +9090,25 @@ function start3D(THREE){
   var halo=new THREE.Mesh(new THREE.TorusGeometry(.52,.022,6,40),new THREE.MeshBasicMaterial({color:0xffd66b,transparent:true,opacity:.9,blending:THREE.AdditiveBlending,depthWrite:false}));
   halo.position.set(0,2.24,-.32); rig.add(halo);
 
+  /* weekly boss: a spirit mask that looms over the dojo and shrinks as it is beaten */
+  var bossG=new THREE.Group(); bossG.position.set(1.02,2.55,-.75); bossG.visible=false; scene.add(bossG);
+  var BOSSM=mat(0x2a1420,{emissive:0x501010,emissiveIntensity:.6}), BOSSE=new THREE.MeshBasicMaterial({color:0xff5030});
+  mesh(new THREE.IcosahedronGeometry(.42,1),BOSSM,0,0,0,bossG).scale.set(1,1.15,.8);
+  [-1,1].forEach(function(sx){
+    mesh(new THREE.ConeGeometry(.09,.42,5),mat(0xd8cdb8),sx*.26,.48,0,bossG).rotation.z=-sx*.35;
+    mesh(box(.15,.05,.04),BOSSE,sx*.16,.06,.33,bossG).rotation.z=sx*.3;
+  });
+  mesh(box(.34,.07,.05),mat(0x0c0a08),0,-.22,.3,bossG);
+  [-.12,0,.12].forEach(function(dx){ mesh(new THREE.ConeGeometry(.035,.1,4),mat(0xe9e2d0),dx,-.21,.33,bossG).rotation.x=Math.PI; });
+  var bossL=new THREE.PointLight(0xff4020,0,4); bossL.position.set(.9,2.4,-.2); scene.add(bossL);
+  var bossS=1, bossHit=0, bossOn=false;
+  /* tournament banner + trophy shelf */
+  var banT=tex(256,64,function(){}), banM=mesh(new THREE.PlaneGeometry(1.5,.36),new THREE.MeshBasicMaterial({map:banT.t}),0,3.0,-1.49,room); banM.visible=false;
+  var shelf=new THREE.Group(); shelf.position.set(-1.12,.84,-1.5); shelf.visible=false; room.add(shelf);
+  mesh(box(.8,.04,.16),mat(0x170f08),0,0,.06,shelf);
+  var cups=[]; [-.28,-.14,0,.14,.28].forEach(function(dx){ var c=new THREE.Group(); c.position.set(dx,.02,.06); shelf.add(c);
+    mesh(new THREE.CylinderGeometry(.03,.04,.04,6),GOLDM,0,.02,0,c); mesh(new THREE.CylinderGeometry(.05,.02,.1,6),GOLDM,0,.09,0,c); cups.push(c); });
+
   var tier=-1;
   function setTier(t){
     if(t===tier) return; tier=t;
@@ -9110,7 +9129,7 @@ function start3D(THREE){
   var mode='idle', bowT=0;
 
   /* interaction: drag to turn, tap to strike */
-  var rotY=-.45, drag=null, punch=0, jab=0, flexT=0, auto=0, side=0;
+  var rotY=-.45, warm=false, drag=null, punch=0, jab=0, flexT=0, auto=0, side=0;
   stage.addEventListener('pointerdown',function(e){ drag={x:e.clientX,r:rotY,moved:0}; try{ stage.setPointerCapture(e.pointerId); }catch(_){} });
   stage.addEventListener('pointermove',function(e){ if(!drag) return; var dx=e.clientX-drag.x; drag.moved=Math.max(drag.moved,Math.abs(dx)); rotY=drag.r+dx*.012; });
   stage.addEventListener('pointerup',function(e){
@@ -9147,6 +9166,7 @@ function start3D(THREE){
     for(var q in cur) cur[q]+=(target[q]-cur[q])*a;
     /* training with you: shadow-boxing combos */
     if(mode==='train'&&bowT<=0){ auto-=dt; if(auto<=0&&punch<=0&&jab<=0){ if(side===0||side===1){ jab=1; auto=.42; } else { punch=1; auto=1.15; } side=(side+1)%3; } }
+    else if(warm&&mode==='idle'&&bowT<=0){ auto-=dt; if(auto<=0&&punch<=0&&jab<=0){ jab=1; auto=2.4; } }
     var br=Math.sin(t*(mode==='seiza'?1.1:1.9)), bob=mode==='train'?Math.abs(Math.sin(t*5.2))*.035:0;
     var k=0; if(punch>0){ punch=Math.max(0,punch-dt*2.6); var ph=1-punch; k=smooth(ph<.3?ph/.3:1-(ph-.3)/.7); }
     var j=0; if(jab>0){ jab=Math.max(0,jab-dt*3.6); var pj=1-jab; j=smooth(pj<.35?pj/.35:1-(pj-.35)/.65); }
@@ -9168,11 +9188,24 @@ function start3D(THREE){
     glow.intensity=(tier>=2?1+tier*.45:0)+fl*8+k*2+(mode==='train'?1.2:0);
     lanL.intensity=TOD[todName].lan*(1+Math.sin(t*9)*.04+Math.sin(t*23)*.03);
     if(ki.visible){ for(var i=0;i<N;i++){ var p=ps[i]; p.y+=p.v*dt*(1+fl*3); if(p.y>2.7){ p.y=0; p.a=Math.random()*6.28; } p.a+=dt*.6; var rr=p.r*(1-p.y/4.2); pp[i*3]=Math.cos(p.a)*rr; pp[i*3+1]=p.y+.06; pp[i*3+2]=Math.sin(p.a)*rr; } pg.attributes.position.needsUpdate=true; }
+    if(bossOn){
+      if(bossHit>0) bossHit=Math.max(0,bossHit-dt*3); if((k>.85||j>.85)&&bossHit<=0) bossHit=1;
+      bossG.scale.setScalar(bossS*(1+bossHit*.12));
+      bossG.position.set(1.02+Math.sin(t*31)*bossHit*.05,2.55+Math.sin(t*.9)*.06,-.75);
+      bossG.rotation.y=-.35+Math.sin(t*.6)*.12; bossG.rotation.z=Math.sin(t*.7)*.06;
+      BOSSM.emissiveIntensity=.6+bossHit*3; bossL.intensity=1.2+bossHit*5+Math.sin(t*3)*.3;
+    }
     renderer.render(scene,cam);
     raf=requestAnimationFrame(frame);
   }
-  scene3d={setTier:setTier,flex:function(){ flexT=1; go(); },bow:function(){ bowT=2.6; go(); },tod:function(n){ todName=''; setTOD(n); }};
+  scene3d={setTier:setTier,flex:function(){ flexT=1; go(); },bow:function(){ bowT=2.6; go(); },tod:function(n){ todName=''; setTOD(n); },
+    boss:function(o){ bossOn=!!(o&&o.alive); bossG.visible=bossOn; if(!bossOn){ bossL.intensity=0; return; } bossS=.5+.6*Math.max(0,Math.min(1,o.pct)); BOSSM.color.set(o.color||0x2a1420); if(rotY===-.45) rotY=.38; },
+    banner:function(txt){ banM.visible=!!txt; if(!txt||banM._t===txt) return; banM._t=txt; var x=banT.x; x.fillStyle='#8a2a18'; x.fillRect(0,0,256,64); x.fillStyle='#e8b840'; x.fillRect(0,0,256,4); x.fillRect(0,60,256,4);
+      x.fillStyle='#f5ecd6'; x.textAlign='center'; x.textBaseline='middle'; x.font='900 30px "Noto Serif JP",serif'; x.fillText(txt,128,33); banT.t.needsUpdate=true; },
+    trophies:function(n){ shelf.visible=n>0; cups.forEach(function(c,i){ c.visible=i<n; }); },
+    warm:function(v){ warm=!!v; }};
   setTier(state?state.tier:0); setTOD(); pollState(); size(); go();
+  try{ if(window.__arena) window.__arena.refresh(); }catch(e){}
 }
 
 /* ── boot + keep in sync with the app ── */
@@ -9188,7 +9221,7 @@ function boot(){
   window.__fighter={refresh:refresh,compute:compute,STATS:STATS,TIERS:TIERS,lvl:lvl,prog:prog,
     flex:function(){ if(scene3d) scene3d.flex(); },bow:function(){ if(scene3d) scene3d.bow(); },
     preview:function(t){ if(scene3d) scene3d.setTier(Math.max(0,Math.min(6,t|0))); },
-    force:function(m){ forced=m||null; },tod:function(n){ if(scene3d) scene3d.tod(n); }};
+    force:function(m){ forced=m||null; },scene:function(){ return scene3d; },tod:function(n){ if(scene3d) scene3d.tod(n); }};
   import(THREE_URL).then(start3D).catch(function(){ var h=document.getElementById('fg-hint'); if(h) h.textContent='3D needs a connection — stats still live'; });
 }
 try{ boot(); }catch(e){ if(window.console) console.warn('fighter layer failed',e); }
@@ -9367,13 +9400,13 @@ function refreshPath(){
   if(!el){ el=document.createElement('div'); el.id='jx-path'; wrap.insertBefore(el,wrap.firstChild); wrap.classList.add('jx-path-on'); }
   var P=[], LET=['S','M','T','W','T','F','S'], i, hit=0;
   for(i=0;i<7;i++){ var d=new Date(); d.setDate(d.getDate()-(6-i)); var m=by[dayKey(d)]||0;
-    P.push({x:26+i*44.6,y:104-i*11.5-(i%2?8:0),m:m,pct:Math.min(1,m/goal),ok:m>=goal,l:LET[d.getDay()],today:i===6}); if(m>=goal) hit++; }
+    P.push({x:26+i*44.6,y:104-i*11.5-(i%2?8:0),m:m,pct:Math.min(1,m/goal),ok:m>=goal,sh:!!(window.__arena&&window.__arena.shielded(dayKey(d))),l:LET[d.getDay()],today:i===6}); if(m>=goal) hit++; }
   var s='<svg viewBox="0 0 320 140" xmlns="http://www.w3.org/2000/svg">'+
     '<polygon points="0,140 0,100 55,76 105,90 165,52 212,70 262,20 320,60 320,140" style="fill:var(--b1);opacity:.55"/>'+
     '<polygon points="246,34 262,20 277,37 268,33 262,39 255,32" style="fill:var(--text);opacity:.25"/>'+
     '<polygon points="0,140 0,120 70,108 140,98 205,78 268,50 320,62 320,140" style="fill:var(--s2)"/>';
   s+='<polyline points="'+P.map(function(p){ return p.x.toFixed(1)+','+p.y.toFixed(1); }).join(' ')+'" style="fill:none;stroke:var(--muted);stroke-width:1.5;stroke-dasharray:3 4"/>';
-  for(i=1;i<7;i++) if(P[i].ok&&P[i-1].ok) s+='<line class="pp-hit" x1="'+P[i-1].x.toFixed(1)+'" y1="'+P[i-1].y.toFixed(1)+'" x2="'+P[i].x.toFixed(1)+'" y2="'+P[i].y.toFixed(1)+'" style="stroke:var(--gold2);stroke-width:2.5"/>';
+  for(i=1;i<7;i++) if((P[i].ok||P[i].sh)&&(P[i-1].ok||P[i-1].sh)) s+='<line class="pp-hit" x1="'+P[i-1].x.toFixed(1)+'" y1="'+P[i-1].y.toFixed(1)+'" x2="'+P[i].x.toFixed(1)+'" y2="'+P[i].y.toFixed(1)+'" style="stroke:var(--gold2);stroke-width:2.5"/>';
   P.forEach(function(p){
     var C=2*Math.PI*9, x=p.x.toFixed(1), y=p.y.toFixed(1);
     s+='<g><title>'+(p.m/60).toFixed(1)+'h of '+(goal/60)+'h</title>';
@@ -9381,6 +9414,7 @@ function refreshPath(){
     s+='<circle cx="'+x+'" cy="'+y+'" r="9" style="fill:'+(p.ok?'var(--gold2)':'var(--bg)')+';stroke:var(--b2);stroke-width:1.5"'+(p.ok?' class="pp-hit"':'')+'/>';
     if(!p.ok&&p.pct>0) s+='<circle cx="'+x+'" cy="'+y+'" r="9" transform="rotate(-90 '+x+' '+y+')" style="fill:none;stroke:'+(p.pct>=.67?'var(--gold2)':'var(--verm)')+';stroke-width:2.5;stroke-linecap:round;stroke-dasharray:'+(C*p.pct).toFixed(1)+' '+C.toFixed(1)+'"/>';
     if(p.ok) s+='<text x="'+x+'" y="'+(p.y+3.6).toFixed(1)+'" text-anchor="middle" style="font-size:10px;font-weight:900;fill:#1a1208">✓</text>';
+    if(p.sh&&!p.ok) s+='<text x="'+x+'" y="'+(p.y+3.8).toFixed(1)+'" text-anchor="middle" style="font-size:10px">🛡</text>';
     s+='<text x="'+x+'" y="'+(p.y-15).toFixed(1)+'" text-anchor="middle" style="font-size:8px;font-family:var(--mono);fill:'+(p.m?'var(--text)':'var(--muted)')+'">'+(p.m?(p.m/60).toFixed(1)+'h':'·')+'</text>';
     s+='<text x="'+x+'" y="'+(p.y+23).toFixed(1)+'" text-anchor="middle" style="font-size:8px;font-family:var(--mono);letter-spacing:1px;fill:'+(p.today?'var(--verm)':'var(--muted2)')+'">'+(p.today?'TODAY':p.l)+'</text></g>';
   });
@@ -9450,5 +9484,231 @@ try{ boot(); }catch(e){ if(window.console) console.warn('dojo extras failed',e);
 })();
 </script>
 <!-- ═══ DOJO EXTRAS LAYER END ═══ -->
+<!-- ═══ ARENA LAYER START (v127) — additive, passive: streak shields, weekly boss, rival, tournament mode. Nothing here is playable; everything moves only from logged work. Delete from here to "ARENA LAYER END" to remove it. ═══ -->
+<style id="ar-css">
+.ar-card{background:var(--s1);border:1px solid var(--b1);padding:12px 18px 6px;margin-bottom:14px;}
+.ar-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:6px;}
+.ar-title{font-size:8px;letter-spacing:4px;color:var(--muted);text-transform:uppercase;}
+.ar-title b{font-family:var(--serif);font-size:13px;color:var(--gold);letter-spacing:2px;margin-right:8px;font-weight:900;}
+.ar-shields{font-size:9px;letter-spacing:1px;color:var(--muted2);white-space:nowrap;}
+.ar-shields i{font-style:normal;opacity:.22;filter:grayscale(1);margin-left:2px;}
+.ar-shields i.on{opacity:1;filter:none;}
+.ar-row{display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--b1);}
+.ar-kj{width:34px;height:34px;border:1.5px solid;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:900;font-size:18px;transform:rotate(-5deg);}
+.ar-line{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:11px;color:var(--text);}
+.ar-line small{font-size:9px;color:var(--muted2);letter-spacing:.5px;text-align:right;}
+.ar-line b{font-family:var(--serif);font-weight:900;}
+.ar-sub{font-size:9px;color:var(--muted2);letter-spacing:.5px;margin-top:4px;}
+.ar-bar{height:6px;background:var(--b1);border-radius:3px;overflow:hidden;margin-top:6px;position:relative;}
+.ar-bar i{display:block;height:100%;border-radius:3px;transition:width 1s cubic-bezier(.3,.9,.3,1);}
+.ar-bar.thin{height:4px;margin-top:4px;}
+.ar-bar u{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--text);opacity:.7;}
+.ar-row.dead .ar-kj{opacity:.35;} .ar-row.dead .ar-line{color:var(--muted2);}
+.ar-trow input{background:var(--bg);border:1px solid var(--b2);padding:6px 9px;color:var(--text);font-family:var(--mono);font-size:10px;outline:none;flex:1;min-width:0;}
+.ar-trow input:focus{border-color:var(--gold);}
+.ar-form{display:flex;gap:6px;margin-top:6px;}
+.jx-shields{position:relative;z-index:1;margin-top:6px;font-size:10px;letter-spacing:2px;white-space:nowrap;}
+.jx-shields i{font-style:normal;opacity:.2;filter:grayscale(1);}
+.jx-shields i.on{opacity:1;filter:none;}
+.rc-arena{font-size:10px;letter-spacing:.5px;color:var(--text);text-align:center;margin-top:8px;line-height:1.9;}
+.rc-arena b{font-family:var(--serif);font-weight:900;}
+</style>
+<script id="ar-js">
+(function(){
+'use strict';
+function lsGet(k,d){ try{ var v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+function F(){ return window.__fighter||null; }
+function say(m,ms){ try{ if(typeof toast==='function') toast(m,ms||3600); }catch(e){} }
+function esc(s){ return String(s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function goal(){ return (typeof DAILY_GOAL!=='undefined'&&DAILY_GOAL)||600; }
+function pad(n){ return String(n).padStart(2,'0'); }
+function dk(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function dayId(d){ d=d||new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+function h1(m){ return (Math.round(m/6)/10).toFixed(1)+'h'; }
+function weekStart(off){ var d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-d.getDay()+(off||0)*7); return d; }
+function sess(){ try{ return (typeof getSess==='function'?getSess():[])||[]; }catch(e){ return []; } }
+function minsBetween(a,b,list){ var A=+a,B=+b,t=0; (list||sess()).forEach(function(s){ var st=s.startTime||s.start; if(!st) return; var x=+new Date(st); if(x>=A&&x<B) t+=+s.mins||0; }); return t; }
+var booting=true;
+
+/* ════ 1. STREAK SHIELDS ════ */
+var LS_SH='jx_shields', MAX_SH=3;
+function getSh(){ var s=lsGet(LS_SH,null)||{}; s.count=+s.count||0; s.used=s.used||[]; s.earned=s.earned||[]; return s; }
+function grantShield(why){ var s=getSh(); if(s.count>=MAX_SH) return false; s.count++; lsSet(LS_SH,s); if(!booting) say('🛡 Streak shield earned ('+s.count+'/'+MAX_SH+') — '+why+' ✓'); return true; }
+function earnCheck(){
+  var q=lsGet('jx_quests',null), s=getSh(); if(!q||!q.all||s.earned.indexOf(q.date)>=0) return;
+  s.earned.push(q.date); s.earned=s.earned.slice(-90); lsSet(LS_SH,s); grantShield('all daily quests cleared');
+}
+function installStreak(){
+  var orig=window.calcStreak; if(typeof orig!=='function') return;
+  window.calcStreak=function(byDay){
+    try{
+      var s=getSh(), g=goal(), b={}, k, spent=[]; for(k in byDay) b[k]=byDay[k];
+      s.used.forEach(function(u){ b[u]=Math.max(b[u]||0,g); });
+      var today=new Date();
+      for(var i=1;i<=365;i++){
+        var d=new Date(today); d.setDate(today.getDate()-i); var key=dk(d);
+        if((b[key]||0)>=g) continue;
+        var p=new Date(today); p.setDate(today.getDate()-i-1);
+        /* a shield is spent only when it protects a real streak standing behind the missed day */
+        if(s.count>0&&(b[dk(p)]||0)>=g){ s.count--; s.used.push(key); b[key]=g; spent.push(key); continue; }
+        break;
+      }
+      if(spent.length){ s.used=s.used.slice(-120); lsSet(LS_SH,s); setTimeout(function(){ say('🛡 Shield spent — your streak survived '+spent.join(', ')+'. '+s.count+' left.',5000); renderShields(); },600); }
+      return orig(b);
+    }catch(e){ return orig(byDay); }
+  };
+}
+function shieldIcons(n){ var o=''; for(var i=0;i<MAX_SH;i++) o+='<i'+(i<n?' class="on"':'')+'>🛡</i>'; return o; }
+function renderShields(){
+  var s=getSh(), box=document.querySelector('.streak-box');
+  if(box){ var el=box.querySelector('.jx-shields'); if(!el){ el=document.createElement('div'); el.className='jx-shields'; box.appendChild(el); } el.innerHTML=shieldIcons(s.count); el.title=s.count+' of '+MAX_SH+' streak shields. Clear all three daily quests to earn one; one is spent automatically if you miss a day.'; }
+  var hd=document.getElementById('ar-shields'); if(hd) hd.innerHTML='Streak shields'+shieldIcons(s.count);
+}
+
+/* ════ 3. WEEKLY BOSS (passive: only logged work damages it) ════ */
+var LS_BOSS='jx_boss', LS_BONUS='jx_quest_bonus';
+var BOSSES=[
+  {kj:'怠',name:'Namake',title:'the Sloth Oni',color:0x2a1420,css:'#e0492a'},
+  {kj:'迷',name:'Mayoi',title:'the Wandering Mind',color:0x1a2040,css:'#6878c0'},
+  {kj:'恐',name:'Osore',title:'Fear of the Board',color:0x101a16,css:'#70b880'},
+  {kj:'慢',name:'Manshin',title:'the Proud One',color:0x3a2a08,css:'#e8b840'},
+  {kj:'疑',name:'Utagai',title:'the Doubter',color:0x221a2e,css:'#a878e8'},
+  {kj:'焦',name:'Aseri',title:'the Hasty Hand',color:0x3a1408,css:'#ff8a1a'},
+  {kj:'眠',name:'Nemuri',title:'the Drowsy Tengu',color:0x141c2a,css:'#5bc8d4'},
+  {kj:'乱',name:'Midare',title:'Lord of Chaos',color:0x2e0e1e,css:'#e0492a'}
+];
+function bossState(){
+  var ws=weekStart(0), id=dk(ws), b=lsGet(LS_BOSS,null), list=sess();
+  if(!b||b.week!==id){
+    var tot=0,n=0; for(var w=1;w<=4;w++){ var m=minsBetween(weekStart(-w),weekStart(-w+1),list); if(m>0){ tot+=m; n++; } }
+    var hp=Math.max(900,Math.round((n?tot/n:1500)*1.05/30)*30);
+    b={week:id,hp:hp,idx:Math.floor(+ws/6048e5)%BOSSES.length,defeated:false,q:{}};
+  }
+  var q=lsGet('jx_quests',null); if(q&&q.date===dayId()) b.q[q.date]=Object.keys(q.done||{}).length;
+  var qn=0; for(var k in b.q) qn+=+b.q[k]||0;
+  var dmg=minsBetween(ws,Date.now()+6e4,list)+qn*30, just=false;
+  if(dmg>=b.hp&&!b.defeated){
+    b.defeated=true; just=true;
+    var bn=lsGet(LS_BONUS,{}); ['power','discipline','focus','stamina','execution'].forEach(function(s){ bn[s]=(+bn[s]||0)+2; }); lsSet(LS_BONUS,bn);
+    lsSet('jx_boss_wins',(+lsGet('jx_boss_wins',0)||0)+1);
+  }
+  lsSet(LS_BOSS,b);
+  var B=BOSSES[b.idx]||BOSSES[0];
+  return {b:b,B:B,dmg:Math.min(dmg,b.hp),left:Math.max(0,b.hp-dmg),pct:Math.max(0,1-dmg/b.hp),just:just,daysLeft:7-new Date().getDay(),wins:+lsGet('jx_boss_wins',0)||0};
+}
+function bossRow(o){
+  var B=o.B;
+  if(o.b.defeated) return '<div class="ar-row dead"><div class="ar-kj" style="color:'+B.css+';border-color:'+B.css+'">討</div><div>'+
+    '<div class="ar-line"><span><b>'+B.name+'</b>, '+B.title+' — defeated</span><small>'+o.wins+' boss'+(o.wins===1?'':'es')+' beaten</small></div>'+
+    '<div class="ar-sub">Bonus paid to every stat. A new one arrives on Sunday.</div></div></div>';
+  return '<div class="ar-row"><div class="ar-kj" style="color:'+B.css+';border-color:'+B.css+';box-shadow:0 0 12px -3px '+B.css+'">'+B.kj+'</div><div>'+
+    '<div class="ar-line"><span>Weekly boss · <b>'+B.name+'</b>, '+B.title+'</span><small>'+o.daysLeft+' day'+(o.daysLeft===1?'':'s')+' left</small></div>'+
+    '<div class="ar-bar"><i style="width:'+(o.pct*100).toFixed(1)+'%;background:'+B.css+';box-shadow:0 0 8px '+B.css+'"></i></div>'+
+    '<div class="ar-sub">'+h1(o.dmg)+' of '+h1(o.b.hp)+' dealt · '+h1(o.left)+' to go. Every logged minute is a hit; each cleared quest hits for 0.5h.</div></div></div>';
+}
+
+/* ════ 8. RIVAL: last week's you ════ */
+function rivalState(){
+  var list=sess(), ws=weekStart(0), lw=weekStart(-1), now=Date.now();
+  var you=minsBetween(ws,now+6e4,list), ghost=minsBetween(lw,now-6048e5+6e4,list), lastTot=minsBetween(lw,ws,list), w=0,l=0;
+  for(var i=1;i<=8;i++){ var a=minsBetween(weekStart(-i),weekStart(-i+1),list), b=minsBetween(weekStart(-i-1),weekStart(-i),list); if(!a&&!b) continue; if(a>b) w++; else if(a<b) l++; }
+  return {you:you,ghost:ghost,lastTot:lastTot,diff:you-ghost,w:w,l:l};
+}
+function rivalRow(r){
+  var max=Math.max(r.lastTot,r.you,60), ahead=r.diff>=0, c=ahead?'var(--green2)':'var(--verm)';
+  return '<div class="ar-row"><div class="ar-kj" style="color:var(--muted2);border-color:var(--b2)">影</div><div>'+
+    '<div class="ar-line"><span>Rival · last week\'s you — <b style="color:'+c+'">'+(ahead?'+':'−')+h1(Math.abs(r.diff))+' '+(ahead?'ahead':'behind')+'</b></span><small>record '+r.w+'–'+r.l+'</small></div>'+
+    '<div class="ar-bar thin"><i style="width:'+(r.you/max*100).toFixed(1)+'%;background:var(--gold2)"></i></div>'+
+    '<div class="ar-bar thin"><i style="width:'+(r.ghost/max*100).toFixed(1)+'%;background:var(--muted2)"></i><u style="left:'+Math.min(99.5,r.lastTot/max*100).toFixed(1)+'%" title="where last week ended"></u></div>'+
+    '<div class="ar-sub">You '+h1(r.you)+' · him '+h1(r.ghost)+' by this point last week · he finished on '+h1(r.lastTot)+'.</div></div></div>';
+}
+
+/* ════ 7. TOURNAMENT MODE ════ */
+var LS_TR='jx_trophies', LS_TSKIP='jx_trophy_skip';
+function tourState(){
+  var se=null; try{ se=typeof getSeason==='function'?getSeason():null; }catch(e){}
+  var date=se&&se.tournamentDate||'', tr=lsGet(LS_TR,[]), days=null;
+  if(date){ var t0=new Date(); t0.setHours(0,0,0,0); days=Math.round((new Date(date+'T00:00:00')-t0)/864e5); }
+  var logged=tr.some(function(t){ return t.date===date; })||lsGet(LS_TSKIP,[]).indexOf(date)>=0;
+  return {date:date,days:days,trophies:tr,pending:!!date&&days<0&&!logged};
+}
+function tourRow(t){
+  var n=t.trophies.length, last=n?t.trophies[n-1]:null, shelf=n?('<small>🏆 × '+n+'</small>'):'<small>no trophies yet</small>', body;
+  if(t.pending) body='<div class="ar-line"><span>Tournament of <b>'+esc(t.date)+'</b> is over — how did it go?</span>'+shelf+'</div>'+
+    '<div class="ar-form"><input id="ar-tres" maxlength="60" placeholder="e.g. 6.5/9, +8 Elo, shared 2nd"><button class="sm-btn" id="ar-tadd">🏆 add to shelf</button><button class="sm-btn" id="ar-tskip">skip</button></div>';
+  else if(t.date&&t.days>=0) body='<div class="ar-line"><span>Tournament in <b style="color:'+(t.days<=7?'var(--verm)':'var(--gold2)')+'">'+(t.days===0?'TODAY':t.days+' day'+(t.days===1?'':'s'))+'</b> · '+esc(t.date)+'</span>'+shelf+'</div>'+
+    '<div class="ar-sub">'+(t.days<=7?'Final week — he is warming up. Sharpen, don\'t overload.':'The banner in the dojo counts down with you.')+'</div>';
+  else body='<div class="ar-line"><span>No tournament set</span>'+shelf+'</div><div class="ar-sub">Set a date in the Season card and the dojo will count down to it.'+(last?' Last: '+esc(last.date)+' — '+esc(last.result):'')+'</div>';
+  if(last&&(t.pending||(t.date&&t.days>=0))) body+='<div class="ar-sub">Last trophy: '+esc(last.date)+' — '+esc(last.result)+'</div>';
+  return '<div class="ar-kj" style="color:var(--gold2);border-color:var(--gold)">大</div><div>'+body+'</div>';
+}
+
+/* ── card ── */
+function cardEl(){
+  var el=document.getElementById('ar-card'); if(el) return el;
+  var host=document.getElementById('training-view'); if(!host) return null;
+  el=document.createElement('div'); el.className='ar-card'; el.id='ar-card';
+  el.innerHTML='<div class="ar-head"><div class="ar-title"><b>闘技</b>Arena — moves only when you train</div><div class="ar-shields" id="ar-shields"></div></div><div id="ar-boss"></div><div id="ar-rival"></div><div class="ar-row ar-trow" id="ar-tour"></div>';
+  var fg=document.getElementById('fg-card');
+  if(fg&&fg.parentNode===host) host.insertBefore(el,fg.nextSibling); else host.insertBefore(el,host.firstChild);
+  el.addEventListener('click',function(e){
+    var t=tourState(); if(!t.date) return;
+    if(e.target.id==='ar-tadd'){ var v=(document.getElementById('ar-tres').value||'').trim()||'played'; var tr=lsGet(LS_TR,[]); tr.push({date:t.date,result:v.slice(0,60)}); lsSet(LS_TR,tr); document.getElementById('ar-tour').innerHTML=''; say('🏆 Trophy placed on the shelf — '+esc(v)); var f=F(); if(f) f.bow(); refresh(); }
+    else if(e.target.id==='ar-tskip'){ var sk=lsGet(LS_TSKIP,[]); sk.push(t.date); lsSet(LS_TSKIP,sk); document.getElementById('ar-tour').innerHTML=''; refresh(); }
+  });
+  return el;
+}
+var last={};
+function setHTML(id,html){ var el=document.getElementById(id); if(el&&last[id]!==html){ el.innerHTML=html; last[id]=html; } }
+function refresh(){
+  var el=cardEl(); if(!el) return;
+  earnCheck();
+  var o=bossState(), r=rivalState(), t=tourState();
+  setHTML('ar-boss',bossRow(o)); setHTML('ar-rival',rivalRow(r));
+  var inp=document.getElementById('ar-tres');
+  if(!(inp&&(document.activeElement===inp||inp.value))) setHTML('ar-tour',tourRow(t));
+  renderShields();
+  if(o.just){ grantShield('boss defeated'); renderShields(); if(!booting){ say('🏆 討伐 — '+o.B.name+', '+o.B.title+', is defeated. +2 to every stat.',5000); } var f0=F(); if(f0){ f0.bow(); f0.refresh(); } }
+  var f=F(), sc=f&&f.scene&&f.scene();
+  if(sc){
+    sc.boss({alive:!o.b.defeated,pct:o.pct,color:o.B.color});
+    sc.banner(t.date&&t.days>=0?(t.days===0?'大会 本日':'大会 あと'+t.days+'日'):'');
+    sc.trophies(Math.min(5,t.trophies.length));
+    sc.warm(!!t.date&&t.days>=0&&t.days<=7);
+  }
+  return {boss:o,rival:r,tour:t};
+}
+
+/* round-complete: what this round did in the arena */
+function roundLines(mins){
+  var g=document.getElementById('rc-gains'), btn=document.getElementById('rc-next'); if(!btn) return;
+  var st=refresh(); if(!st) return;
+  var old=document.getElementById('rc-arena'); if(old) old.remove();
+  var el=document.createElement('div'); el.className='rc-arena'; el.id='rc-arena';
+  var o=st.boss, r=st.rival, ahead=r.diff>=0;
+  el.innerHTML=(o.b.defeated?'<div>⚔ <b style="color:'+o.B.css+'">'+o.B.name+'</b> is defeated this week.</div>':'<div>⚔ −'+h1(mins)+' to <b style="color:'+o.B.css+'">'+o.B.name+'</b> · '+Math.round(o.pct*100)+'% HP left</div>')+
+    '<div>影 '+(ahead?'+':'−')+h1(Math.abs(r.diff))+' '+(ahead?'ahead of':'behind')+' last week\'s you</div>';
+  if(g) g.appendChild(el); else btn.parentNode.insertBefore(el,btn);
+}
+
+var tmr=0;
+function hook(name,after){
+  var f=window[name]; if(typeof f!=='function') return;
+  window[name]=function(){ var out=f.apply(this,arguments); try{ if(after) after(arguments); else { clearTimeout(tmr); tmr=setTimeout(refresh,450); } }catch(e){} return out; };
+}
+function boot(){
+  installStreak();
+  refresh();
+  ['renderApp','renderDaily','toggleTask','toggleHabit','renderSeason'].forEach(function(n){ hook(n); });
+  hook('showRoundComplete',function(a){ try{ roundLines(+a[1]||0); }catch(e){} });
+  setInterval(refresh,60000);
+  setTimeout(function(){ booting=false; },5000);
+  window.__arena={refresh:refresh,shielded:function(key){ return getSh().used.indexOf(key)>=0; },grant:grantShield};
+}
+try{ boot(); }catch(e){ if(window.console) console.warn('arena layer failed',e); }
+})();
+</script>
+<!-- ═══ ARENA LAYER END ═══ -->
 </body>
 </html>
