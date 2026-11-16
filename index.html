@@ -8994,6 +8994,28 @@ function start3D(THREE){
   var bar=mat(0x170f08);
   [-.575,-.19,.19,.575].forEach(function(dx){ mesh(box(.04,1.66,.04),bar,1.12+dx,1.85,-1.54,room); });
   [-.8,-.27,.27,.8].forEach(function(dy){ mesh(box(1.19,.04,.04),bar,1.12,1.85+dy,-1.54,room); });
+  /* outside the window: a branch, and whatever the season and the weather bring */
+  var outG=new THREE.Group(); outG.position.set(1.12,1.85,-1.566); room.add(outG);
+  var BRM=new THREE.MeshBasicMaterial({color:0x1a120a}), LEAF=new THREE.MeshBasicMaterial({color:0xd9541e});
+  mesh(box(1.3,.035,.004),BRM,-.05,.5,0,outG).rotation.z=-.22; mesh(box(.6,.025,.004),BRM,.22,.3,0,outG).rotation.z=.35; mesh(box(.4,.02,.004),BRM,-.3,.36,0,outG).rotation.z=-.6;
+  var tufts=[]; [[-.46,.6],[-.22,.55],[.04,.5],[.3,.43],[.42,.4],[.14,.26],[0,.2],[.36,.54],[-.36,.44],[-.42,.26],[.3,.3]].forEach(function(p){ tufts.push(mesh(new THREE.CircleGeometry(.07+Math.random()*.03,7),LEAF,p[0],p[1],.002,outG)); });
+  var ON=48, og=new THREE.BufferGeometry(), op=new Float32Array(ON*3), os=[];
+  for(var oi=0;oi<ON;oi++) os.push({x:(Math.random()-.5)*1.1,y:(Math.random()-.5)*1.56,v:.6+Math.random()*.8,w:Math.random()*6.28});
+  og.setAttribute('position',new THREE.BufferAttribute(op,3));
+  var OUTP=new THREE.PointsMaterial({color:0xd9541e,size:.05,transparent:true,opacity:.95,depthWrite:false});
+  var outPts=new THREE.Points(og,OUTP); outPts.position.z=.004; outG.add(outPts);
+  var mistM=new THREE.MeshBasicMaterial({color:0xb9c2ca,transparent:true,opacity:0,depthWrite:false}); mesh(new THREE.PlaneGeometry(1.15,1.6),mistM,0,0,.006,outG);
+  var SEASONS={spring:{leaf:0xffb7c5,p:0xffc6d3,fall:.16,sway:.14,size:.045,n:26,tuft:true},summer:{leaf:0x4a9060,p:0xe8ff9a,fall:-.03,sway:.2,size:.035,n:9,tuft:true},
+    autumn:{leaf:0xd9541e,p:0xe0702a,fall:.2,sway:.16,size:.05,n:20,tuft:true},winter:{leaf:0xf4f4f4,p:0xffffff,fall:.26,sway:.07,size:.04,n:34,tuft:false}};
+  var outM={fall:.2,sway:.16,n:20};
+  function setOutside(season,weather){
+    var q=SEASONS[season]||SEASONS.autumn; LEAF.color.set(q.leaf); tufts.forEach(function(m){ m.visible=q.tuft; });
+    outM={fall:q.fall,sway:q.sway,n:q.n}; OUTP.color.set(q.p); OUTP.size=q.size; mistM.opacity=0;
+    if(weather==='rain'||weather==='storm'){ outM={fall:weather==='storm'?2.4:1.7,sway:.02,n:ON}; OUTP.color.set(0xa8c0e0); OUTP.size=.03; mistM.opacity=weather==='storm'?.5:.34; }
+    else if(weather==='snow'){ outM={fall:.3,sway:.08,n:ON}; OUTP.color.set(0xffffff); OUTP.size=.045; mistM.opacity=.25; }
+    else if(weather==='fog'){ mistM.opacity=.6; }
+    else if(weather==='cloud'){ mistM.opacity=.22; }
+  }
   /* hanging scroll */
   var scT=tex(128,320,function(){});
   function drawScroll(){
@@ -9187,6 +9209,15 @@ function start3D(THREE){
     glow.intensity=(tier>=2?1+tier*.45:0)+fl*8+k*2+(mode==='train'?1.2:0);
     lanL.intensity=TOD[todName].lan*(1+Math.sin(t*9)*.04+Math.sin(t*23)*.03);
     if(ki.visible){ for(var i=0;i<N;i++){ var p=ps[i]; p.y+=p.v*dt*(1+fl*3); if(p.y>2.7){ p.y=0; p.a=Math.random()*6.28; } p.a+=dt*.6; var rr=p.r*(1-p.y/4.2); pp[i*3]=Math.cos(p.a)*rr; pp[i*3+1]=p.y+.06; pp[i*3+2]=Math.sin(p.a)*rr; } pg.attributes.position.needsUpdate=true; }
+    for(var oi2=0;oi2<ON;oi2++){
+      var oq=os[oi2];
+      if(oi2>=outM.n){ op[oi2*3+1]=9; continue; }
+      oq.y-=outM.fall*oq.v*dt; oq.x+=Math.sin(t*1.3+oq.w)*outM.sway*dt;
+      if(oq.y<-.78){ oq.y=.78; oq.x=(Math.random()-.5)*1.1; } else if(oq.y>.78){ oq.y=-.78; oq.x=(Math.random()-.5)*1.1; }
+      if(oq.x>.56) oq.x=-.56; else if(oq.x<-.56) oq.x=.56;
+      op[oi2*3]=oq.x; op[oi2*3+1]=oq.y; op[oi2*3+2]=0;
+    }
+    og.attributes.position.needsUpdate=true;
     if(bossOn){
       if(bossHit>0) bossHit=Math.max(0,bossHit-dt*3); if((k>.85||j>.85)&&bossHit<=0) bossHit=1;
       bossG.scale.setScalar(bossS*(1+bossHit*.12));
@@ -9202,8 +9233,11 @@ function start3D(THREE){
     banner:function(txt){ banM.visible=!!txt; if(!txt||banM._t===txt) return; banM._t=txt; var x=banT.x; x.fillStyle='#8a2a18'; x.fillRect(0,0,256,64); x.fillStyle='#e8b840'; x.fillRect(0,0,256,4); x.fillRect(0,60,256,4);
       x.fillStyle='#f5ecd6'; x.textAlign='center'; x.textBaseline='middle'; x.font='900 30px "Noto Serif JP",serif'; x.fillText(txt,128,33); banT.t.needsUpdate=true; },
     trophies:function(n){ shelf.visible=n>0; cups.forEach(function(c,i){ c.visible=i<n; }); },
-    warm:function(v){ warm=!!v; }};
+    warm:function(v){ warm=!!v; },
+    outside:function(season,weather){ setOutside(season,weather); }};
+  setOutside((function(){ var m=new Date().getMonth(); return m>=2&&m<=4?'spring':m>=5&&m<=7?'summer':m>=8&&m<=10?'autumn':'winter'; })(),'clear');
   setTier(state?state.tier:0); setTOD(); pollState(); size(); go();
+  try{ if(window.__look) window.__look.outside(); }catch(e){}
   try{ if(window.__arena) window.__arena.refresh(); }catch(e){}
 }
 
@@ -9894,5 +9928,231 @@ try{ boot(); }catch(e){ if(window.console) console.warn('long road layer failed'
 })();
 </script>
 <!-- ═══ LONG ROAD LAYER END ═══ -->
+<!-- ═══ LOOK LAYER START (v131) — additive, visual only: tidy zones, seasons + weather, brush headings, paper + ink wash, seal scroll, ensō timer, palettes. Delete from here to "LOOK LAYER END" to remove it. ═══ -->
+<style id="lk-css">
+/* 9. palettes (dark family; the light toggle still works on its own) */
+body.th-ink:not(.light){--bg:#070b14;--s1:#0c1220;--s2:#121a2c;--b1:#1a2438;--b2:#26324c;--text:#cfd8ea;--muted:#3d4a66;--muted2:#6577a0;--gold:#c9a24a;--gold2:#e6c874;--verm:#d0503a;}
+body.th-autumn:not(.light){--bg:#120a06;--s1:#1a0f08;--s2:#24150b;--b1:#301c0e;--b2:#452a14;--text:#ecd9bd;--muted:#6a4a2c;--muted2:#94703f;--gold:#d98a1e;--gold2:#f0a93c;--verm:#c9401c;}
+body{transition:background .5s,color .5s;}
+
+/* 4. paper grain + ink wash */
+#lk-paper{position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .95 0 0 0 0 .85 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(ellipse 60% 38% at 8% 0%,rgba(232,184,64,.06),transparent 70%),
+    radial-gradient(ellipse 46% 52% at 100% 58%,rgba(104,120,192,.055),transparent 70%),
+    radial-gradient(ellipse 70% 36% at 28% 100%,rgba(200,72,40,.05),transparent 70%);}
+body.light #lk-paper{mix-blend-mode:multiply;opacity:.9;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .2 0 0 0 0 .15 0 0 0 0 .08 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(ellipse 60% 38% at 8% 0%,rgba(20,17,13,.07),transparent 70%),
+    radial-gradient(ellipse 46% 52% at 100% 58%,rgba(20,17,13,.05),transparent 70%),
+    radial-gradient(ellipse 70% 36% at 28% 100%,rgba(168,48,32,.05),transparent 70%);}
+
+/* 3. brush-stroke headings */
+.sec-hdr .sec-kj{font-size:15px;color:var(--gold);opacity:.9;font-weight:900;}
+.sec-hdr .sec-line{height:7px;background:var(--b2);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 10' preserveAspectRatio='none'%3E%3Cpath d='M0 5C18 1 60 2 120 3S262 6 330 4 392 4 400 5C388 7 340 8 262 8S82 9 30 8 4 7 0 5Z'/%3E%3Cpath d='M250 1.2 366 .6 300 2.2Z M40 9.4 140 9.8 90 8.6Z' opacity='.6'/%3E%3C/svg%3E") left center/100% 100% no-repeat;
+          mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 10' preserveAspectRatio='none'%3E%3Cpath d='M0 5C18 1 60 2 120 3S262 6 330 4 392 4 400 5C388 7 340 8 262 8S82 9 30 8 4 7 0 5Z'/%3E%3Cpath d='M250 1.2 366 .6 300 2.2Z M40 9.4 140 9.8 90 8.6Z' opacity='.6'/%3E%3C/svg%3E") left center/100% 100% no-repeat;}
+.sec-hdr.bx-wait .sec-line{clip-path:inset(0 100% 0 0);}
+.sec-hdr.bx-wait .sec-kj,.sec-hdr.bx-wait .sec-lbl{opacity:0;}
+.sec-hdr.bx-in .sec-line{animation:bx-line 1s cubic-bezier(.3,.7,.2,1) .15s both;}
+.sec-hdr.bx-in .sec-kj{animation:bx-ink .8s cubic-bezier(.2,.8,.2,1) both;}
+.sec-hdr.bx-in .sec-lbl{animation:bx-fade .6s ease .1s both;}
+@keyframes bx-line{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes bx-ink{0%{opacity:0;filter:blur(7px);transform:scale(1.7) rotate(-8deg)}100%{opacity:.9;filter:none;transform:none}}
+@keyframes bx-fade{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+
+/* 1. zones */
+.zn{margin-bottom:8px;}
+.zn-head{cursor:default;margin:26px 0 16px;}
+.zn-head .sec-lbl{font-size:9px;color:var(--muted2);}
+.zn-head .sec-kj{font-size:20px;}
+.zn.can .zn-head{cursor:pointer;}
+.zn-tog{background:none;border:1px solid var(--b1);color:var(--muted2);font-family:var(--mono);font-size:9px;padding:2px 8px;cursor:pointer;letter-spacing:1px;flex-shrink:0;}
+.zn-tog:hover{border-color:var(--gold);color:var(--gold);}
+.zn.closed .zn-body{display:none;}
+.zn.closed .zn-head{margin-bottom:6px;}
+
+/* 5. seal scroll */
+.sl-wrap{margin:8px 0 30px;}
+.sl-scroll{position:relative;background:linear-gradient(#ece2c9,#dfd2b0);padding:14px 22px;display:flex;flex-wrap:wrap;gap:7px;min-height:58px;align-items:center;
+  box-shadow:inset 0 0 30px rgba(120,90,40,.25),0 6px 18px -8px rgba(0,0,0,.6);border-left:9px solid #2a1a0c;border-right:9px solid #2a1a0c;}
+.sl-scroll::before,.sl-scroll::after{content:'';position:absolute;top:-4px;bottom:-4px;width:5px;background:#c8900a;border-radius:2px;}
+.sl-scroll::before{left:-11px;} .sl-scroll::after{right:-11px;}
+.sl-seal{width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:900;font-size:14px;line-height:1;color:#efe6cf;background:#c0392b;border-radius:4px;box-shadow:inset 0 0 0 1.5px rgba(239,230,207,.55),0 0 0 1px #a02c20;opacity:.92;cursor:default;transition:transform .2s;}
+.sl-seal:hover{transform:scale(1.35) rotate(0deg) !important;z-index:2;opacity:1;}
+.sl-seal.round{border-radius:50%;background:#b8452f;}
+.sl-seal.gold{background:#b07a10;box-shadow:inset 0 0 0 1.5px rgba(255,241,191,.7),0 0 0 1px #8a5f08;}
+.sl-seal.ink{background:#1a1510;}
+.sl-empty{font-size:10px;color:#6a5a3a;letter-spacing:1px;font-family:var(--mono);}
+.sl-cap{display:flex;justify-content:space-between;font-size:8px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-top:7px;}
+
+/* 6. ensō timer */
+.enso{position:relative;width:118px;height:118px;margin:0 0 8px auto;display:flex;align-items:center;justify-content:center;color:var(--green2);}
+.timer-bar.break .enso{color:var(--gold2);}
+.enso svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;}
+.enso .t-time{position:relative;z-index:1;font-size:24px;}
+.enso-arc,.enso-dry{transition:stroke-dasharray 1s linear;}
+@media (max-width:560px){ .enso{width:96px;height:96px;} .enso .t-time{font-size:19px;} }
+
+/* 2. seasonal drift on the page (spring petals, autumn leaves, winter snow; summer keeps the embers) */
+@keyframes lk-fall{0%{transform:translate3d(0,0,0) rotate(0deg);opacity:0}10%{opacity:var(--o,.5)}85%{opacity:var(--o,.5)}100%{transform:translate3d(var(--dx,30px),112vh,0) rotate(540deg);opacity:0}}
+body.sz-spring #jx-embers i,body.sz-autumn #jx-embers i,body.sz-winter #jx-embers i{bottom:auto;top:-14px;box-shadow:none;animation-name:lk-fall;}
+body.sz-spring #jx-embers i{background:#ffc6d3;border-radius:70% 0 70% 0;width:7px !important;height:6px !important;}
+body.sz-autumn #jx-embers i{background:#d9541e;border-radius:0 70% 0 70%;width:8px !important;height:6px !important;}
+body.sz-autumn #jx-embers i:nth-child(3n){background:#e8a030;}
+body.sz-winter #jx-embers i{background:#fff;border-radius:50%;}
+.fg-wx{position:absolute;right:7px;top:5px;font-size:8px;letter-spacing:2px;color:#d8cdb8;opacity:.65;text-transform:uppercase;pointer-events:none;text-shadow:0 1px 3px #000;}
+@media (prefers-reduced-motion:reduce){ .sec-hdr.bx-in .sec-line,.sec-hdr.bx-in .sec-kj,.sec-hdr.bx-in .sec-lbl{animation:none;} }
+</style>
+<script id="lk-js">
+(function(){
+'use strict';
+function lsGet(k,d){ try{ var v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function say(m){ try{ if(typeof toast==='function') toast(m,3200); }catch(e){} }
+function $(id){ return document.getElementById(id); }
+
+/* ════ 4. paper ════ */
+function paper(){ if($('lk-paper')) return; var d=document.createElement('div'); d.id='lk-paper'; document.body.insertBefore(d,document.body.firstChild); }
+
+/* ════ 9. palettes ════ */
+var PALS=['dojo','ink','autumn'], PAL_LBL={dojo:'🎨 dojo',ink:'🎨 night ink',autumn:'🎨 autumn'};
+function applyPal(p){ document.body.classList.toggle('th-ink',p==='ink'); document.body.classList.toggle('th-autumn',p==='autumn'); var b=$('lk-pal'); if(b) b.textContent=PAL_LBL[p]; }
+function palette(){
+  var p=lsGet('jx_palette','dojo'); if(PALS.indexOf(p)<0) p='dojo';
+  var hdr=document.querySelector('.hdr-right'), tb=$('theme-btn');
+  if(hdr&&!$('lk-pal')){
+    var b=document.createElement('button'); b.className='sm-btn'; b.id='lk-pal'; b.title='Colour palette (dark themes)';
+    b.addEventListener('click',function(){ p=PALS[(PALS.indexOf(p)+1)%PALS.length]; lsSet('jx_palette',p); applyPal(p); });
+    if(tb&&tb.parentNode===hdr) hdr.insertBefore(b,tb.nextSibling); else hdr.insertBefore(b,hdr.firstChild);
+  }
+  applyPal(p);
+}
+
+/* ════ 1. zones ════ */
+function zones(){
+  var tv=$('training-view'); if(!tv||tv.querySelector('.zn')) return;
+  var closed=lsGet('jx_zones',{});
+  function pick(sel){ var el=sel.charAt(0)==='#'?$(sel.slice(1)):tv.querySelector(':scope > '+sel); return el&&el.parentNode===tv?el:null; }
+  function make(id,kj,title,sels,can){
+    var z=document.createElement('section'); z.className='zn'+(can?' can':'')+(can&&closed[id]?' closed':''); z.id='zn-'+id;
+    var h=document.createElement('div'); h.className='sec-hdr zn-head';
+    h.innerHTML='<div class="sec-kj">'+kj+'</div><div class="sec-lbl">'+title+'</div><div class="sec-line"></div>'+(can?'<button class="zn-tog" type="button"></button>':'');
+    var body=document.createElement('div'); body.className='zn-body';
+    sels.forEach(function(s){ var el=typeof s==='string'?pick(s):s; if(el) body.appendChild(el); });
+    z.appendChild(h); z.appendChild(body);
+    if(can){
+      var tg=h.querySelector('.zn-tog'); var upd=function(){ tg.textContent=z.classList.contains('closed')?'show ▸':'hide ▾'; }; upd();
+      h.addEventListener('click',function(){ z.classList.toggle('closed'); closed[id]=z.classList.contains('closed')?1:0; lsSet('jx_zones',closed); upd(); });
+    }
+    return z;
+  }
+  var bg=$('bottle-grid'), mh=bg&&bg.previousElementSibling&&bg.previousElementSibling.classList.contains('sec-hdr')?bg.previousElementSibling:null;
+  var seals=document.createElement('div'); seals.className='sl-wrap'; seals.id='lk-seals';
+  var zs=make('start','始','Start a session',['#quote-block','#timer-bar','#break-bank-bar','#checkin-banner','#break-chip','#remote-timer-bar','#quick-timer','.cal-section'],false);
+  var zt=make('today','今日','Today',['#qs-card','.two-col'],true);
+  var zl=make('long','長期','The long game',['#lr-wrap','#ar-card','#season-card','#levers-card','#week-cal-wrap',mh,'#bottle-grid','.bottle-add-btn','#mastered-log-area',seals],true);
+  var fg=$('fg-card'), ref=fg&&fg.parentNode===tv?fg.nextSibling:tv.firstChild;
+  tv.insertBefore(zs,ref); tv.insertBefore(zt,ref); tv.insertBefore(zl,ref);
+}
+
+/* ════ 3. brush headings ════ */
+var io=null;
+function brush(){
+  if(!window.IntersectionObserver) return;
+  if(!io) io=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.remove('bx-wait'); e.target.classList.add('bx-in'); io.unobserve(e.target); } }); },{threshold:.4});
+  [].forEach.call(document.querySelectorAll('.sec-hdr:not(.bx)'),function(h){ h.classList.add('bx','bx-wait'); io.observe(h); });
+}
+
+/* ════ 5. seal scroll ════ */
+function hash(s){ var h=0; for(var i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))|0; return h; }
+var lastSeals='';
+function seals(){
+  var el=$('lk-seals'); if(!el) return;
+  var out=[], f=window.__fighter, n=0;
+  function add(kj,cls,title){ var r=(Math.abs(hash(kj+title+n))%15)-7; n++; out.push('<div class="sl-seal '+cls+'" style="transform:rotate('+r+'deg)" title="'+esc(title)+'">'+kj+'</div>'); }
+  try{ if(f){ var t=f.compute().tier; for(var i=1;i<=t;i++) add(f.TIERS[i].kj.charAt(0),'ink',f.TIERS[i].name+' attained'); } }catch(e){}
+  (lsGet('jx_trophies',[])||[]).forEach(function(t){ add('杯','gold','Tournament '+t.date+' — '+t.result); });
+  (lsGet('jx_roads',[])||[]).forEach(function(r){ var st=Math.ceil(r.total/(r.stage||10)); for(var i=1;i<=(+r.paid||0);i++) add(r.finished&&i===+r.paid?'完':'段','',r.finished&&i===+r.paid?'“'+r.name+'” completed':'“'+r.name+'” — stage '+i+' of '+st); });
+  var days=((lsGet('jx_shields',{})||{}).earned||[]), extra=Math.max(0,days.length-60);
+  days.slice(-60).forEach(function(d){ add('日','round','All daily quests cleared — '+d); });
+  var html='<div class="sl-scroll">'+(out.length?out.join(''):'<div class="sl-empty">Your seals collect here: belts, trophies, road stages, and every day you clear all three quests.</div>')+'</div>'+
+    '<div class="sl-cap"><span>印 — seals earned</span><span>'+(out.length+extra)+' total</span></div>';
+  if(html!==lastSeals){ el.innerHTML=html; lastSeals=html; }
+}
+
+/* ════ 6. ensō timer ════ */
+var C1=2*Math.PI*50, C2=2*Math.PI*45;
+function ensoBuild(){
+  var tt=$('t-time'); if(!tt||tt.parentNode.classList.contains('enso')) return;
+  var w=document.createElement('div'); w.className='enso';
+  w.innerHTML='<svg viewBox="0 0 120 120"><defs><filter id="lk-rough" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency=".035 .6" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="5"/></filter></defs>'+
+    '<circle cx="60" cy="60" r="50" fill="none" stroke="currentColor" stroke-opacity=".12" stroke-width="2" stroke-dasharray="2 5"/>'+
+    '<g filter="url(#lk-rough)" transform="rotate(-105 60 60)"><circle class="enso-arc" id="enso-arc" cx="60" cy="60" r="50" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" stroke-dasharray="0 '+C1.toFixed(1)+'"/>'+
+    '<circle class="enso-dry" id="enso-dry" cx="60" cy="60" r="45" fill="none" stroke="currentColor" stroke-opacity=".45" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="0 '+C2.toFixed(1)+'"/></g></svg>';
+  tt.parentNode.insertBefore(w,tt); w.appendChild(tt);
+}
+function ensoTick(){
+  var a=$('enso-arc'), d=$('enso-dry'); if(!a) return;
+  var p=0;
+  try{
+    if(typeof activeTimer!=='undefined'&&activeTimer){
+      var now=activeTimer.paused&&activeTimer.pausedAt?activeTimer.pausedAt:Date.now(), el=(now-(activeTimer.phaseStart||activeTimer.startTime))/1000;
+      if(activeTimer.isPomo){ var dur=(activeTimer.phase==='work'?activeTimer.pw:activeTimer.pb)*60; p=dur>0?el/dur:0; }
+      else p=(el%3600)/3600;
+    }
+  }catch(e){}
+  p=Math.max(0,Math.min(1,p));
+  a.setAttribute('stroke-dasharray',(C1*p*.985).toFixed(1)+' '+C1.toFixed(1));
+  d.setAttribute('stroke-dasharray',(C2*Math.max(0,p-.04)*.97).toFixed(1)+' '+C2.toFixed(1));
+}
+
+/* ════ 2 + 7. seasons and weather ════ */
+var TZLOC={'Asia/Jerusalem':[32.07,34.79]};
+function loc(){ var l=lsGet('jx_loc',null); if(l&&l.length===2) return l; try{ return TZLOC[Intl.DateTimeFormat().resolvedOptions().timeZone]||null; }catch(e){ return null; } }
+function season(){ var m=new Date().getMonth(), s=m>=2&&m<=4?'spring':m>=5&&m<=7?'summer':m>=8&&m<=10?'autumn':'winter', l=loc(); if(l&&l[0]<0) s={spring:'autumn',summer:'winter',autumn:'spring',winter:'summer'}[s]; return s; }
+var WX_LBL={clear:'',cloud:'曇 cloudy',fog:'霧 mist',rain:'雨 rain',snow:'雪 snow',storm:'嵐 storm'};
+function wxKind(code,cloud){ if(code>=95) return 'storm'; if((code>=51&&code<=67)||(code>=80&&code<=82)) return 'rain'; if((code>=71&&code<=77)||code===85||code===86) return 'snow'; if(code===45||code===48) return 'fog'; if(code===3||cloud>=85) return 'cloud'; return 'clear'; }
+function outside(){
+  var s=season(), w=(lsGet('jx_wx',null)||{}).kind||'clear';
+  ['spring','summer','autumn','winter'].forEach(function(x){ document.body.classList.toggle('sz-'+x,x===s); });
+  var f=window.__fighter, sc=f&&f.scene&&f.scene(); if(sc&&sc.outside) sc.outside(s,w);
+  var st=$('fg-stage'); if(st){ var l=st.querySelector('.fg-wx'); if(!l){ l=document.createElement('div'); l.className='fg-wx'; st.appendChild(l); } l.textContent=WX_LBL[w]||''; }
+  return !!(sc&&sc.outside);
+}
+function weather(force){
+  var l=loc(), c=lsGet('jx_wx',null); if(!l||!window.fetch) return;
+  if(!force&&c&&Date.now()-c.t<30*60000) return;
+  fetch('https://api.open-meteo.com/v1/forecast?latitude='+l[0]+'&longitude='+l[1]+'&current=weather_code,cloud_cover')
+    .then(function(r){ return r.json(); })
+    .then(function(d){ var cur=d&&d.current; if(!cur||typeof cur.weather_code!=='number') return; lsSet('jx_wx',{t:Date.now(),kind:wxKind(cur.weather_code,+cur.cloud_cover||0)}); outside(); })
+    .catch(function(){});
+}
+function locButton(){
+  var panel=document.querySelector('.jx-menu-panel'); if(!panel||$('lk-loc')||!navigator.geolocation) return;
+  var b=document.createElement('button'); b.className='sm-btn'; b.id='lk-loc'; b.textContent='📍 weather place'; b.title='Use this device\'s location for the weather outside the dojo window';
+  b.addEventListener('click',function(){ navigator.geolocation.getCurrentPosition(function(p){ lsSet('jx_loc',[Math.round(p.coords.latitude*100)/100,Math.round(p.coords.longitude*100)/100]); say('✓ Weather place set'); weather(true); },function(){ say('Location not shared — keeping the default'); }); });
+  panel.appendChild(b);
+}
+
+/* ── boot ── */
+var tmr=0;
+function hook(name){ var f=window[name]; if(typeof f!=='function') return; window[name]=function(){ var out=f.apply(this,arguments); try{ clearTimeout(tmr); tmr=setTimeout(function(){ seals(); brush(); },700); }catch(e){} return out; }; }
+function boot(){
+  paper(); palette(); zones(); ensoBuild(); locButton(); seals(); brush(); outside(); weather(false);
+  ['renderApp','renderDaily','renderSeason'].forEach(hook);
+  setInterval(ensoTick,1000); ensoTick();
+  setInterval(function(){ seals(); brush(); },5000);
+  var tries=0, iv=setInterval(function(){ if(outside()||++tries>30) clearInterval(iv); },1500);
+  setInterval(function(){ weather(false); outside(); },10*60000);
+  window.__look={outside:outside,weather:weather,seals:seals};
+}
+try{ boot(); }catch(e){ if(window.console) console.warn('look layer failed',e); }
+})();
+</script>
+<!-- ═══ LOOK LAYER END ═══ -->
 </body>
 </html>
