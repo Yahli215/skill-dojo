@@ -8555,7 +8555,7 @@ var last={x:innerWidth/2,y:innerHeight/2,t:0};
 var lastCelebrate=0;
 var GOLD=['#e8b840','#c8900a','#fff1bf'], VERM=['#e0492a','#c84828','#ffb49a'], GREEN=['#70b880','#4a9060','#d6ffe0'];
 var PARTY=['#e8b840','#c84828','#fff1bf','#70b880','#a878e8','#6878c0'];
-function on(){ return mode!=='off'; }
+function on(){ return mode!=='off'&&!document.body.classList.contains('calm'); }
 function isLight(){ return document.body.classList.contains('light'); }
 
 /* ── canvas particles ── */
@@ -8679,12 +8679,14 @@ function drum(t0,vol){
 function bell(t0,vol){ [1,2.76,5.4,8.93].forEach(function(r,i){ tone(330*r,t0,3.2/(i+1),vol/(i+1.4),'sine'); }); }
 function sound(kind){
   if(mode!=='sound') return;
+  if(document.body.classList.contains('calm')){ if(kind!=='bell'&&kind!=='start') return; kind='calm'; }
   try{
     ac=ac||new (window.AudioContext||window.webkitAudioContext)(); if(ac.state==='suspended') ac.resume();
     var t=ac.currentTime;
     if(kind==='tick'){ noise(t,.03,.16,rnd(1900,2600),4); tone(rnd(480,560),t,.045,.03,'sine'); }
     else if(kind==='start'){ drum(t,.55); drum(t+.3,.38); drum(t+.45,.65); }
     else if(kind==='bell'){ bell(t,.14); }
+    else if(kind==='calm'){ tone(196,t,4.2,.13,'sine'); tone(196*2.76,t,1.8,.03,'sine'); }
     else if(kind==='win'){ tone(587.3,t,.35,.07); tone(880,t+.09,.45,.07); }
     else if(kind==='big'){ drum(t,.5); [587.3,740,880,1174.7,1480].forEach(function(f,i){ tone(f,t+.08+i*.09,.6,.07); }); }
   }catch(e){}
@@ -8792,7 +8794,7 @@ function setup(){
   watch('streak-num'); watch('daily-time');
   apply();
 }
-window.__jx={sound:sound,party:party,burst:burst,ring:ring,stamp:stamp,floatText:floatText,on:on};
+window.__jx={sound:sound,party:party,burst:burst,ring:ring,stamp:stamp,floatText:floatText,on:on,apply:apply};
 try{ setup(); }catch(e){ if(window.console) console.warn('juice layer setup failed',e); }
 })();
 </script>
@@ -8900,7 +8902,7 @@ function dojoState(){
       return activeTimer.paused?'idle':'train';
     }
   }catch(e){}
-  return 'idle';
+  return document.body.classList.contains('calm')?'seiza':'idle';
 }
 var HINTS={idle:'drag to turn · tap to strike',train:'稽古中 — training with you',seiza:'休憩 — resting in seiza',restless:'waiting for you…',bow:'礼 — respect'};
 
@@ -9130,11 +9132,11 @@ function start3D(THREE){
   var cups=[]; [-.28,-.14,0,.14,.28].forEach(function(dx){ var c=new THREE.Group(); c.position.set(dx,.02,.06); shelf.add(c);
     mesh(new THREE.CylinderGeometry(.03,.04,.04,6),GOLDM,0,.02,0,c); mesh(new THREE.CylinderGeometry(.05,.02,.1,6),GOLDM,0,.09,0,c); cups.push(c); });
 
-  var tier=-1;
+  var tier=-1, calmV=false;
   function setTier(t){
     if(t===tier) return; tier=t;
     BELT.color.set(TIERS[t].belt);
-    band.visible=t>=1; ring.visible=ring2.visible=t>=2; sword.visible=t>=3; guards.visible=t>=4; ki.visible=t>=5; halo.visible=t>=6;
+    band.visible=t>=1; ring.visible=ring2.visible=t>=2&&!calmV; sword.visible=t>=3; guards.visible=t>=4; ki.visible=t>=5&&!calmV; halo.visible=t>=6&&!calmV;
     EYE.emissive.set(t>=6?0xffb030:0x000000); EYE.emissiveIntensity=t>=6?2.5:0;
   }
 
@@ -9206,7 +9208,7 @@ function start3D(THREE){
     tail1.rotation.x=Math.sin(t*2.6)*.25-.1-k*.5; tail1.rotation.y=Math.sin(t*1.7)*.3; tail2.rotation.x=Math.sin(t*2.2+1)*.3-.2-k*.4; tail2.rotation.y=Math.sin(t*1.9+2)*.3;
     ring.rotation.z=t*.5; ring2.rotation.z=-t*.8; ring.material.opacity=.5+Math.sin(t*2.4)*.2+fl*.4; ring.scale.setScalar(1+fl*.35);
     halo.rotation.z=t*.6; halo.material.opacity=.7+Math.sin(t*3)*.2;
-    glow.intensity=(tier>=2?1+tier*.45:0)+fl*8+k*2+(mode==='train'?1.2:0);
+    glow.intensity=(tier>=2&&!calmV?1+tier*.45:0)+fl*8+k*2+(mode==='train'?1.2:0);
     lanL.intensity=TOD[todName].lan*(1+Math.sin(t*9)*.04+Math.sin(t*23)*.03);
     if(ki.visible){ for(var i=0;i<N;i++){ var p=ps[i]; p.y+=p.v*dt*(1+fl*3); if(p.y>2.7){ p.y=0; p.a=Math.random()*6.28; } p.a+=dt*.6; var rr=p.r*(1-p.y/4.2); pp[i*3]=Math.cos(p.a)*rr; pp[i*3+1]=p.y+.06; pp[i*3+2]=Math.sin(p.a)*rr; } pg.attributes.position.needsUpdate=true; }
     for(var oi2=0;oi2<ON;oi2++){
@@ -9234,7 +9236,8 @@ function start3D(THREE){
       x.fillStyle='#f5ecd6'; x.textAlign='center'; x.textBaseline='middle'; x.font='900 30px "Noto Serif JP",serif'; x.fillText(txt,128,33); banT.t.needsUpdate=true; },
     trophies:function(n){ shelf.visible=n>0; cups.forEach(function(c,i){ c.visible=i<n; }); },
     warm:function(v){ warm=!!v; },
-    outside:function(season,weather){ setOutside(season,weather); }};
+    outside:function(season,weather){ setOutside(season,weather); },
+    calm:function(v){ calmV=!!v; var t0=tier; tier=-1; setTier(t0<0?0:t0); }};
   setOutside((function(){ var m=new Date().getMonth(); return m>=2&&m<=4?'spring':m>=5&&m<=7?'summer':m>=8&&m<=10?'autumn':'winter'; })(),'clear');
   setTier(state?state.tier:0); setTOD(); pollState(); size(); go();
   try{ if(window.__look) window.__look.outside(); }catch(e){}
@@ -10154,5 +10157,104 @@ try{ boot(); }catch(e){ if(window.console) console.warn('look layer failed',e); 
 })();
 </script>
 <!-- ═══ LOOK LAYER END ═══ -->
+<!-- ═══ CALM LAYER START (v132) — additive: 静 Calm mode. Empty space, ink + paper, stillness, one thing at a time. Delete from here to "CALM LAYER END" to remove it. ═══ -->
+<style id="cm-css">
+/* 2. ink and paper only — vermilion is the single accent */
+body.calm{--gold:var(--muted2) !important;--gold2:var(--text) !important;--green:var(--muted2) !important;--green2:var(--text) !important;--indigo:var(--muted2) !important;--purple:var(--muted2) !important;}
+body.calm :is(.fg-info,.qs-card,.ar-card,.lr-foot,.two-col,#levers-card,#season-card,#bottle-grid,#week-cal-wrap,.cal-section,.skill-pills,.hdr-right,.rc-gains,#mastered-log-area){filter:saturate(.1);}
+body.calm .fg-bar i,body.calm .qs-mini i{box-shadow:none !important;}
+body.calm .enso{color:var(--verm);}
+body.calm .timer-bar.break .enso{color:var(--muted2);}
+body.calm .timer-bar.on .t-time{color:var(--text);text-shadow:none;}
+
+/* 1. empty space — content sits on the page like ink on paper */
+body.calm .wrap{max-width:660px;padding:60px 28px 160px;}
+body.calm{line-height:1.8;}
+body.calm .zn-head{margin:72px 0 30px;}
+body.calm :is(.starter,.fg-card,.qs-card,.ar-card,.lr-card,.chart-wrap,.streak-box,.report-wrap,.timer-bar){background:transparent;border-color:transparent;box-shadow:none;padding-left:0;padding-right:0;}
+body.calm .fg-card::before,body.calm .fg-card::after{display:none;}
+body.calm .fg-card,body.calm .qs-card,body.calm .ar-card,body.calm .lr-card{margin-bottom:36px;}
+body.calm .sm-btn{border-color:transparent;}
+body.calm .sm-btn:hover{border-color:var(--b2);}
+body.calm .header{border-bottom-color:transparent;margin-bottom:40px;}
+body.calm .view-nav{margin-bottom:48px;}
+body.calm .page-watermark{opacity:.22;}
+body.calm .quote-block{margin-bottom:48px;}
+
+/* 3. stillness */
+body.calm .jx-flame,body.calm .round-flash,body.calm .fg-bar i::after,body.calm .rc-gain-bar{display:none !important;}
+body.calm .lr-t.next,body.calm #jx-path .pp-now,body.calm .rc-gain-lv.up{animation:none !important;}
+body.calm .streak-box.jx-lit .streak-num{color:var(--text);text-shadow:none;}
+body.calm *{transition-duration:.5s;}
+body.calm .enso-arc,body.calm .enso-dry{transition-duration:1s;}
+#cm-leaf{display:none;position:fixed;top:-20px;left:62%;width:9px;height:7px;background:var(--verm);border-radius:0 70% 0 70%;opacity:0;pointer-events:none;z-index:0;}
+body.calm #cm-leaf{display:block;animation:cm-leaf 46s linear infinite;}
+@keyframes cm-leaf{0%{transform:translate3d(0,0,0) rotate(0);opacity:0}4%{opacity:.55}30%{transform:translate3d(-60px,40vh,0) rotate(200deg)}60%{transform:translate3d(30px,80vh,0) rotate(380deg);opacity:.5}75%,100%{transform:translate3d(-20px,112vh,0) rotate(520deg);opacity:0}}
+
+/* 7. slow, gentle arrivals */
+@keyframes cm-fade{from{opacity:0}to{opacity:1}}
+body.calm .cm-in{animation:cm-fade .7s ease both;}
+
+/* 4. one thing at a time — while a round runs, only the circle, the time and the task remain */
+body.calm.calm-focus :is(.header,.view-nav,#fg-card,#zn-today,#zn-long,#zn-start .zn-head,#quote-block,#quick-timer,.cal-section,.page-watermark,#break-chip){opacity:.05;transition:opacity 1.6s ease;}
+body.calm.calm-focus :is(.header,.view-nav,#fg-card,#zn-today,#zn-long,#quick-timer,.cal-section):hover{opacity:1;transition:opacity .5s ease;}
+body.calm.calm-focus #timer-bar{flex-direction:column;align-items:center;text-align:center;gap:22px;padding:70px 0 60px;animation:none;}
+body.calm.calm-focus #timer-bar .t-icon{display:none;}
+body.calm.calm-focus #timer-bar .t-right{text-align:center;}
+body.calm.calm-focus #timer-bar .enso{width:220px;height:220px;margin:0 auto 26px;}
+body.calm.calm-focus #timer-bar .enso .t-time{font-size:40px;}
+body.calm.calm-focus #timer-bar .t-skill{font-size:20px;}
+body.calm.calm-focus #timer-bar :is(.t-stop,.t-pause-btn,.t-switch-btn,.t-next-btn){opacity:.3;}
+body.calm.calm-focus #timer-bar:hover :is(.t-stop,.t-pause-btn,.t-switch-btn,.t-next-btn){opacity:1;}
+@media (prefers-reduced-motion:reduce){ body.calm #cm-leaf{animation:none;display:none;} }
+</style>
+<script id="cm-js">
+(function(){
+'use strict';
+var LS='jx_calm';
+function get(){ try{ return localStorage.getItem(LS)==='1'; }catch(e){ return false; } }
+function set(v){ try{ localStorage.setItem(LS,v?'1':'0'); }catch(e){} }
+var calm=get(), focus=false;
+function scene(){ var f=window.__fighter; return f&&f.scene&&f.scene(); }
+function apply(){
+  document.body.classList.toggle('calm',calm);
+  if(!calm){ document.body.classList.remove('calm-focus'); focus=false; }
+  var b=document.getElementById('cm-btn'); if(b){ b.textContent=calm?'静 calm':'動 lively'; b.title=calm?'Calm mode is on — click for the lively look':'Lively look — click for calm mode'; }
+  try{ if(window.__jx&&window.__jx.apply) window.__jx.apply(); }catch(e){}
+  var sc=scene(); if(sc&&sc.calm) sc.calm(calm);
+  return !!(sc&&sc.calm);
+}
+function tick(){
+  var want=false;
+  try{
+    var tv=document.getElementById('training-view');
+    want=calm&&typeof activeTimer!=='undefined'&&!!activeTimer&&!activeTimer.paused&&activeTimer.phase!=='break'&&!!tv&&tv.style.display!=='none';
+  }catch(e){}
+  if(want===focus) return; focus=want;
+  document.body.classList.toggle('calm-focus',focus);
+  if(focus){ var tb=document.getElementById('timer-bar'); if(tb&&tb.scrollIntoView) setTimeout(function(){ try{ tb.scrollIntoView({block:'center',behavior:'smooth'}); }catch(e){} },400); }
+}
+function fadeIn(el){ if(!el||!calm) return; el.classList.remove('cm-in'); void el.offsetWidth; el.classList.add('cm-in'); setTimeout(function(){ el.classList.remove('cm-in'); },800); }
+function hook(name,after){ var f=window[name]; if(typeof f!=='function') return; window[name]=function(){ var out=f.apply(this,arguments); try{ after(arguments); }catch(e){} return out; }; }
+function boot(){
+  var leaf=document.createElement('div'); leaf.id='cm-leaf'; document.body.insertBefore(leaf,document.body.firstChild);
+  var hdr=document.querySelector('.hdr-right');
+  if(hdr){
+    var b=document.createElement('button'); b.className='sm-btn'; b.id='cm-btn';
+    b.addEventListener('click',function(){ calm=!calm; set(calm); apply(); tick(); });
+    hdr.insertBefore(b,hdr.firstChild);
+  }
+  apply();
+  var tries=0, iv=setInterval(function(){ if(apply()||++tries>40) clearInterval(iv); },1500);
+  setInterval(tick,1000);
+  hook('switchView',function(a){ fadeIn(document.getElementById(a[0]+'-view')); });
+  /* 5. quiet reward: one seal for a finished round */
+  hook('showRoundComplete',function(){ if(!calm||!window.__jx) return; setTimeout(function(){ window.__jx.stamp(innerWidth/2,innerHeight*.2,'済','#c84828'); },700); });
+  window.__calm={set:function(v){ calm=!!v; set(calm); apply(); tick(); },on:function(){ return calm; }};
+}
+try{ boot(); }catch(e){ if(window.console) console.warn('calm layer failed',e); }
+})();
+</script>
+<!-- ═══ CALM LAYER END ═══ -->
 </body>
 </html>
