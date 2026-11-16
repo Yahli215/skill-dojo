@@ -8781,5 +8781,297 @@ try{ setup(); }catch(e){ if(window.console) console.warn('juice layer setup fail
 })();
 </script>
 <!-- ═══ JUICE LAYER END ═══ -->
+<!-- ═══ FIGHTER LAYER START (v125) — additive: 3D fighter card with stats fed by real dojo data. Delete from here to "FIGHTER LAYER END" to remove it. ═══ -->
+<style id="fx-fighter-css">
+.fg-card{position:relative;display:flex;gap:18px;align-items:stretch;background:var(--s1);border:1px solid var(--b1);padding:18px 20px;margin-bottom:28px;overflow:hidden;}
+.fg-card::before,.fg-card::after{content:'';position:absolute;width:18px;height:18px;border-color:var(--gold);border-style:solid;opacity:.4;pointer-events:none;}
+.fg-card::before{top:10px;left:10px;border-width:1px 0 0 1px;}
+.fg-card::after{bottom:10px;right:10px;border-width:0 1px 1px 0;}
+.fg-stage{position:relative;width:210px;flex-shrink:0;min-height:270px;background:radial-gradient(ellipse at 50% 78%,rgba(232,184,64,.13),transparent 62%);cursor:grab;touch-action:pan-y;user-select:none;}
+.fg-stage:active{cursor:grabbing;}
+.fg-stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+.fg-stage-kj{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:900;font-size:150px;color:var(--gold);opacity:.05;pointer-events:none;}
+.fg-hint{position:absolute;left:0;right:0;bottom:2px;text-align:center;font-size:8px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;pointer-events:none;}
+.fg-info{flex:1;min-width:0;display:flex;flex-direction:column;}
+.fg-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px;}
+.fg-label{font-size:8px;letter-spacing:4px;color:var(--muted);text-transform:uppercase;margin-bottom:3px;}
+.fg-name{font-family:var(--serif);font-size:20px;font-weight:900;color:var(--text);line-height:1.2;outline:none;border-bottom:1px dashed transparent;display:inline-block;min-width:40px;}
+.fg-name:hover,.fg-name:focus{border-bottom-color:var(--gold);}
+.fg-tier{font-size:10px;letter-spacing:2px;margin-top:4px;font-family:var(--serif);font-weight:700;}
+.fg-lvl{text-align:right;flex-shrink:0;}
+.fg-lvl-num{font-family:var(--serif);font-size:38px;font-weight:900;color:var(--gold);line-height:1;}
+.fg-lvl-lbl{font-size:8px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;}
+.fg-stats{display:flex;flex-direction:column;gap:9px;flex:1;justify-content:center;}
+.fg-stat{display:grid;grid-template-columns:22px 1fr auto;gap:2px 10px;align-items:center;}
+.fg-stat-kj{font-family:var(--serif);font-weight:900;font-size:16px;grid-row:span 2;text-align:center;}
+.fg-stat-head{display:flex;justify-content:space-between;align-items:baseline;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted2);}
+.fg-stat-val{color:var(--muted);letter-spacing:.5px;text-transform:none;}
+.fg-stat-lv{font-family:var(--serif);font-weight:900;font-size:17px;grid-row:span 2;min-width:44px;text-align:right;}
+.fg-stat-lv small{font-size:8px;letter-spacing:1px;color:var(--muted);font-family:var(--mono);font-weight:400;margin-right:3px;}
+.fg-bar{height:4px;background:var(--b1);border-radius:2px;overflow:hidden;}
+.fg-bar i{display:block;height:100%;border-radius:2px;position:relative;overflow:hidden;transition:width .9s cubic-bezier(.34,1.56,.64,1);}
+.fg-bar i::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent);transform:translateX(-100%);animation:jx-sheen 2.8s ease-in-out infinite;}
+.fg-next{margin-top:12px;padding-top:10px;border-top:1px solid var(--b1);font-size:9px;letter-spacing:1px;color:var(--muted2);}
+.fg-next b{color:var(--gold2);font-weight:700;}
+@keyframes fg-up{0%{transform:scale(1)}30%{transform:scale(1.5);filter:brightness(1.8)}100%{transform:scale(1);filter:none}}
+.fg-up{animation:fg-up .7s cubic-bezier(.34,1.56,.64,1);display:inline-block;}
+@media (max-width:560px){ .fg-card{flex-direction:column;padding:14px;} .fg-stage{width:100%;min-height:240px;} }
+</style>
+<script id="fx-fighter-js">
+(function(){
+'use strict';
+var THREE_URL='https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js';
+var LS_HW='jx_fighter_hw', LS_SEEN='jx_fighter_seen', LS_NAME='jx_fighter_name';
+function lsGet(k,d){ try{ var v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+
+var STATS=[
+  {id:'power',     kj:'力', name:'Power',      unit:4, color:'#e0492a', fmt:function(x){ return x.toFixed(1)+' h trained'; }},
+  {id:'discipline',kj:'律', name:'Discipline', unit:3, color:'#e8b840', fmt:function(x){ return Math.round(x)+' check-ins + training days'; }},
+  {id:'focus',     kj:'集', name:'Focus',      unit:3, color:'#a878e8', fmt:function(x){ return x.toFixed(1)+' focused h'; }},
+  {id:'stamina',   kj:'耐', name:'Stamina',    unit:4, color:'#70b880', fmt:function(x){ return Math.round(x)+' full rounds'; }},
+  {id:'execution', kj:'達', name:'Execution',  unit:2, color:'#6878c0', fmt:function(x){ return Math.round(x)+' tasks done'; }}
+];
+var TIERS=[
+  {min:0,  kj:'白帯',  name:'White Belt',  belt:'#cfc7b2', unlock:'the journey begins'},
+  {min:10, kj:'黄帯',  name:'Yellow Belt', belt:'#e0b83a', unlock:'indigo headband'},
+  {min:20, kj:'緑帯',  name:'Green Belt',  belt:'#4a9060', unlock:'ki ring underfoot'},
+  {min:35, kj:'青帯',  name:'Blue Belt',   belt:'#4a64b8', unlock:'bokken on the back'},
+  {min:50, kj:'茶帯',  name:'Brown Belt',  belt:'#7a4a22', unlock:'gold shoulder guards'},
+  {min:70, kj:'黒帯',  name:'Black Belt',  belt:'#141210', unlock:'rising ki aura'},
+  {min:100,kj:'紅白帯',name:'Master',      belt:'#c84828', unlock:'halo + burning eyes'}
+];
+function lvl(xp,unit){ return 1+Math.floor(Math.sqrt(Math.max(0,xp)/unit)); }
+function prog(xp,unit){ var l=lvl(xp,unit), a=unit*(l-1)*(l-1), b=unit*l*l; return Math.max(0,Math.min(1,(xp-a)/(b-a))); }
+
+/* ── read real dojo data (read-only) ── */
+function compute(){
+  var xp={power:0,discipline:0,focus:0,stamina:0,execution:0};
+  try{
+    var ss=(typeof getSess==='function'?getSess():[])||[], days={};
+    ss.forEach(function(s){
+      var m=+s.mins||0; xp.power+=m/60;
+      var f=+(s.quality||s.jacob_focus||0); if(f>0) xp.focus+=Math.min(10,f)/10*m/60;
+      if(m>=25) xp.stamina+=1;
+      var st=s.startTime||s.start; if(st&&m>0){ var d=new Date(st); days[d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate()]=1; }
+    });
+    xp.discipline+=Object.keys(days).length;
+  }catch(e){}
+  try{ ((typeof getHabits==='function'?getHabits():[])||[]).forEach(function(h){ xp.discipline+=(h.history||[]).length; }); }catch(e){}
+  try{ var se=typeof getSeason==='function'?getSeason():null; ((se&&se.habits)||[]).forEach(function(h){ xp.discipline+=(h.checkedDates||[]).length; }); }catch(e){}
+  try{ xp.execution=((typeof getTasks==='function'?getTasks():[])||[]).filter(function(t){ return t&&t.done; }).length; }catch(e){}
+  /* never gets worse: keep the high-water mark of every stat */
+  var hw=lsGet(LS_HW,{}), ch=false;
+  STATS.forEach(function(s){ var v=xp[s.id]; if(!(hw[s.id]>=v)){ hw[s.id]=v; ch=true; } xp[s.id]=Math.max(v,hw[s.id]||0); });
+  if(ch) lsSet(LS_HW,hw);
+  var lv={}, total=0; STATS.forEach(function(s){ lv[s.id]=lvl(xp[s.id],s.unit); total+=lv[s.id]; });
+  var tier=0; TIERS.forEach(function(t,i){ if(total>=t.min) tier=i; });
+  return {xp:xp,lv:lv,total:total,tier:tier};
+}
+
+/* ── card DOM ── */
+var card,els={},state=null,scene3d=null;
+function build(){
+  var host=document.getElementById('training-view'); if(!host||document.getElementById('fg-card')) return false;
+  card=document.createElement('div'); card.className='fg-card'; card.id='fg-card';
+  card.innerHTML='<div class="fg-stage" id="fg-stage"><div class="fg-stage-kj">己</div><div class="fg-hint" id="fg-hint">drag to turn · tap to strike</div></div>'+
+    '<div class="fg-info"><div class="fg-top"><div><div class="fg-label">分身 · Your Fighter</div>'+
+    '<div class="fg-name" id="fg-name" contenteditable="true" spellcheck="false" title="Click to rename"></div>'+
+    '<div class="fg-tier" id="fg-tier"></div></div>'+
+    '<div class="fg-lvl"><div class="fg-lvl-num" id="fg-lvl">–</div><div class="fg-lvl-lbl">Total level</div></div></div>'+
+    '<div class="fg-stats">'+STATS.map(function(s){
+      return '<div class="fg-stat"><div class="fg-stat-kj" style="color:'+s.color+'">'+s.kj+'</div>'+
+        '<div class="fg-stat-head"><span>'+s.name+'</span><span class="fg-stat-val" id="fg-v-'+s.id+'"></span></div>'+
+        '<div class="fg-stat-lv" style="color:'+s.color+'"><small>LV</small><span id="fg-l-'+s.id+'">1</span></div>'+
+        '<div class="fg-bar"><i id="fg-b-'+s.id+'" style="width:0%;background:'+s.color+';box-shadow:0 0 8px '+s.color+'"></i></div></div>';
+    }).join('')+'</div><div class="fg-next" id="fg-next"></div></div>';
+  host.insertBefore(card,host.firstChild);
+  var nm=document.getElementById('fg-name'); nm.textContent=lsGet(LS_NAME,'無名 Mumei');
+  nm.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); nm.blur(); } });
+  nm.addEventListener('blur',function(){ var v=nm.textContent.trim().slice(0,28)||'無名 Mumei'; nm.textContent=v; lsSet(LS_NAME,v); });
+  return true;
+}
+function say(msg){ try{ if(typeof toast==='function') toast(msg,3200); }catch(e){} }
+function bump(el){ if(!el) return; el.classList.remove('fg-up'); void el.offsetWidth; el.classList.add('fg-up'); }
+function refresh(){
+  if(!card) return;
+  var st=compute(), seen=lsGet(LS_SEEN,null), ups=[], tierUp=false;
+  STATS.forEach(function(s){
+    var x=st.xp[s.id], l=st.lv[s.id];
+    document.getElementById('fg-v-'+s.id).textContent=s.fmt(x);
+    var le=document.getElementById('fg-l-'+s.id); le.textContent=l;
+    document.getElementById('fg-b-'+s.id).style.width=(prog(x,s.unit)*100).toFixed(1)+'%';
+    if(seen&&l>(seen.lv[s.id]||1)){ ups.push(s.name+' Lv '+l); bump(le); }
+  });
+  var t=TIERS[st.tier], nx=TIERS[st.tier+1];
+  var te=document.getElementById('fg-tier'); te.textContent=t.kj+' · '+t.name; te.style.color=st.tier===0?'var(--muted2)':(st.tier===5?'var(--text)':t.belt);
+  document.getElementById('fg-lvl').textContent=st.total;
+  document.getElementById('fg-next').innerHTML=nx?('Next: <b>'+nx.kj+' '+nx.name+'</b> at total level '+nx.min+' — unlocks '+nx.unlock+' ('+(nx.min-st.total)+' to go)'):'<b>極 — every rank attained.</b> Keep sharpening.';
+  if(seen&&st.tier>seen.tier) tierUp=true;
+  if(tierUp){ bump(document.getElementById('fg-lvl')); say('🏆 '+t.kj+' '+t.name+' attained — unlocked '+t.unlock); }
+  else if(ups.length){ bump(document.getElementById('fg-lvl')); say('⬆ '+ups.join(' · ')+' ✓'); }
+  if(!seen||ups.length||tierUp||seen.total!==st.total) lsSet(LS_SEEN,{lv:st.lv,tier:st.tier,total:st.total});
+  state=st;
+  if(scene3d){ scene3d.setTier(st.tier); if(ups.length||tierUp) scene3d.flex(); }
+}
+
+/* ── 3D fighter (original low-poly design, built from primitives) ── */
+function start3D(THREE){
+  var stage=document.getElementById('fg-stage'); if(!stage) return;
+  var renderer; try{ renderer=new THREE.WebGLRenderer({antialias:true,alpha:true}); }catch(e){ return; }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+  if('outputColorSpace' in renderer) renderer.outputColorSpace=THREE.SRGBColorSpace;
+  stage.insertBefore(renderer.domElement,stage.firstChild.nextSibling);
+  var scene=new THREE.Scene();
+  var cam=new THREE.PerspectiveCamera(30,1,.1,50); cam.position.set(0,1.45,7.4); cam.lookAt(0,1.12,0);
+  scene.add(new THREE.HemisphereLight(0xfff1d0,0x1a1410,1.1));
+  var key=new THREE.DirectionalLight(0xffd68a,2.2); key.position.set(2.5,4,3.5); scene.add(key);
+  var rim=new THREE.DirectionalLight(0xe0492a,1.8); rim.position.set(-3,2.2,-2.5); scene.add(rim);
+  var glow=new THREE.PointLight(0xe8b840,0,6); glow.position.set(0,.5,1.2); scene.add(glow);
+
+  function mat(c,o){ var p={color:c,flatShading:true,roughness:.82,metalness:.04}; if(o) for(var k in o) p[k]=o[k]; return new THREE.MeshStandardMaterial(p); }
+  function mesh(g,m,x,y,z,par){ var o=new THREE.Mesh(g,m); o.position.set(x||0,y||0,z||0); (par||rig).add(o); return o; }
+  var GI=mat(0xe9e2d0), DARK=mat(0x1b1a24), SKIN=mat(0xd9a877), HAIR=mat(0x15120f), WOOD=mat(0x4a2f1a), GOLDM=mat(0xe8b840,{metalness:.6,roughness:.35});
+  var BELT=mat(0xcfc7b2), BAND=mat(0x4858a0), EYE=mat(0x15120f,{emissive:0x000000});
+
+  var rig=new THREE.Group(); scene.add(rig);
+  /* ground */
+  mesh(new THREE.CylinderGeometry(1.08,1.2,.14,8),mat(0x1e1a14,{roughness:1}),0,-.07,0);
+  var ring=new THREE.Mesh(new THREE.RingGeometry(.92,1.04,48),new THREE.MeshBasicMaterial({color:0xe8b840,transparent:true,opacity:.7,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false}));
+  ring.rotation.x=-Math.PI/2; ring.position.y=.012; rig.add(ring);
+  var ring2=ring.clone(); ring2.scale.setScalar(.72); ring2.material=ring.material.clone(); ring2.material.opacity=.35; rig.add(ring2);
+
+  /* lower body — wide stance, dark hakama */
+  var body=new THREE.Group(); rig.add(body);
+  function leg(sx){
+    var g=new THREE.Group(); g.position.set(sx*.25,.92,0); g.rotation.z=sx*.2; body.add(g);
+    mesh(new THREE.CylinderGeometry(.2,.24,.9,6),DARK,0,-.45,0,g);
+    mesh(new THREE.BoxGeometry(.22,.1,.36),HAIR,0,-.9,.06,g);
+    return g;
+  }
+  leg(-1); leg(1);
+  mesh(new THREE.CylinderGeometry(.34,.4,.34,7),DARK,0,.95,0,body);
+  var belt=mesh(new THREE.TorusGeometry(.345,.055,6,14),BELT,0,1.12,0,body); belt.rotation.x=Math.PI/2;
+  mesh(new THREE.BoxGeometry(.11,.1,.08),BELT,.06,1.12,.36,body);
+  var bt1=mesh(new THREE.BoxGeometry(.06,.26,.03),BELT,.02,.98,.38,body); bt1.rotation.z=.25;
+  var bt2=mesh(new THREE.BoxGeometry(.06,.22,.03),BELT,.12,.99,.38,body); bt2.rotation.z=-.3;
+
+  /* upper body */
+  var upper=new THREE.Group(); upper.position.y=1.14; body.add(upper);
+  mesh(new THREE.CylinderGeometry(.44,.32,.68,7),GI,0,.34,0,upper);
+  var c1=mesh(new THREE.BoxGeometry(.07,.52,.04),DARK,-.1,.42,.36,upper); c1.rotation.z=-.42; c1.rotation.x=-.12;
+  var c2=mesh(new THREE.BoxGeometry(.07,.52,.04),DARK,.1,.42,.36,upper); c2.rotation.z=.42; c2.rotation.x=-.12;
+  mesh(new THREE.CylinderGeometry(.1,.12,.14,6),SKIN,0,.74,0,upper);
+  function arm(sx){
+    var sh=new THREE.Group(); sh.position.set(sx*.5,.6,0); upper.add(sh);
+    mesh(new THREE.IcosahedronGeometry(.17,0),GI,0,0,0,sh);
+    mesh(new THREE.CylinderGeometry(.12,.105,.42,6),GI,0,-.22,0,sh);
+    var el=new THREE.Group(); el.position.y=-.44; sh.add(el);
+    mesh(new THREE.CylinderGeometry(.1,.085,.38,6),SKIN,0,-.19,0,el);
+    mesh(new THREE.IcosahedronGeometry(.115,0),SKIN,0,-.42,0,el);
+    return {sh:sh,el:el};
+  }
+  var L=arm(-1), R=arm(1);
+  /* guard stance: lead hand up, rear hand chambered */
+  var POSE={Lsx:-1.05,Lsz:.18,Lex:-1.15, Rsx:.35,Rsz:-.22,Rex:-1.75};
+  var head=new THREE.Group(); head.position.y=.98; upper.add(head);
+  mesh(new THREE.IcosahedronGeometry(.25,1),SKIN,0,0,0,head);
+  var hair=mesh(new THREE.IcosahedronGeometry(.265,0),HAIR,0,.07,-.05,head); hair.scale.set(1,.82,1);
+  mesh(new THREE.ConeGeometry(.09,.2,5),HAIR,0,.32,-.08,head);
+  var e1=mesh(new THREE.BoxGeometry(.06,.025,.02),EYE,-.09,-.01,.235,head), e2=mesh(new THREE.BoxGeometry(.06,.025,.02),EYE,.09,-.01,.235,head);
+  e1.rotation.z=-.18; e2.rotation.z=.18;
+
+  /* tier gear */
+  var gear=[];
+  var band=new THREE.Group(); head.add(band); gear[1]=band;
+  var bm=mesh(new THREE.TorusGeometry(.255,.035,5,14),BAND,0,.06,0,band); bm.rotation.x=Math.PI/2;
+  var tail1=new THREE.Group(), tail2=new THREE.Group(); tail1.position.set(.04,.06,-.25); tail2.position.set(-.04,.06,-.25); band.add(tail1); band.add(tail2);
+  mesh(new THREE.BoxGeometry(.05,.02,.36),BAND,0,0,-.18,tail1); mesh(new THREE.BoxGeometry(.05,.02,.28),BAND,0,0,-.14,tail2);
+  var sword=new THREE.Group(); sword.position.set(0,.42,-.3); sword.rotation.z=.62; upper.add(sword); gear[3]=sword;
+  mesh(new THREE.BoxGeometry(.055,1.25,.04),WOOD,0,.1,0,sword); mesh(new THREE.BoxGeometry(.14,.03,.07),GOLDM,0,-.3,0,sword);
+  var guards=new THREE.Group(); upper.add(guards); gear[4]=guards;
+  [-1,1].forEach(function(sx){ var g=mesh(new THREE.BoxGeometry(.3,.07,.34),DARK,sx*.52,.76,0,guards); g.rotation.z=-sx*.35; var t=mesh(new THREE.BoxGeometry(.32,.025,.36),GOLDM,sx*.53,.8,0,guards); t.rotation.z=-sx*.35; });
+  var N=70, pg=new THREE.BufferGeometry(), pp=new Float32Array(N*3), ps=[];
+  for(var i=0;i<N;i++){ ps.push({a:Math.random()*6.28,r:.35+Math.random()*.75,y:Math.random()*2.6,v:.35+Math.random()*.7}); }
+  pg.setAttribute('position',new THREE.BufferAttribute(pp,3));
+  var ki=new THREE.Points(pg,new THREE.PointsMaterial({color:0xffc94d,size:.07,transparent:true,opacity:.85,blending:THREE.AdditiveBlending,depthWrite:false})); rig.add(ki); gear[5]=ki;
+  var halo=new THREE.Mesh(new THREE.TorusGeometry(.52,.022,6,40),new THREE.MeshBasicMaterial({color:0xffd66b,transparent:true,opacity:.9,blending:THREE.AdditiveBlending,depthWrite:false}));
+  halo.position.set(0,2.16,-.32); rig.add(halo); gear[6]=halo;
+
+  var tier=-1;
+  function setTier(t){
+    if(t===tier) return; tier=t;
+    BELT.color.set(TIERS[t].belt);
+    band.visible=t>=1; ring.visible=ring2.visible=t>=2; sword.visible=t>=3; guards.visible=t>=4; ki.visible=t>=5; halo.visible=t>=6;
+    glow.intensity=t>=2?1.2+t*.5:0;
+    EYE.emissive.set(t>=6?0xffb030:0x000000); EYE.emissiveIntensity=t>=6?2.5:0;
+  }
+
+  /* interaction: drag to turn, tap to strike */
+  var rotY=-.5, drag=null, punch=0, flexT=0;
+  stage.addEventListener('pointerdown',function(e){ drag={x:e.clientX,r:rotY,moved:0}; try{ stage.setPointerCapture(e.pointerId); }catch(_){} });
+  stage.addEventListener('pointermove',function(e){ if(!drag) return; var dx=e.clientX-drag.x; drag.moved=Math.max(drag.moved,Math.abs(dx)); rotY=drag.r+dx*.012; });
+  function end(e){
+    if(!drag) return; var tap=drag.moved<6; drag=null;
+    if(tap&&punch<=0){ punch=1; kiai(e.clientX,e.clientY); }
+  }
+  stage.addEventListener('pointerup',end); stage.addEventListener('pointercancel',function(){ drag=null; });
+  var KIAI=['押忍!','セイ!','ハッ!','気合!'];
+  function kiai(x,y){
+    var d=document.createElement('div'); d.className='jx-float'; d.textContent=KIAI[(Math.random()*KIAI.length)|0];
+    d.style.left=x+'px'; d.style.top=(y-30)+'px'; d.style.setProperty('--c','#e0492a'); document.body.appendChild(d); setTimeout(function(){ d.remove(); },1300);
+    var h=document.getElementById('fg-hint'); if(h) h.style.opacity='0';
+  }
+
+  function size(){ var w=stage.clientWidth,h=stage.clientHeight; if(!w||!h) return false; renderer.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix(); return true; }
+  var visible=true, raf=0, prev=0, t=0;
+  if(window.IntersectionObserver) new IntersectionObserver(function(en){ visible=en[0].isIntersecting; if(visible) go(); }).observe(stage);
+  if(window.ResizeObserver) new ResizeObserver(function(){ size(); }).observe(stage);
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden) go(); });
+  function go(){ if(!raf) { prev=performance.now(); raf=requestAnimationFrame(frame); } }
+  function frame(now){
+    raf=0;
+    if(!visible||document.hidden||!stage.clientWidth){ if(visible&&!document.hidden) setTimeout(go,600); return; }
+    var dt=Math.min((now-prev)/1000,.05); prev=now; t+=dt;
+    if(renderer.domElement.width===0||renderer.domElement.clientWidth!==stage.clientWidth) size();
+    var br=Math.sin(t*1.9);
+    upper.scale.y=1+br*.014; upper.position.y=1.14+br*.008; body.position.y=Math.sin(t*1.9+.6)*.012;
+    if(!drag) rig.rotation.y+=((rotY+Math.sin(t*.45)*.1)-rig.rotation.y)*Math.min(1,dt*6); else rig.rotation.y=rotY;
+    /* strike */
+    var k=0; if(punch>0){ punch=Math.max(0,punch-dt*2.6); var ph=1-punch; k=ph<.3?ph/.3:1-(ph-.3)/.7; k=k*k*(3-2*k); }
+    var fl=0; if(flexT>0){ flexT=Math.max(0,flexT-dt*.9); fl=Math.sin((1-flexT)*Math.PI); }
+    L.sh.rotation.x=POSE.Lsx+br*.03+fl*-1.7; L.sh.rotation.z=POSE.Lsz-fl*.5; L.el.rotation.x=POSE.Lex+fl*-.5+k*.3;
+    R.sh.rotation.x=POSE.Rsx+k*(-1.95)+fl*-2.9; R.sh.rotation.z=POSE.Rsz+k*.2+fl*.75; R.el.rotation.x=POSE.Rex+k*1.7+fl*.9;
+    upper.rotation.y=k*-.55; body.position.z=k*.16; head.rotation.y=k*.4;
+    upper.rotation.x=fl*-.12; body.scale.setScalar(1+fl*.06);
+    tail1.rotation.x=Math.sin(t*2.6)*.25-.1-k*.5; tail1.rotation.y=Math.sin(t*1.7)*.3; tail2.rotation.x=Math.sin(t*2.2+1)*.3-.2-k*.4; tail2.rotation.y=Math.sin(t*1.9+2)*.3;
+    ring.rotation.z=t*.5; ring2.rotation.z=-t*.8; ring.material.opacity=.5+Math.sin(t*2.4)*.2+fl*.4; ring.scale.setScalar(1+fl*.35);
+    halo.rotation.z=t*.6; halo.material.opacity=.7+Math.sin(t*3)*.2;
+    glow.intensity=(tier>=2?1.2+tier*.5:0)+fl*8+k*2;
+    if(ki.visible){ for(var i=0;i<N;i++){ var p=ps[i]; p.y+=p.v*dt*(1+fl*3); if(p.y>2.7){ p.y=0; p.a=Math.random()*6.28; } p.a+=dt*.6; var rr=p.r*(1-p.y/4.2); pp[i*3]=Math.cos(p.a)*rr; pp[i*3+1]=p.y; pp[i*3+2]=Math.sin(p.a)*rr; } pg.attributes.position.needsUpdate=true; }
+    renderer.render(scene,cam);
+    raf=requestAnimationFrame(frame);
+  }
+  scene3d={setTier:setTier,flex:function(){ flexT=1; go(); },_dbg:{renderer:renderer}};
+  setTier(state?state.tier:0); size(); go();
+}
+
+/* ── boot + keep in sync with the app ── */
+function hook(name){
+  var f=window[name]; if(typeof f!=='function') return;
+  window[name]=function(){ var out=f.apply(this,arguments); try{ clearTimeout(hook.t); hook.t=setTimeout(refresh,250); }catch(e){} return out; };
+}
+function boot(){
+  if(!build()) return;
+  refresh();
+  ['renderApp','renderDaily','toggleTask','toggleHabit','renderTasks','renderHabits','renderSeason'].forEach(hook);
+  setInterval(refresh,60000);
+  window.__fighter={refresh:refresh,compute:compute,flex:function(){ if(scene3d) scene3d.flex(); },preview:function(t){ if(scene3d) scene3d.setTier(Math.max(0,Math.min(6,t|0))); }};
+  import(THREE_URL).then(start3D).catch(function(){ var h=document.getElementById('fg-hint'); if(h) h.textContent='3D needs a connection — stats still live'; });
+}
+try{ boot(); }catch(e){ if(window.console) console.warn('fighter layer failed',e); }
+})();
+</script>
+<!-- ═══ FIGHTER LAYER END ═══ -->
 </body>
 </html>
