@@ -9484,7 +9484,7 @@ try{ boot(); }catch(e){ if(window.console) console.warn('dojo extras failed',e);
 })();
 </script>
 <!-- ═══ DOJO EXTRAS LAYER END ═══ -->
-<!-- ═══ ARENA LAYER START (v127) — additive, passive: streak shields, weekly boss, rival, tournament mode. Nothing here is playable; everything moves only from logged work. Delete from here to "ARENA LAYER END" to remove it. ═══ -->
+<!-- ═══ ARENA LAYER START (v128) — additive, passive: streak shields, rival, tournament mode. Nothing here is playable; everything moves only from logged work. Delete from here to "ARENA LAYER END" to remove it. ═══ -->
 <style id="ar-css">
 .ar-card{background:var(--s1);border:1px solid var(--b1);padding:12px 18px 6px;margin-bottom:14px;}
 .ar-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:6px;}
@@ -9566,48 +9566,6 @@ function renderShields(){
   var hd=document.getElementById('ar-shields'); if(hd) hd.innerHTML='Streak shields'+shieldIcons(s.count);
 }
 
-/* ════ 3. WEEKLY BOSS (passive: only logged work damages it) ════ */
-var LS_BOSS='jx_boss', LS_BONUS='jx_quest_bonus';
-var BOSSES=[
-  {kj:'怠',name:'Namake',title:'the Sloth Oni',color:0x2a1420,css:'#e0492a'},
-  {kj:'迷',name:'Mayoi',title:'the Wandering Mind',color:0x1a2040,css:'#6878c0'},
-  {kj:'恐',name:'Osore',title:'Fear of the Board',color:0x101a16,css:'#70b880'},
-  {kj:'慢',name:'Manshin',title:'the Proud One',color:0x3a2a08,css:'#e8b840'},
-  {kj:'疑',name:'Utagai',title:'the Doubter',color:0x221a2e,css:'#a878e8'},
-  {kj:'焦',name:'Aseri',title:'the Hasty Hand',color:0x3a1408,css:'#ff8a1a'},
-  {kj:'眠',name:'Nemuri',title:'the Drowsy Tengu',color:0x141c2a,css:'#5bc8d4'},
-  {kj:'乱',name:'Midare',title:'Lord of Chaos',color:0x2e0e1e,css:'#e0492a'}
-];
-function bossState(){
-  var ws=weekStart(0), id=dk(ws), b=lsGet(LS_BOSS,null), list=sess();
-  if(!b||b.week!==id){
-    var tot=0,n=0; for(var w=1;w<=4;w++){ var m=minsBetween(weekStart(-w),weekStart(-w+1),list); if(m>0){ tot+=m; n++; } }
-    var hp=Math.max(900,Math.round((n?tot/n:1500)*1.05/30)*30);
-    b={week:id,hp:hp,idx:Math.floor(+ws/6048e5)%BOSSES.length,defeated:false,q:{}};
-  }
-  var q=lsGet('jx_quests',null); if(q&&q.date===dayId()) b.q[q.date]=Object.keys(q.done||{}).length;
-  var qn=0; for(var k in b.q) qn+=+b.q[k]||0;
-  var dmg=minsBetween(ws,Date.now()+6e4,list)+qn*30, just=false;
-  if(dmg>=b.hp&&!b.defeated){
-    b.defeated=true; just=true;
-    var bn=lsGet(LS_BONUS,{}); ['power','discipline','focus','stamina','execution'].forEach(function(s){ bn[s]=(+bn[s]||0)+2; }); lsSet(LS_BONUS,bn);
-    lsSet('jx_boss_wins',(+lsGet('jx_boss_wins',0)||0)+1);
-  }
-  lsSet(LS_BOSS,b);
-  var B=BOSSES[b.idx]||BOSSES[0];
-  return {b:b,B:B,dmg:Math.min(dmg,b.hp),left:Math.max(0,b.hp-dmg),pct:Math.max(0,1-dmg/b.hp),just:just,daysLeft:7-new Date().getDay(),wins:+lsGet('jx_boss_wins',0)||0};
-}
-function bossRow(o){
-  var B=o.B;
-  if(o.b.defeated) return '<div class="ar-row dead"><div class="ar-kj" style="color:'+B.css+';border-color:'+B.css+'">討</div><div>'+
-    '<div class="ar-line"><span><b>'+B.name+'</b>, '+B.title+' — defeated</span><small>'+o.wins+' boss'+(o.wins===1?'':'es')+' beaten</small></div>'+
-    '<div class="ar-sub">Bonus paid to every stat. A new one arrives on Sunday.</div></div></div>';
-  return '<div class="ar-row"><div class="ar-kj" style="color:'+B.css+';border-color:'+B.css+';box-shadow:0 0 12px -3px '+B.css+'">'+B.kj+'</div><div>'+
-    '<div class="ar-line"><span>Weekly boss · <b>'+B.name+'</b>, '+B.title+'</span><small>'+o.daysLeft+' day'+(o.daysLeft===1?'':'s')+' left</small></div>'+
-    '<div class="ar-bar"><i style="width:'+(o.pct*100).toFixed(1)+'%;background:'+B.css+';box-shadow:0 0 8px '+B.css+'"></i></div>'+
-    '<div class="ar-sub">'+h1(o.dmg)+' of '+h1(o.b.hp)+' dealt · '+h1(o.left)+' to go. Every logged minute is a hit; each cleared quest hits for 0.5h.</div></div></div>';
-}
-
 /* ════ 8. RIVAL: last week's you ════ */
 function rivalState(){
   var list=sess(), ws=weekStart(0), lw=weekStart(-1), now=Date.now();
@@ -9649,7 +9607,7 @@ function cardEl(){
   var el=document.getElementById('ar-card'); if(el) return el;
   var host=document.getElementById('training-view'); if(!host) return null;
   el=document.createElement('div'); el.className='ar-card'; el.id='ar-card';
-  el.innerHTML='<div class="ar-head"><div class="ar-title"><b>闘技</b>Arena — moves only when you train</div><div class="ar-shields" id="ar-shields"></div></div><div id="ar-boss"></div><div id="ar-rival"></div><div class="ar-row ar-trow" id="ar-tour"></div>';
+  el.innerHTML='<div class="ar-head"><div class="ar-title"><b>闘技</b>Arena — moves only when you train</div><div class="ar-shields" id="ar-shields"></div></div><div id="ar-rival"></div><div class="ar-row ar-trow" id="ar-tour"></div>';
   var fg=document.getElementById('fg-card');
   if(fg&&fg.parentNode===host) host.insertBefore(el,fg.nextSibling); else host.insertBefore(el,host.firstChild);
   el.addEventListener('click',function(e){
@@ -9664,20 +9622,19 @@ function setHTML(id,html){ var el=document.getElementById(id); if(el&&last[id]!=
 function refresh(){
   var el=cardEl(); if(!el) return;
   earnCheck();
-  var o=bossState(), r=rivalState(), t=tourState();
-  setHTML('ar-boss',bossRow(o)); setHTML('ar-rival',rivalRow(r));
+  var r=rivalState(), t=tourState();
+  setHTML('ar-rival',rivalRow(r));
   var inp=document.getElementById('ar-tres');
   if(!(inp&&(document.activeElement===inp||inp.value))) setHTML('ar-tour',tourRow(t));
   renderShields();
-  if(o.just){ grantShield('boss defeated'); renderShields(); if(!booting){ say('🏆 討伐 — '+o.B.name+', '+o.B.title+', is defeated. +2 to every stat.',5000); } var f0=F(); if(f0){ f0.bow(); f0.refresh(); } }
   var f=F(), sc=f&&f.scene&&f.scene();
   if(sc){
-    sc.boss({alive:!o.b.defeated,pct:o.pct,color:o.B.color});
+    sc.boss({alive:false});
     sc.banner(t.date&&t.days>=0?(t.days===0?'大会 本日':'大会 あと'+t.days+'日'):'');
     sc.trophies(Math.min(5,t.trophies.length));
     sc.warm(!!t.date&&t.days>=0&&t.days<=7);
   }
-  return {boss:o,rival:r,tour:t};
+  return {rival:r,tour:t};
 }
 
 /* round-complete: what this round did in the arena */
@@ -9686,9 +9643,8 @@ function roundLines(mins){
   var st=refresh(); if(!st) return;
   var old=document.getElementById('rc-arena'); if(old) old.remove();
   var el=document.createElement('div'); el.className='rc-arena'; el.id='rc-arena';
-  var o=st.boss, r=st.rival, ahead=r.diff>=0;
-  el.innerHTML=(o.b.defeated?'<div>⚔ <b style="color:'+o.B.css+'">'+o.B.name+'</b> is defeated this week.</div>':'<div>⚔ −'+h1(mins)+' to <b style="color:'+o.B.css+'">'+o.B.name+'</b> · '+Math.round(o.pct*100)+'% HP left</div>')+
-    '<div>影 '+(ahead?'+':'−')+h1(Math.abs(r.diff))+' '+(ahead?'ahead of':'behind')+' last week\'s you</div>';
+  var r=st.rival, ahead=r.diff>=0;
+  el.innerHTML='<div>影 '+(ahead?'+':'−')+h1(Math.abs(r.diff))+' '+(ahead?'ahead of':'behind')+' last week\'s you</div>';
   if(g) g.appendChild(el); else btn.parentNode.insertBefore(el,btn);
 }
 
