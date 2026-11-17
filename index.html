@@ -10707,5 +10707,28 @@ try{ refresh(); ['renderSeason','renderLevers','renderApp','renderDaily'].forEac
 })();
 </script>
 <!-- ═══ SEASON FOCUS LAYER END ═══ -->
+<!-- ═══ LEAVES CONTROL LAYER START (v137) — additive: choose how many drifting leaves/petals/embers the page shows. Delete from here to "LEAVES CONTROL LAYER END" to remove it. ═══ -->
+<style id="lf-css">
+body.lf-few #jx-embers i:nth-child(n+4){display:none;}
+body.lf-none #jx-embers,body.lf-none #cm-leaf{display:none !important;}
+</style>
+<script id="lf-js">
+(function(){
+'use strict';
+var LS='jx_leaves', OPTS=['few','none','many'], LBL={many:'🍂 leaves: many',few:'🍂 leaves: few',none:'🍂 leaves: off'};
+var cur='few'; try{ cur=localStorage.getItem(LS)||'few'; }catch(e){} if(OPTS.indexOf(cur)<0) cur='few';
+function apply(){ document.body.classList.toggle('lf-few',cur==='few'); document.body.classList.toggle('lf-none',cur==='none'); var b=document.getElementById('lf-btn'); if(b) b.textContent=LBL[cur]; }
+try{
+  var panel=document.querySelector('.jx-menu-panel')||document.querySelector('.hdr-right');
+  if(panel){
+    var b=document.createElement('button'); b.className='sm-btn'; b.id='lf-btn'; b.type='button'; b.title='How many leaves, petals or embers drift across the page';
+    b.addEventListener('click',function(e){ e.stopPropagation(); cur=OPTS[(OPTS.indexOf(cur)+1)%OPTS.length]; try{ localStorage.setItem(LS,cur); }catch(_){} apply(); });
+    panel.insertBefore(b,panel.firstChild);
+  }
+  apply();
+}catch(e){ if(window.console) console.warn('leaves control failed',e); }
+})();
+</script>
+<!-- ═══ LEAVES CONTROL LAYER END ═══ -->
 </body>
 </html>
