@@ -9182,7 +9182,9 @@ function start3D(THREE){
   function frame(now){
     raf=0;
     if(!visible||document.hidden||!stage.clientWidth){ if(visible&&!document.hidden) setTimeout(go,600); return; }
-    var dt=Math.min((now-prev)/1000,.05); prev=now; t+=dt;
+    var gapMs=(mode==='train'||punch>0||jab>0||flexT>0||bowT>0||drag)?31:48;
+    if(now-prev<gapMs){ raf=requestAnimationFrame(frame); return; }
+    var dt=Math.min((now-prev)/1000,.1); prev=now; t+=dt;
     if(renderer.domElement.clientWidth!==stage.clientWidth||renderer.domElement.width===0) size();
     if(bowT>0) bowT=Math.max(0,bowT-dt);
     var target=POSES[bowT>0?'bow':mode]||POSES.idle, a=Math.min(1,dt*(bowT>0?4:5));
@@ -10257,7 +10259,7 @@ try{ boot(); }catch(e){ if(window.console) console.warn('calm layer failed',e); 
 })();
 </script>
 <!-- ═══ CALM LAYER END ═══ -->
-<!-- ═══ ZEN LAYER START (v133) — additive: 禅 zen-garden palette. Raked sand, stone, moss. Delete from here to "ZEN LAYER END" to remove it. ═══ -->
+<!-- ═══ ZEN LAYER START (v134) — additive: 禅 zen-garden palette. Raked sand, stone, moss. Delete from here to "ZEN LAYER END" to remove it. ═══ -->
 <style id="zn-css">
 body.th-zen{--bg:#d9d4c7;--s1:#d0cabc;--s2:#c6c0b1;--b1:#b8b1a1;--b2:#9c9686;--text:#2b2d29;--muted:#8d8878;--muted2:#5d5a4e;
   --gold:#5d7343;--gold2:#485c32;--verm:#a5412d;--green:#5d7343;--green2:#485c32;--indigo:#55606a;--purple:#6a6470;
@@ -10284,36 +10286,135 @@ body.th-zen .sm-btn{color:var(--muted2);}
 /* the garden */
 #zen-garden{display:none;position:fixed;inset:0;z-index:0;pointer-events:none;}
 body.th-zen #zen-garden{display:block;}
+#zen-garden #zg-svg{position:absolute;inset:0;}
 #zen-garden svg{width:100%;height:100%;display:block;}
+#zg-cap{position:absolute;left:14px;bottom:10px;font-family:'Noto Serif JP',serif;font-size:10px;letter-spacing:1px;color:#5d5a4e;opacity:.75;max-width:min(92vw,560px);}
 @media (max-width:1180px){ #zen-garden .zg-st{display:none;} }
 </style>
 <script id="zn-js">
 (function(){
 'use strict';
-function garden(){
-  if(document.getElementById('zen-garden')) return;
-  var SAND='#d9d4c7', LINE='rgba(70,66,52,.15)', o='', y, i;
-  /* raked sand: long parallel furrows with a slow drift */
-  for(y=14;y<1000;y+=17){ var a=(Math.sin(y*.013)*7).toFixed(1), b=(Math.cos(y*.017)*6).toFixed(1);
-    o+='<path d="M-20 '+y+' C400 '+(y+ +a)+' 800 '+(y- +b)+' 1200 '+(y+ +b)+' S1500 '+(y- +a)+' 1620 '+y+'" fill="none" stroke="'+LINE+'" stroke-width="1.5"/>'; }
-  /* stones: rings raked around each, a patch of moss, a soft shadow */
-  function stone(cx,cy,R,w,h,rot,moss){
-    var s='<g class="zg-st"><circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="'+SAND+'"/>';
+var SAND='#d9d4c7', last='';
+/* the garden reflects consistency: moss spreads over a good month, a pine grows with total training days, the rake lines stay crisp on days you train */
+function state(){
+  var by={}, g={moss:0,pine:0,crisp:1,leaves:0,d30:0,total:0,gap:0};
+  try{ by=(typeof dailyHistory==='function'?dailyHistory():{})||{}; }catch(e){}
+  if(typeof dayKey!=='function') return g;
+  var k, today=new Date(), gap=-1;
+  for(k in by) if(by[k]>=60) g.total++;
+  for(var i=0;i<30;i++){ var d=new Date(today); d.setDate(today.getDate()-i); var on=(by[dayKey(d)]||0)>=60; if(on){ g.d30++; if(gap<0) gap=i; } }
+  if(gap<0) gap=g.total?30:0;
+  g.gap=gap; g.moss=Math.min(1,g.d30/26);
+  g.pine=g.total>=180?4:g.total>=90?3:g.total>=30?2:g.total>=7?1:0;
+  g.crisp=g.total?[1,.8,.55,.38,.26][Math.min(4,gap)]:1; g.leaves=Math.min(9,Math.max(0,gap-1)*3);
+  return g;
+}
+function build(g){
+  var LINE='rgba(70,66,52,'+(.16*g.crisp).toFixed(3)+')', o='', y;
+  for(y=14;y<1000;y+=17){ var a=(Math.sin(y*.013)*7).toFixed(1), b=(Math.cos(y*.017)*6).toFixed(1), w=g.crisp<.5?(Math.sin(y*1.7)*6*(1-g.crisp)).toFixed(1):0;
+    o+='<path d="M-20 '+y+' C400 '+(y+ +a+ +w)+' 800 '+(y- +b)+' 1200 '+(y+ +b- +w)+' S1500 '+(y- +a)+' 1620 '+y+'" fill="none" stroke="'+LINE+'" stroke-width="1.5"/>'; }
+  function stone(cx,cy,R,w,h,rot,thr){
+    var m=Math.max(0,Math.min(1,(g.moss-thr)/.3)), s='<g class="zg-st"><circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="'+SAND+'"/>';
     for(var r=Math.max(w,h)*.62+14;r<R;r+=16) s+='<ellipse cx="'+cx+'" cy="'+cy+'" rx="'+r+'" ry="'+(r*.93).toFixed(1)+'" fill="none" stroke="'+LINE+'" stroke-width="1.5"/>';
+    if(m>.6) s+='<ellipse cx="'+(cx-w*.2)+'" cy="'+(cy+h*.4)+'" rx="'+(w*.5*m).toFixed(1)+'" ry="'+(h*.16*m).toFixed(1)+'" fill="#6b8249" opacity=".55"/>';
     s+='<ellipse cx="'+(cx+6)+'" cy="'+(cy+h*.42)+'" rx="'+(w*.56)+'" ry="'+(h*.2)+'" fill="rgba(40,38,30,.22)"/>';
     s+='<g transform="rotate('+rot+' '+cx+' '+cy+')"><path d="M'+(cx-w*.5)+' '+(cy+h*.3)+' C'+(cx-w*.56)+' '+(cy-h*.2)+' '+(cx-w*.25)+' '+(cy-h*.55)+' '+(cx+w*.05)+' '+(cy-h*.5)+' S'+(cx+w*.55)+' '+(cy-h*.2)+' '+(cx+w*.5)+' '+(cy+h*.22)+' S'+(cx-w*.3)+' '+(cy+h*.52)+' '+(cx-w*.5)+' '+(cy+h*.3)+'Z" fill="url(#zg-rock)"/>'+
        '<path d="M'+(cx-w*.3)+' '+(cy-h*.28)+' C'+(cx-w*.1)+' '+(cy-h*.46)+' '+(cx+w*.18)+' '+(cy-h*.42)+' '+(cx+w*.3)+' '+(cy-h*.22)+'" fill="none" stroke="rgba(255,255,255,.16)" stroke-width="3" stroke-linecap="round"/>';
-    if(moss) s+='<path d="M'+(cx-w*.46)+' '+(cy+h*.12)+' C'+(cx-w*.52)+' '+(cy-h*.22)+' '+(cx-w*.3)+' '+(cy-h*.5)+' '+(cx-w*.02)+' '+(cy-h*.47)+' C'+(cx-w*.12)+' '+(cy-h*.2)+' '+(cx-w*.26)+' '+(cy+h*.02)+' '+(cx-w*.46)+' '+(cy+h*.12)+'Z" fill="#6b8249" opacity=".92"/><circle cx="'+(cx-w*.3)+'" cy="'+(cy-h*.22)+'" r="'+(w*.05)+'" fill="#8aa35f" opacity=".7"/>';
+    if(m>0){ var e=.35+.65*m; s+='<g transform="translate('+(cx-w*.2)+' '+(cy-h*.2)+') scale('+e.toFixed(2)+') translate('+(-(cx-w*.2))+' '+(-(cy-h*.2))+')" opacity="'+(.5+.45*m).toFixed(2)+'">'+
+      '<path d="M'+(cx-w*.46)+' '+(cy+h*.12)+' C'+(cx-w*.52)+' '+(cy-h*.22)+' '+(cx-w*.3)+' '+(cy-h*.5)+' '+(cx-w*.02)+' '+(cy-h*.47)+' C'+(cx-w*.12)+' '+(cy-h*.2)+' '+(cx-w*.26)+' '+(cy+h*.02)+' '+(cx-w*.46)+' '+(cy+h*.12)+'Z" fill="#6b8249"/><circle cx="'+(cx-w*.3)+'" cy="'+(cy-h*.22)+'" r="'+(w*.05)+'" fill="#8aa35f" opacity=".7"/></g>';
+      if(m>.8) s+='<path d="M'+(cx+w*.12)+' '+(cy-h*.44)+' C'+(cx+w*.3)+' '+(cy-h*.4)+' '+(cx+w*.42)+' '+(cy-h*.2)+' '+(cx+w*.44)+' '+(cy-h*.02)+' C'+(cx+w*.3)+' '+(cy-h*.12)+' '+(cx+w*.2)+' '+(cy-h*.26)+' '+(cx+w*.12)+' '+(cy-h*.44)+'Z" fill="#6b8249" opacity=".8"/>'; }
     return s+'</g></g>';
   }
-  o+=stone(1360,760,230,150,104,-8,true)+stone(1492,838,0,62,44,14,false)+stone(176,236,160,88,66,10,true)+stone(1448,178,118,56,42,-16,false)+stone(96,842,100,46,34,6,true);
-  var d=document.createElement('div'); d.id='zen-garden';
-  d.innerHTML='<svg viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="zg-rock" x1="0" y1="0" x2=".4" y2="1"><stop offset="0" stop-color="#70726a"/><stop offset=".55" stop-color="#4a4c45"/><stop offset="1" stop-color="#33352f"/></linearGradient></defs>'+o+'</svg>';
-  document.body.insertBefore(d,document.body.firstChild);
+  o+=stone(1360,760,230,150,104,-8,0)+stone(1492,838,0,62,44,14,.6)+stone(176,236,160,88,66,10,.2)+stone(1448,178,118,56,42,-16,.75)+stone(96,842,100,46,34,6,.4);
+  /* the pine by the great stone */
+  if(g.pine>0){
+    var sc=[0,.3,.58,.82,1.05][g.pine], px=1212, py=792;
+    o+='<g class="zg-st" transform="translate('+px+' '+py+') scale('+sc+')"><ellipse cx="6" cy="2" rx="46" ry="8" fill="rgba(40,38,30,.2)"/>'+
+      '<path d="M0 0 C-10 -40 16 -70 2 -112 C-4 -132 -22 -146 -30 -168" fill="none" stroke="#3b3024" stroke-width="9" stroke-linecap="round"/>'+
+      '<path d="M4 -78 C26 -86 40 -92 58 -108" fill="none" stroke="#3b3024" stroke-width="5" stroke-linecap="round"/>'+
+      [[-34,-176,52,15],[-66,-150,34,11],[2,-150,36,12],[60,-116,40,13],[26,-98,26,9],[-26,-116,30,10]].map(function(c){ return '<ellipse cx="'+c[0]+'" cy="'+c[1]+'" rx="'+c[2]+'" ry="'+c[3]+'" fill="#4c6336"/><ellipse cx="'+(c[0]-4)+'" cy="'+(c[1]-4)+'" rx="'+(c[2]*.7)+'" ry="'+(c[3]*.55)+'" fill="#5f7a44" opacity=".8"/>'; }).join('')+'</g>';
+  }
+  /* an unraked garden gathers leaves */
+  for(var i=0;i<g.leaves;i++){ var lx=(137*(i+3)*7)%1500+50, ly=(211*(i+5)*3)%900+50, lr=(i*47)%360;
+    o+='<ellipse cx="'+lx+'" cy="'+ly+'" rx="9" ry="4" transform="rotate('+lr+' '+lx+' '+ly+')" fill="'+(i%2?'#a5632d':'#8a4a26')+'" opacity=".75"/>'; }
+  return '<svg viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="zg-rock" x1="0" y1="0" x2=".4" y2="1"><stop offset="0" stop-color="#70726a"/><stop offset=".55" stop-color="#4a4c45"/><stop offset="1" stop-color="#33352f"/></linearGradient></defs>'+o+'</svg>';
 }
-try{ garden(); }catch(e){ if(window.console) console.warn('zen layer failed',e); }
+var PINE=['no pine yet — it sprouts after 7 training days','a pine seedling','a young pine','a grown pine','an old pine'];
+function refresh(force){
+  var d=document.getElementById('zen-garden');
+  if(!d){ d=document.createElement('div'); d.id='zen-garden'; d.innerHTML='<div id="zg-svg"></div><div id="zg-cap"></div>'; document.body.insertBefore(d,document.body.firstChild); }
+  if(!force&&!document.body.classList.contains('th-zen')&&last) return;
+  var g=state(), key=JSON.stringify(g); if(key===last) return; last=key;
+  document.getElementById('zg-svg').innerHTML=build(g);
+  document.getElementById('zg-cap').textContent='庭 — '+g.d30+' of the last 30 days trained · '+PINE[g.pine]+' · '+(g.total===0?'freshly raked':g.gap===0?'raked today':g.gap===1?'last raked yesterday':'unraked for '+g.gap+' days');
+  return g;
+}
+function hook(name){ var f=window[name]; if(typeof f!=='function') return; window[name]=function(){ var out=f.apply(this,arguments); try{ setTimeout(refresh,800); }catch(e){} return out; }; }
+try{ refresh(true); hook('renderDaily'); setInterval(refresh,5*60000); window.__garden={refresh:refresh,state:state}; }catch(e){ if(window.console) console.warn('zen layer failed',e); }
 })();
 </script>
 <!-- ═══ ZEN LAYER END ═══ -->
+<!-- ═══ PHONE LAYER START (v134) — additive: layout fixes for narrow screens. Delete from here to "PHONE LAYER END" to remove it. ═══ -->
+<style id="ph-css">
+@media (max-width:560px){
+  /* tabs fit on one row */
+  .view-nav{overflow-x:auto;scrollbar-width:none;}
+  .view-nav::-webkit-scrollbar{display:none;}
+  .view-nav-btn{flex:1 0 auto;padding:10px 6px;letter-spacing:.3px;font-size:8px;}
+  /* header: bigger touch targets, menu opens inward */
+  .hdr-right{gap:6px;}
+  .hdr-right .sm-btn{padding:7px 11px;font-size:10px;}
+  .jx-menu-panel{right:auto;left:0;min-width:170px;}
+  .jx-menu-panel .sm-btn{padding:10px 12px;font-size:11px;}
+  /* fighter card */
+  .fg-lvl-num{font-size:32px;}
+  .fg-stat-head{flex-wrap:wrap;}
+  .fg-stat-val{font-size:8px;}
+  /* quests: text gets the full row, progress and reward sit beneath it */
+  .qs-card,.ar-card,.lr-card{padding-left:14px;padding-right:14px;}
+  .qs-row{flex-wrap:wrap;row-gap:7px;}
+  .qs-text{flex:1 1 calc(100% - 40px);}
+  .qs-prog{margin-left:38px;}
+  .qs-rew{margin-left:auto;}
+  /* arena */
+  .ar-title{font-size:0;letter-spacing:0;}
+  .ar-title b{font-size:13px;letter-spacing:2px;margin-right:0;}
+  .ar-row{grid-template-columns:30px 1fr;gap:10px;}
+  .ar-kj{width:30px;height:30px;font-size:16px;}
+  .ar-line{flex-wrap:wrap;row-gap:2px;}
+  .ar-line small{white-space:nowrap;}
+  .ar-form{flex-wrap:wrap;}
+  .ar-form input{flex:1 1 100%;}
+  /* long road */
+  .lr-big-num{font-size:32px;}
+  .lr-t{font-size:7px;}
+  .lr-form{grid-template-columns:1fr;}
+  .lr-form label.wide,.lr-form .lr-btns{grid-column:auto;}
+  .lr-acts button{padding:6px 11px;font-size:10px;}
+  /* zones, seals, round-complete */
+  .zn-head{margin:22px 0 14px;}
+  .zn-tog{padding:6px 10px;}
+  .sl-scroll{padding:12px 14px;}
+  .rc-gains{max-width:270px;}
+  /* calm + zen */
+  body.calm .wrap{padding:36px 20px 120px;}
+  body.calm .zn-head{margin:48px 0 22px;}
+  body.calm.calm-focus #timer-bar{padding:40px 0 34px;}
+  body.calm.calm-focus #timer-bar .enso{width:190px;height:190px;}
+  #zg-cap{display:none;}
+}
+</style>
+<script id="ph-js">
+(function(){
+'use strict';
+try{
+  if(!window.matchMedia||!matchMedia('(max-width:560px)').matches) return;
+  /* on a phone the header keeps only calm + more; the rest moves into the menu */
+  var panel=document.querySelector('.jx-menu-panel'); if(!panel) return;
+  ['presence-btn','lk-pal','theme-btn','jx-btn'].forEach(function(id){ var b=document.getElementById(id); if(b) panel.insertBefore(b,panel.firstChild); });
+}catch(e){}
+})();
+</script>
+<!-- ═══ PHONE LAYER END ═══ -->
 </body>
 </html>
