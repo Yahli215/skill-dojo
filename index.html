@@ -8952,8 +8952,8 @@ function refresh(){
   if(scene3d){ scene3d.setTier(st.tier); if(tierUp) scene3d.bow(); else if(ups.length) scene3d.flex(); }
   /* daily goal reached → he bows, once per day */
   try{
-    if(typeof todayMins==='function'&&typeof DAILY_GOAL!=='undefined'&&todayMins()>=DAILY_GOAL&&lsGet(LS_BOW,'')!==localDay()){
-      lsSet(LS_BOW,localDay()); if(scene3d) scene3d.bow(); say('🏆 目標達成 — daily goal reached. He bows to you.');
+    if(typeof todayMins==='function'&&typeof DAILY_GOAL!=='undefined'&&todayMins()>=((window.__fair&&window.__fair.today())||DAILY_GOAL)&&lsGet(LS_BOW,'')!==localDay()){
+      lsSet(LS_BOW,localDay()); if(scene3d) scene3d.bow(); say('🏆 目標達成 — today is complete. He bows to you.');
     }
   }catch(e){}
 }
@@ -9347,10 +9347,11 @@ var LS_Q='jx_quests', LS_BONUS='jx_quest_bonus';
 var QB={power:1,discipline:2,focus:1,stamina:2,execution:2};
 function hrs(x){ return (Math.round(x*10)/10)+'h'; }
 var QUESTS=[
+  {id:'fair', stat:'power',     text:'Complete today\'s fair goal',           f:function(c){ var g=(window.__fair&&window.__fair.today())||600; return [Math.min(g,c.mins)/60,g/60]; }, show:function(p){ return hrs(p[0])+' / '+hrs(p[1]); }},
   {id:'am2',  stat:'stamina',   text:'2 full rounds before noon',            f:function(c){ return [c.ss.filter(function(s){ return s.m>=25&&s.h<12; }).length,2]; }, ok:function(c){ return c.hour<10; }},
   {id:'long', stat:'stamina',   text:'One unbroken round of 60+ minutes',     f:function(c){ return [c.ss.some(function(s){ return s.m>=60; })?1:0,1]; }},
-  {id:'h4',   stat:'power',     text:'Train 4 hours today',                   f:function(c){ return [Math.min(4,c.mins/60),4]; }, show:function(p){ return hrs(p[0])+' / 4h'; }},
-  {id:'h6',   stat:'power',     text:'Train 6 hours today',                   f:function(c){ return [Math.min(6,c.mins/60),6]; }, show:function(p){ return hrs(p[0])+' / 6h'; }, ok:function(c){ return c.hour<15; }},
+  {id:'h4',   stat:'power',     text:'Train 4 hours today',                   f:function(c){ return [Math.min(4,c.mins/60),4]; }, show:function(p){ return hrs(p[0])+' / 4h'; }, ok:function(){ return false; }},
+  {id:'h6',   stat:'power',     text:'Train 6 hours today',                   f:function(c){ return [Math.min(6,c.mins/60),6]; }, show:function(p){ return hrs(p[0])+' / 6h'; }, ok:function(){ return false; }},
   {id:'habits',stat:'discipline',text:'Check every habit today',              f:function(c){ return [c.hDone,c.hAll]; }, ok:function(c){ return c.hAll>0; }},
   {id:'early',stat:'discipline',text:'Start your first session before 9:00',  f:function(c){ return [c.ss.some(function(s){ return s.h<9; })?1:0,1]; }, ok:function(c){ return c.hour<9||c.ss.some(function(s){ return s.h<9; }); }},
   {id:'red',  stat:'execution', text:'Clear one 🔴 task',                     f:function(c){ return [Math.min(1,c.redDone),1]; }, ok:function(c){ return c.redOpen+c.redDone>0; }},
@@ -9439,7 +9440,7 @@ function refreshPath(){
   if(!el){ el=document.createElement('div'); el.id='jx-path'; wrap.insertBefore(el,wrap.firstChild); wrap.classList.add('jx-path-on'); }
   var P=[], LET=['S','M','T','W','T','F','S'], i, hit=0;
   for(i=0;i<7;i++){ var d=new Date(); d.setDate(d.getDate()-(6-i)); var m=by[dayKey(d)]||0;
-    P.push({x:26+i*44.6,y:104-i*11.5-(i%2?8:0),m:m,pct:Math.min(1,m/goal),ok:m>=goal,sh:!!(window.__arena&&window.__arena.shielded(dayKey(d))),l:LET[d.getDay()],today:i===6}); if(m>=goal) hit++; }
+    P.push({x:26+i*44.6,y:104-i*11.5-(i%2?8:0),m:m,gd:((window.__fair&&window.__fair.goalFor(dayKey(d)))||goal),pct:Math.min(1,m/((window.__fair&&window.__fair.goalFor(dayKey(d)))||goal)),ok:m>=((window.__fair&&window.__fair.goalFor(dayKey(d)))||goal),sh:!!(window.__arena&&window.__arena.shielded(dayKey(d))),l:LET[d.getDay()],today:i===6}); if(P[P.length-1].ok) hit++; }
   var s='<svg viewBox="0 0 320 140" xmlns="http://www.w3.org/2000/svg">'+
     '<polygon points="0,140 0,100 55,76 105,90 165,52 212,70 262,20 320,60 320,140" style="fill:var(--b1);opacity:.55"/>'+
     '<polygon points="246,34 262,20 277,37 268,33 262,39 255,32" style="fill:var(--text);opacity:.25"/>'+
@@ -9448,7 +9449,7 @@ function refreshPath(){
   for(i=1;i<7;i++) if((P[i].ok||P[i].sh)&&(P[i-1].ok||P[i-1].sh)) s+='<line class="pp-hit" x1="'+P[i-1].x.toFixed(1)+'" y1="'+P[i-1].y.toFixed(1)+'" x2="'+P[i].x.toFixed(1)+'" y2="'+P[i].y.toFixed(1)+'" style="stroke:var(--gold2);stroke-width:2.5"/>';
   P.forEach(function(p){
     var C=2*Math.PI*9, x=p.x.toFixed(1), y=p.y.toFixed(1);
-    s+='<g><title>'+(p.m/60).toFixed(1)+'h of '+(goal/60)+'h</title>';
+    s+='<g><title>'+(p.m/60).toFixed(1)+'h of '+(Math.round(p.gd/6)/10)+'h</title>';
     if(p.today) s+='<circle class="pp-now" cx="'+x+'" cy="'+y+'" r="9" style="fill:none;stroke:var(--verm);stroke-width:1.5"/>';
     s+='<circle cx="'+x+'" cy="'+y+'" r="9" style="fill:'+(p.ok?'var(--gold2)':'var(--bg)')+';stroke:var(--b2);stroke-width:1.5"'+(p.ok?' class="pp-hit"':'')+'/>';
     if(!p.ok&&p.pct>0) s+='<circle cx="'+x+'" cy="'+y+'" r="9" transform="rotate(-90 '+x+' '+y+')" style="fill:none;stroke:'+(p.pct>=.67?'var(--gold2)':'var(--verm)')+';stroke-width:2.5;stroke-linecap:round;stroke-dasharray:'+(C*p.pct).toFixed(1)+' '+C.toFixed(1)+'"/>';
@@ -9457,7 +9458,7 @@ function refreshPath(){
     s+='<text x="'+x+'" y="'+(p.y-15).toFixed(1)+'" text-anchor="middle" style="font-size:8px;font-family:var(--mono);fill:'+(p.m?'var(--text)':'var(--muted)')+'">'+(p.m?(p.m/60).toFixed(1)+'h':'·')+'</text>';
     s+='<text x="'+x+'" y="'+(p.y+23).toFixed(1)+'" text-anchor="middle" style="font-size:8px;font-family:var(--mono);letter-spacing:1px;fill:'+(p.today?'var(--verm)':'var(--muted2)')+'">'+(p.today?'TODAY':p.l)+'</text></g>';
   });
-  s+='</svg><div class="pp-cap"><span>道 — the week\'s climb</span><span>'+hit+' / 7 days at '+(goal/60)+'h</span></div>';
+  s+='</svg><div class="pp-cap"><span>道 — the week\'s climb</span><span>'+hit+' / 7 days complete</span></div>';
   if(el._last!==s){ el.innerHTML=s; el._last=s; }
 }
 
@@ -10416,5 +10417,145 @@ try{
 })();
 </script>
 <!-- ═══ PHONE LAYER END ═══ -->
+<!-- ═══ FAIR DAY LAYER START (v135) — additive: the daily goal fits the day you actually have. Delete from here to "FAIR DAY LAYER END" to remove it. ═══ -->
+<style id="fd-css">
+#fair-line{border-left:2px solid var(--gold);padding:8px 0 8px 14px;margin:0 0 18px;font-size:11px;color:var(--text);line-height:1.8;}
+#fair-line b{font-family:var(--serif);font-weight:900;color:var(--gold2);}
+#fair-line.done{border-left-color:var(--green2);}
+#fair-line.done b{color:var(--green2);}
+#fair-line small{display:block;font-size:9px;color:var(--muted2);letter-spacing:.5px;}
+#fair-line .fd-bar{height:3px;background:var(--b1);border-radius:2px;overflow:hidden;margin:6px 0 4px;max-width:340px;}
+#fair-line .fd-bar i{display:block;height:100%;border-radius:2px;background:var(--gold2);transition:width 1s cubic-bezier(.3,.9,.3,1);}
+#fair-line.done .fd-bar i{background:var(--green2);}
+#fair-line .fd-cfg{background:none;border:none;color:var(--muted);font-family:var(--mono);font-size:9px;cursor:pointer;padding:0 0 0 6px;text-decoration:underline dotted;}
+#fair-line .fd-cfg:hover{color:var(--gold);}
+#fair-edit{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;font-size:9px;color:var(--muted2);letter-spacing:.5px;}
+#fair-edit input{background:var(--bg);border:1px solid var(--b2);padding:4px 6px;color:var(--text);font-family:var(--mono);font-size:10px;outline:none;}
+#fair-edit input[type=number]{width:54px;}
+body.calm.calm-focus #fair-line{opacity:.05;transition:opacity 1.6s ease;}
+body.calm.calm-focus #fair-line:hover{opacity:1;}
+.rc-fair{font-size:10px;letter-spacing:.5px;color:var(--text);text-align:center;margin-top:6px;line-height:1.9;}
+.rc-fair b{font-family:var(--serif);font-weight:900;color:var(--gold2);}
+</style>
+<script id="fd-js">
+(function(){
+'use strict';
+var LS='jx_fair', LS_H='jx_fair_hist', LS_C='jx_fair_cfg';
+function lsGet(k,d){ try{ var v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+function full(){ return (typeof DAILY_GOAL!=='undefined'&&DAILY_GOAL)||600; }
+function pad(n){ return String(n).padStart(2,'0'); }
+function dk(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function hh(m){ var x=Math.round(m/6)/10; return (x%1?x.toFixed(1):x.toFixed(0))+'h'; }
+function clock(min){ return pad(Math.floor(min/60)%24)+':'+pad(min%60); }
+function cfg(){ var c=lsGet(LS_C,null)||{}; return {cut:c.cut==null?21*60:+c.cut,allow:c.allow==null?90:+c.allow}; }
+function sess(){ try{ return (typeof getSess==='function'?getSess():[])||[]; }catch(e){ return []; } }
+
+/* how much work still fits between a start time and the end of the day:
+   90-minute rounds with 15-minute breaks, less time for sport and meals */
+function fairFrom(startMin){
+  var c=cfg(), win=c.cut-startMin; if(win<=0) return 30;
+  var al=win>=360?c.allow:c.allow*win/360, avail=win-al;
+  return Math.max(30,Math.min(full(),Math.floor(avail/105*90/30)*30));
+}
+function firstStart(){
+  var d0=new Date(); d0.setHours(0,0,0,0); var lo=null;
+  sess().forEach(function(s){ var st=s.startTime||s.start; if(!st) return; var x=+new Date(st); if(x>=+d0&&(lo==null||x<lo)) lo=x; });
+  try{ if(typeof activeTimer!=='undefined'&&activeTimer&&activeTimer.startTime>=+d0&&(lo==null||activeTimer.startTime<lo)) lo=activeTimer.startTime; }catch(e){}
+  return lo;
+}
+function mins(){ try{ return typeof todayMins==='function'?todayMins():0; }catch(e){ return 0; } }
+function state(){
+  var now=new Date(), id=dk(now), t=lsGet(LS,null), fs=firstStart();
+  if(!t||t.date!==id) t={date:id,start:null,goal:null};
+  if(fs!=null&&(t.start==null||fs<t.start||t.goal==null)){
+    t.start=t.start==null?fs:Math.min(fs,t.start); var d=new Date(t.start); t.goal=fairFrom(d.getHours()*60+d.getMinutes());
+    var h=lsGet(LS_H,{}); h[id]=t.goal; lsSet(LS_H,h);
+  }
+  lsSet(LS,t);
+  var nowMin=now.getHours()*60+now.getMinutes(), c=cfg(), locked=t.goal!=null, goal=locked?t.goal:fairFrom(nowMin), m=mins(), left=Math.max(0,goal-m);
+  return {goal:goal,locked:locked,start:t.start,m:m,left:left,rounds:Math.ceil(left/90),pct:goal?m/goal:0,done:locked&&m>=goal,over:nowMin>=c.cut,cut:c.cut,allow:c.allow,share:goal/full()};
+}
+function goalFor(key){ if(key===dk(new Date())) return state().goal; var h=lsGet(LS_H,{}); return +h[key]||full(); }
+
+/* ── the line above the session starter ── */
+var editing=false, lastLine='';
+function line(){
+  var el=document.getElementById('fair-line');
+  if(!el){
+    var qt=document.getElementById('quick-timer'); if(!qt||!qt.parentNode) return;
+    el=document.createElement('div'); el.id='fair-line'; qt.parentNode.insertBefore(el,qt);
+    el.addEventListener('click',function(e){
+      if(e.target.id==='fd-cfg'){ editing=!editing; lastLine=''; refresh(); }
+      else if(e.target.id==='fd-save'){
+        var tv=(document.getElementById('fd-cut').value||'21:00').split(':'), al=parseInt(document.getElementById('fd-allow').value,10);
+        lsSet(LS_C,{cut:(+tv[0]||21)*60+(+tv[1]||0),allow:isNaN(al)?90:Math.max(0,Math.min(300,al))});
+        var t=lsGet(LS,null); if(t&&t.start!=null){ t.goal=null; lsSet(LS,t); }
+        editing=false; lastLine=''; refresh(); try{ if(typeof renderDaily==='function') renderDaily(); }catch(_){}
+      }
+    });
+  }
+  if(editing&&document.activeElement&&el.contains(document.activeElement)&&document.activeElement.tagName==='INPUT') return;
+  var s=state(), cards=Math.round(s.share*100), html, cut=clock(s.cut);
+  var cfgBtn=' <button class="fd-cfg" id="fd-cfg" type="button">day ends '+cut+'</button>';
+  var bar='<div class="fd-bar"><i style="width:'+Math.min(100,s.pct*100).toFixed(1)+'%"></i></div>';
+  var cardTxt=cards<100?'Cards: '+cards+'% of your usual target counts as a full day today.':'Cards: your usual target.';
+  if(!s.locked) html=(s.over?'The day has ended at '+cut+'. Anything you do now is extra.':'Start now and <b>'+hh(s.goal)+'</b> is a complete day.')+cfgBtn+'<small>'+(s.over?'':cardTxt+' ')+'The goal is set when your first session starts.</small>';
+  else if(s.done) html='達 Today is complete — <b>'+hh(Math.min(s.m,s.goal))+' of '+hh(s.goal)+'</b> possible.'+(s.m>s.goal?' <b>+'+hh(s.m-s.goal)+'</b> beyond it.':'')+cfgBtn+bar+'<small>Started '+clock(new Date(s.start).getHours()*60+new Date(s.start).getMinutes())+'. '+cardTxt+'</small>';
+  else if(s.over) html='Today: <b>'+hh(s.m)+' of '+hh(s.goal)+'</b> possible — '+Math.round(s.pct*100)+'%. The day is done; rest.'+cfgBtn+bar+'<small>Tomorrow starts clean.</small>';
+  else html='Today\'s fair goal: <b>'+hh(s.goal)+'</b> · '+hh(s.m)+' done · <b>'+s.rounds+' round'+(s.rounds===1?'':'s')+' left</b> to complete today.'+cfgBtn+bar+
+    '<small>Started '+clock(new Date(s.start).getHours()*60+new Date(s.start).getMinutes())+', so '+hh(s.goal)+' is everything that fits before '+cut+'. '+cardTxt+'</small>';
+  if(editing) html+='<div id="fair-edit">Day ends at <input type="time" id="fd-cut" value="'+cut+'"> · sport and meals <input type="number" id="fd-allow" min="0" max="300" value="'+s.allow+'"> min <button class="sm-btn" id="fd-save" type="button">save</button></div>';
+  if(html!==lastLine){ el.innerHTML=html; lastLine=html; }
+  el.classList.toggle('done',!!s.done);
+  return s;
+}
+
+/* ── make the existing daily-goal block use the fair goal ── */
+function daily(){
+  var s=state(), bar=document.getElementById('daily-bar'), tm=document.getElementById('daily-time'), sub=document.getElementById('daily-sub'), lbl=document.getElementById('daily-goal-label');
+  var c=s.done?'var(--green2)':'var(--gold2)';
+  if(bar) bar.style.cssText='width:'+Math.min(100,s.pct*100).toFixed(1)+'%;background:'+c;
+  if(tm) tm.style.color=c;
+  if(lbl) lbl.textContent='Fair goal: '+hh(s.goal);
+  if(sub) sub.textContent=s.done?'目標達成 — today is complete.':!s.locked?'Start now and '+hh(s.goal)+' is a complete day.':s.over?hh(s.m)+' of '+hh(s.goal)+' possible today.':s.rounds+' round'+(s.rounds===1?'':'s')+' left — '+hh(s.left)+' to a complete day.';
+  var dots=document.getElementById('week-dots');
+  if(dots&&typeof dailyHistory==='function'){
+    var by=dailyHistory(), ch=dots.children;
+    for(var i=6,k=0;i>=0&&k<ch.length;i--,k++){ var d=new Date(); d.setDate(d.getDate()-i); var r=(by[dk(d)]||0)/goalFor(dk(d)); ch[k].classList.toggle('g',r>=1); ch[k].classList.toggle('o',r<1&&r>=.67); }
+  }
+}
+/* a day that met its fair goal counts as a full day for the streak */
+function installStreak(){
+  var inner=window.calcStreak; if(typeof inner!=='function') return;
+  window.calcStreak=function(byDay){
+    try{ var tk=dk(new Date()), tg=state().goal, h=lsGet(LS_H,{}), g=full(), b={}, k; for(k in byDay) b[k]=byDay[k];
+      for(k in h) if(k!==tk&&+h[k]<g&&(b[k]||0)>=+h[k]) b[k]=g;
+      if(tg<g&&(b[tk]||0)>=tg) b[tk]=g;
+      return inner(b);
+    }catch(e){ return inner(byDay); }
+  };
+}
+function roundLine(){
+  var btn=document.getElementById('rc-next'); if(!btn) return; var old=document.getElementById('rc-fair'); if(old) old.remove();
+  var s=state(), el=document.createElement('div'); el.className='rc-fair'; el.id='rc-fair';
+  el.innerHTML=s.done?'今日 <b>Today is complete</b> — '+hh(s.goal)+' was everything that fit.':'今日 '+hh(s.m)+' of '+hh(s.goal)+' — <b>'+s.rounds+' round'+(s.rounds===1?'':'s')+' left</b> to complete today';
+  var g=document.getElementById('rc-gains'); if(g) g.appendChild(el); else btn.parentNode.insertBefore(el,btn);
+}
+function refresh(){ try{ line(); }catch(e){} }
+function hook(name,after){ var f=window[name]; if(typeof f!=='function') return; window[name]=function(){ var out=f.apply(this,arguments); try{ after(arguments); }catch(e){} return out; }; }
+function boot(){
+  installStreak();
+  window.__fair={today:function(){ return state().goal; },goalFor:goalFor,state:state,refresh:refresh};
+  hook('renderDaily',function(){ daily(); refresh(); });
+  hook('startTimer',function(){ setTimeout(function(){ refresh(); try{ daily(); }catch(e){} },300); });
+  hook('showRoundComplete',function(){ roundLine(); });
+  refresh(); try{ daily(); }catch(e){}
+  setInterval(function(){ refresh(); try{ daily(); }catch(e){} },60000);
+}
+try{ boot(); }catch(e){ if(window.console) console.warn('fair day layer failed',e); }
+})();
+</script>
+<!-- ═══ FAIR DAY LAYER END ═══ -->
 </body>
 </html>
