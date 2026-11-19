@@ -9188,7 +9188,7 @@ function start3D(THREE){
     outside:function(season,weather){ setOutside(season,weather); },
     calm:function(v){ calmV=!!v; var t0=tier; tier=-1; setTier(t0<0?0:t0); },
     zen:function(v){ v=!!v; if(v===zenV) return; zenV=v; WALLM.color.set(v?0xd9d3c4:0x2a1e12); scene.background.set(v?0xd8d3c6:0x0c0a08); todName=''; setTOD(); },
-    pixel:function(v){ renderer.setPixelRatio(v?.3:Math.min(window.devicePixelRatio||1,2)); size(); }};
+    pixel:function(v){ renderer.setPixelRatio(v?Math.min(window.devicePixelRatio||1,1.5):Math.min(window.devicePixelRatio||1,2)); size(); }};
   setOutside((function(){ var m=new Date().getMonth(); return m>=2&&m<=4?'spring':m>=5&&m<=7?'summer':m>=8&&m<=10?'autumn':'winter'; })(),'clear');
   setTier(state?state.tier:0); setTOD(); pollState(); size(); go();
   try{ if(window.__look) window.__look.outside(); }catch(e){}
