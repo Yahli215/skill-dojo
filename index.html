@@ -2682,17 +2682,29 @@ function renderRemoteTimer(){
     return;
   }
   const sk = skills.find(s=>s.id===remoteTimer.skillId);
+  const isPomo = !!remoteTimer.isPomo;
   const isWork = (remoteTimer.phase||'work')==='work';
-  const phaseMins = isWork ? (remoteTimer.pw||90) : (remoteTimer.pb||10);
-  const elapsed = Math.floor((Date.now() - remoteTimer.phaseStart)/1000);
-  const remaining = Math.max(0, phaseMins*60 - elapsed);
-  const m = Math.floor(remaining/60), s = remaining%60;
+  const paused = !!remoteTimer.paused;
+  // While paused, time is frozen at the moment of pause
+  const now = paused && remoteTimer.pausedAt ? remoteTimer.pausedAt : Date.now();
+  let timeTxt;
+  if(isPomo){
+    const phaseMins = isWork ? (remoteTimer.pw||90) : (remoteTimer.pb||10);
+    const elapsed = Math.floor((now - remoteTimer.phaseStart)/1000);
+    const remaining = Math.max(0, phaseMins*60 - elapsed);
+    timeTxt = remaining===0 ? 'Phase complete' : `${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`;
+  } else {
+    // Plain stopwatch session: count up from start
+    const el = Math.max(0, Math.floor((now - (remoteTimer.startTime||now))/1000));
+    const h = Math.floor(el/3600), m = Math.floor((el%3600)/60), s = el%60;
+    timeTxt = h>0 ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${m}:${String(s).padStart(2,'0')}`;
+  }
   document.getElementById('rt-icon').textContent = isWork ? (sk?.emoji||'⚡') : '☕';
   document.getElementById('rt-skill').textContent = sk ? `${sk.emoji} ${sk.name}` : '⚡ Training';
-  document.getElementById('rt-desc').textContent  = `🖥 Running on computer`;
-  document.getElementById('rt-pomo').textContent  = `${isWork?'Work':'Break'}  ·  Round ${remoteTimer.round||1}`;
-  document.getElementById('rt-time').textContent  = remaining===0 ? 'Phase complete' : `${m}:${String(s).padStart(2,'0')}`;
-  bar.classList.toggle('break', !isWork);
+  document.getElementById('rt-desc').textContent  = `🖥 Running on computer${paused?' · paused':''}`;
+  document.getElementById('rt-pomo').textContent  = isPomo ? `${isWork?'Work':'Break'}  ·  Round ${remoteTimer.round||1}` : (remoteTimer.desc||'Session');
+  document.getElementById('rt-time').textContent  = (paused?'⏸ ':'') + timeTxt;
+  bar.classList.toggle('break', isPomo && !isWork);
   bar.classList.add('on');
   if(!remoteTimerTick) remoteTimerTick = setInterval(renderRemoteTimer, 1000);
 }
@@ -2700,19 +2712,24 @@ function renderRemoteTimer(){
 function startRemoteTimer(timer){
   remoteTimer = timer;
   renderRemoteTimer();
-  // Poll cloud every 30s to catch phase changes or when timer stops
-  if(!remoteTimerPoll) remoteTimerPoll = setInterval(async ()=>{
-    if(!getGUser()) return;
-    try {
-      const res = await fetch(`${SB_URL}/rest/v1/skillquest?google_user_id=eq.${encodeURIComponent(getGUser())}&select=data`, { headers: sbH(), cache:'no-store' });
-      const rows = await res.json();
-      const t = rows[0]?.data?.activeTimer || null;
-      _cloudTimerCache = t; // keep cache fresh
-      if(!t){ remoteTimer=null; clearInterval(remoteTimerPoll); remoteTimerPoll=null; renderRemoteTimer(); }
-      else { remoteTimer=t; }
-    } catch(e){}
-  }, 30000);
 }
+
+// Lightweight timer-only poll (every 5s): picks up start/pause/stop from other devices fast
+async function pollRemoteTimer(){
+  if(!getGUser() || document.hidden || activeTimer) return;
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/skillquest?google_user_id=eq.${encodeURIComponent(getGUser())}&select=timer:data->activeTimer`, { headers: sbH(), cache:'no-store' });
+    if(!res.ok) return;
+    const rows = await res.json();
+    const t = rows[0]?.timer || null;
+    _cloudTimerCache = t; // keep cache fresh so our own pushes don't clobber it
+    if(activeTimer) return; // started one locally while request was in flight
+    remoteTimer = t;
+    renderRemoteTimer();
+  } catch(e){}
+}
+if(!remoteTimerPoll) remoteTimerPoll = setInterval(pollRemoteTimer, 5000);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) pollRemoteTimer(); });
 
 async function manualSync(){
   const btn = document.getElementById('sync-btn');
@@ -3063,6 +3080,7 @@ function startTimer(){
   activeTimer = {skillId:selSkillId,desc,startTime:Date.now(),isPomo,pw,originalPw:pw,pb,phase:'work',round:1,phaseStart:Date.now(),eventEndTime:eventEnd?new Date(eventEnd).getTime():null,eventId};
   _timerOwner = true; // this device owns the timer
   ls.set('sq_active_timer', activeTimer);
+  pushCloud(); // sync other devices immediately
   const sk = skills.find(s=>s.id===selSkillId);
   document.getElementById('t-icon').textContent = sk?.emoji||'⚡';
   document.getElementById('t-skill').textContent = sk?.name||'—';
@@ -3159,6 +3177,7 @@ function togglePauseTimer(){
     if(btn){ btn.textContent='▶'; btn.classList.add('paused'); }
     const tEl=document.getElementById('t-time');
     if(tEl) tEl.textContent='⏸';
+    pushCloud();
   } else {
     // Resume — shift startTime and phaseStart forward so elapsed stays accurate
     const gap=Date.now()-activeTimer.pausedAt;
@@ -3168,11 +3187,14 @@ function togglePauseTimer(){
     activeTimer.pausedAt=null;
     localStorage.setItem('sq_active_timer',JSON.stringify(activeTimer));
     if(btn){ btn.textContent='⏸'; btn.classList.remove('paused'); }
+    pushCloud();
   }
 }
 
 function cancelTimer(){
   activeTimer=null; localStorage.removeItem('sq_active_timer');
+  _cloudTimerCache=null; // this device owned it; don't let a later push resurrect it
+  pushCloud();
   document.getElementById('timer-bar').classList.remove('on','break');
   document.getElementById('quick-timer').style.display='block';
   document.getElementById('t-pomo').style.display='none';
@@ -3273,7 +3295,7 @@ function saveNextRoundEdit(){
 
   activeTimer.skillId=newSkillId;
   if(desc) activeTimer.desc=desc;
-  ls.set('sq_active_timer',activeTimer);
+  ls.set('sq_active_timer',activeTimer); pushCloud();
   const sk=skills.find(s=>s.id===activeTimer.skillId);
   if(sk){
     const skEl=document.getElementById('t-skill'); if(skEl) skEl.textContent=sk.emoji+' '+sk.name;
@@ -3422,7 +3444,7 @@ function tickTimer(){
           activeTimer.phase='break'; activeTimer.phaseStart=Date.now(); document.getElementById('timer-bar').classList.add('break'); sendNotif('☕ Break','Round '+activeTimer.round+' done.');
         }
         else{ activeTimer.round++; activeTimer.phase='work'; activeTimer.pw=activeTimer.originalPw||activeTimer.pw; activeTimer.phaseStart=Date.now(); document.getElementById('timer-bar').classList.remove('break'); sendNotif('💪 Work','Round '+activeTimer.round); startCheckin(); }
-        ls.set('sq_active_timer',activeTimer); playBeep();
+        ls.set('sq_active_timer',activeTimer); playBeep(); pushCloud();
       }
       const rm2=Math.max(0,rem),rmm=Math.floor(rm2/60),rss=rm2%60;
       tEl.textContent=pad(rmm)+':'+pad(rss);
