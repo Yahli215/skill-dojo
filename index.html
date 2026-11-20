@@ -1388,6 +1388,7 @@ body.light .page-watermark { opacity: .2; }
         <button class="sm-btn" id="theme-btn" onclick="toggleTheme()">☀ light</button>
         <button class="sm-btn" id="user-btn" onclick="signOut()" style="display:none">sign out</button>
         <button class="sm-btn" id="sync-btn" onclick="manualSync()" style="display:none">⟳ sync</button>
+        <button class="sm-btn" onclick="openDayTemplate()">🗓 day template</button>
         <button class="sm-btn" id="presence-btn" onclick="togglePresence()" title="Presence auto-stop: OFF">👁 presence</button><span class="presence-dot" id="presence-dot"></span>
         <button class="sm-btn" onclick="exportData()">↓ backup</button>
         <button class="sm-btn" onclick="document.getElementById('import-inp').click()">↑ restore</button>
@@ -1680,6 +1681,10 @@ body.light .page-watermark { opacity: .2; }
     <div class="ml-field">
       <div class="ml-field-lbl">Step 1 — Describe the problem</div>
       <textarea class="ml-textarea" id="pt-problem" rows="4" placeholder="What exactly is happening? When? What does it cost you?"></textarea>
+    </div>
+    <div class="ml-field">
+      <div class="ml-field-lbl">Solved when (measurable, from your data)</div>
+      <input class="ml-inp" id="pt-solved-when" placeholder="e.g. calculation focus avg ≥ 3.5 for 2 weeks">
     </div>
     <div class="ml-modal-row">
       <button class="ml-modal-cancel" onclick="closeProblemModal()">Cancel</button>
@@ -2321,9 +2326,7 @@ async function bootFromCloud(){
       if(d.sessions){
         // Merge: keep cloud sessions as base, add any local sessions not yet pushed
         const local = ls.get('sq_sessions','[]');
-        const cloudIds = new Set(d.sessions.map(s=>s.id));
-        const extra = local.filter(s=>!cloudIds.has(s.id));
-        ls.set('sq_sessions', extra.length ? [...d.sessions,...extra] : d.sessions);
+        ls.set('sq_sessions', _mergeSessions(d.sessions, local));
       }
       if(d.skillData){
         // Merge skillData: take higher totalMins per skill (local wins if ahead of cloud)
@@ -2419,6 +2422,7 @@ async function bootFromCloud(){
         const extraB = localB.filter(b=>!cloudBIds.has(b.id));
         ls.set('sq_breaks', extraB.length ? [...d.breaks,...extraB] : d.breaks);
       }
+      if(d.dayTemplate){ const _lt = ls.get('sq_day_template','null'); if(!_lt || (d.dayTemplate.updatedAt||0) >= (_lt.updatedAt||0)) ls.set('sq_day_template', d.dayTemplate); }
       if(d.problems){
         const localP = ls.get('sq_problems','[]');
         const cloudPIds = new Set(d.problems.map(p=>p.id));
@@ -2537,9 +2541,7 @@ async function refreshFromCloud(){
       }
       if(d.sessions){
         const local = ls.get('sq_sessions','[]');
-        const cloudIds = new Set(d.sessions.map(s=>s.id));
-        const extra = local.filter(s=>!cloudIds.has(s.id));
-        ls.set('sq_sessions', extra.length ? [...d.sessions,...extra] : d.sessions);
+        ls.set('sq_sessions', _mergeSessions(d.sessions, local));
       }
       if(d.skillData){
         const localData = ls.get('sq_skill_data','{}');
@@ -2646,6 +2648,7 @@ async function refreshFromCloud(){
         const extraB = localB.filter(b=>!cloudBIds.has(b.id));
         ls.set('sq_breaks', extraB.length ? [...d.breaks,...extraB] : d.breaks);
       }
+      if(d.dayTemplate){ const _lt = ls.get('sq_day_template','null'); if(!_lt || (d.dayTemplate.updatedAt||0) >= (_lt.updatedAt||0)) ls.set('sq_day_template', d.dayTemplate); }
       if(d.problems){
         const localP = ls.get('sq_problems','[]');
         const cloudPIds = new Set(d.problems.map(p=>p.id));
@@ -3112,6 +3115,7 @@ function stopTimer(){
   const plannedMins = activeTimer.isPomo ? (activeTimer.pw||null) : null;
   const outcome = plannedMins == null ? 'completed' : (mins >= 0.85 * plannedMins ? 'completed' : 'cut_short');
   const session = {id:uid(),skillId:activeTimer.skillId,description:desc,startTime:tStart,endTime:Date.now(),duration:elapsed,mins,stop:new Date().toISOString(),start:new Date(tStart).toISOString(),duration_minutes:mins,plannedMins,outcome,end_rpe:null,peak_rpe:null,session_load:null};
+  _detectDeviations(session, activeTimer.missed);
   const all = getSess(); all.push(session); ls.set('sq_sessions',all); sessions=all;
   try{renderDaily();}catch(e){}
   const data=getData(), sid=activeTimer.skillId;
@@ -3427,6 +3431,7 @@ function tickTimer(){
           const rMins=Math.floor(rEl/60);
           if(rMins>=1){
             const rSess={id:uid(),skillId:activeTimer.skillId,description:activeTimer.desc+' · R'+activeTimer.round,startTime:activeTimer.phaseStart,endTime:Date.now(),duration:rEl,mins:rMins,stop:new Date().toISOString(),start:new Date(activeTimer.phaseStart).toISOString(),duration_minutes:rMins,plannedMins:activeTimer.pw||null,outcome:'completed',end_rpe:null,peak_rpe:null,session_load:null};
+            _detectDeviations(rSess, activeTimer.missed);
             const rAll=getSess(); rAll.push(rSess); ls.set('sq_sessions',rAll); sessions=rAll;
             const rData=getData(),rSid=activeTimer.skillId;
             if(!rData[rSid]) rData[rSid]={totalMins:0,rank:'Novice'};
@@ -3459,6 +3464,137 @@ function tickTimer(){
 function selSkill(id){ selSkillId=id; document.querySelectorAll('.skill-pill').forEach(b=>b.classList.toggle('sel',b.dataset.id===id)); document.getElementById('start-btn').disabled=false; }
 function togglePomo(){ const b=document.getElementById('pomo-btn'),r=document.getElementById('pomo-row'),on=b.classList.toggle('on'); r.classList.toggle('show',on); }
 function playBeep(){ try{ const ctx=new(window.AudioContext||window.webkitAudioContext)(); [880,1047].forEach((f,i)=>setTimeout(()=>{ const o=ctx.createOscillator(),g=ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.frequency.value=f; o.type='sine'; g.gain.setValueAtTime(.35,ctx.currentTime); g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.7); o.start(ctx.currentTime); o.stop(ctx.currentTime+.7); },i*350)); }catch(e){} }
+
+/* ── DAY TEMPLATE + DEVIATIONS ──────────────────────────
+   sq_day_template = { blocks:[{start:'09:00', end:'10:30', type:'chess'}...], tol:5, updatedAt }
+   Synced via Supabase (data.dayTemplate). Planned block times are compared with actual sessions;
+   deviations are stored on the session: { deviations:[{type,mins,...}], blockIdx, blockType, devNote } */
+const TASK_TYPES = ['chess','review','admin','sport','other'];
+const TYPE_ICON  = { chess:'♟', review:'🔍', admin:'🗂', sport:'🏃', other:'•' };
+
+function getDayTemplate(){
+  const t = ls.get('sq_day_template','null');
+  return (t && Array.isArray(t.blocks) && t.blocks.length) ? t : null;
+}
+function saveDayTemplate(t){ t.updatedAt = Date.now(); ls.set('sq_day_template', t); pushSync(); }
+function _tplMin(hhmm){ const p=String(hhmm||'0:0').split(':'); return (parseInt(p[0])||0)*60 + (parseInt(p[1])||0); }
+function _tplFmt(min){ min=((min%1440)+1440)%1440; return String(Math.floor(min/60)).padStart(2,'0')+':'+String(min%60).padStart(2,'0'); }
+
+// Which template block does this session belong to? Best overlap, must cover >=50% of the session.
+function _blockForSession(startMs, endMs){
+  const tpl = getDayTemplate(); if(!tpl) return null;
+  const d0 = new Date(startMs); d0.setHours(0,0,0,0);
+  let best = null, bestOv = 0;
+  tpl.blocks.forEach((b,i)=>{
+    const ps = d0.getTime() + _tplMin(b.start)*60000, pe = d0.getTime() + _tplMin(b.end)*60000;
+    const ov = Math.min(endMs,pe) - Math.max(startMs,ps);
+    if(ov > bestOv){ bestOv = ov; best = {idx:i, block:b, ps, pe}; }
+  });
+  if(!best || bestOv < 0.5*(endMs-startMs)) return null;
+  return best;
+}
+
+// Called when a block (session) is saved. Mutates sess: blockIdx, blockType, deviations.
+//  - late start / ended early: planned (template) vs actual, beyond the tolerance.
+//    Only judged when the session is >=60% of the planned block length (short pomodoro rounds inside a block aren't "early").
+//  - away: missed check-ins that fell inside the session.
+function _detectDeviations(sess, missed){
+  try{
+    const tpl = getDayTemplate();
+    const tol = ((tpl && tpl.tol) || 5) * 60000;
+    const devs = [];
+    const m = _blockForSession(sess.startTime, sess.endTime);
+    if(m){
+      sess.blockIdx = m.idx; sess.blockType = m.block.type || null;
+      if((sess.endTime - sess.startTime) >= 0.6*(m.pe - m.ps)){
+        if(sess.startTime - m.ps > tol) devs.push({type:'late_start', mins:Math.round((sess.startTime - m.ps)/60000)});
+        if(m.pe - sess.endTime > tol)   devs.push({type:'early_end',  mins:Math.round((m.pe - sess.endTime)/60000)});
+      }
+    }
+    const away = (missed||[]).filter(x => x.at >= sess.startTime && x.at <= sess.endTime + 60000);
+    if(away.length) devs.push({type:'away', count:away.length, mins:away.reduce((a,x)=>a+(x.mins||5),0)});
+    if(devs.length) sess.deviations = devs;
+  }catch(e){ console.warn('deviation detect failed', e); }
+}
+function _devLabel(d){
+  if(d.type==='late_start') return `Late start +${d.mins}m`;
+  if(d.type==='early_end')  return `Ended early −${d.mins}m`;
+  if(d.type==='away')       return `Away from desk ~${d.mins}m`;
+  return d.type;
+}
+// Optional "What happened?" field — rendered only when the block had a deviation
+function _devBlockHtml(sessionId){
+  const s = getSess().find(x=>x.id===sessionId);
+  if(!s || !s.deviations || !s.deviations.length) return '';
+  const chips = s.deviations.map(d=>`<span style="display:inline-block;margin:0 4px 4px 0;padding:2px 7px;border:1px solid var(--verm);color:var(--verm);border-radius:10px;font-family:var(--mono);font-size:9px">${_devLabel(d)}</span>`).join('');
+  return `<div style="margin-bottom:16px;padding-top:12px;border-top:1px solid var(--b2)">
+    <div style="margin-bottom:4px">${chips}</div>
+    <div style="font-size:12px;color:var(--muted2);margin-bottom:4px">What happened? <span style="font-size:10px">(optional)</span></div>
+    <input id="sq-dev-note" placeholder="e.g. phone call, bathroom, slept in…" autocomplete="off" style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:7px;font-family:var(--mono);font-size:11px;border-radius:6px">
+  </div>`;
+}
+
+function openDayTemplate(){
+  document.getElementById('dt-ov')?.remove();
+  const cur = getDayTemplate() || {blocks:[], tol:5};
+  let blocks = cur.blocks.map(b=>({...b}));
+  const ov = document.createElement('div'); ov.id='dt-ov';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:950;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 0 60px';
+  const inp = 'background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:6px;font-family:var(--mono);font-size:11px;border-radius:5px;';
+  const lbl = 'font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;margin-bottom:3px';
+  function render(){
+    const rows = blocks.map((b,i)=>`<div style="display:flex;align-items:center;gap:5px;margin-bottom:6px">
+      <span style="font-family:var(--mono);font-size:10px;color:var(--muted2);width:16px">${i+1}</span>
+      <input type="time" data-i="${i}" data-f="start" value="${b.start}" style="${inp}width:88px">
+      <span style="color:var(--muted2)">–</span>
+      <input type="time" data-i="${i}" data-f="end" value="${b.end}" style="${inp}width:88px">
+      <select data-i="${i}" data-f="type" style="${inp}flex:1">${TASK_TYPES.map(t=>`<option value="${t}"${(b.type||'chess')===t?' selected':''}>${TYPE_ICON[t]} ${t}</option>`).join('')}</select>
+      <button data-rm="${i}" style="background:none;border:none;color:var(--verm);cursor:pointer;font-size:14px">✕</button>
+    </div>`).join('') || `<div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:8px">No blocks yet — generate below or add one.</div>`;
+    ov.innerHTML = `<div style="background:var(--b1);border:1px solid var(--b2);border-radius:12px;padding:20px 18px;width:370px;max-width:95vw;margin:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div style="font-family:var(--serif);font-size:18px;font-weight:900">🗓 Day template</div>
+        <button id="dt-x" style="background:none;border:none;color:var(--muted2);font-size:20px;cursor:pointer">✕</button>
+      </div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:12px;line-height:1.5">Planned block times. Actual sessions are compared against these to flag late starts, early finishes and time away.</div>
+      <div style="${lbl}">Generate</div>
+      <div style="display:flex;gap:6px;align-items:flex-end;margin-bottom:14px">
+        <div><div style="${lbl}">Start</div><input id="dt-gs" type="time" value="${blocks[0]?.start||'09:00'}" style="${inp}width:88px"></div>
+        <div><div style="${lbl}">Blocks</div><input id="dt-gn" type="number" min="1" max="12" value="7" style="${inp}width:46px"></div>
+        <div><div style="${lbl}">Min</div><input id="dt-gl" type="number" min="15" value="90" style="${inp}width:50px"></div>
+        <div><div style="${lbl}">Break</div><input id="dt-gb" type="number" min="0" value="15" style="${inp}width:46px"></div>
+        <button id="dt-gen" style="padding:7px 10px;background:var(--s2);border:1px solid var(--b2);color:var(--text);font-family:var(--mono);font-size:10px;cursor:pointer;border-radius:5px">Fill</button>
+      </div>
+      <div style="${lbl}">Blocks</div>
+      ${rows}
+      <button id="dt-add" style="width:100%;margin:4px 0 14px;padding:7px;background:var(--s2);border:1px solid var(--b2);color:var(--muted2);font-family:var(--mono);font-size:10px;cursor:pointer;border-radius:6px">＋ Add block</button>
+      <div style="${lbl}">Tolerance (min before it counts as a deviation)</div>
+      <input id="dt-tol" type="number" min="0" value="${cur.tol||5}" style="${inp}width:70px;margin-bottom:16px">
+      <div style="display:flex;gap:8px">
+        <button id="dt-clear" style="padding:9px;background:none;border:1px solid var(--b2);color:var(--muted2);font-family:var(--mono);font-size:11px;cursor:pointer;border-radius:6px">Clear</button>
+        <button id="dt-save" style="flex:1;padding:9px;background:var(--gold2);color:#000;border:none;font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer;border-radius:6px">Save template</button>
+      </div></div>`;
+    ov.querySelector('#dt-x').onclick = ()=>ov.remove();
+    ov.querySelectorAll('[data-f]').forEach(el=>{ el.onchange = ()=>{ blocks[+el.dataset.i][el.dataset.f] = el.value; }; });
+    ov.querySelectorAll('[data-rm]').forEach(b=>{ b.onclick = ()=>{ blocks.splice(+b.dataset.rm,1); render(); }; });
+    ov.querySelector('#dt-add').onclick = ()=>{ const last=blocks[blocks.length-1]; const st=last?_tplMin(last.end)+15:540; blocks.push({start:_tplFmt(st), end:_tplFmt(st+90), type:'chess'}); render(); };
+    ov.querySelector('#dt-gen').onclick = ()=>{
+      const st=_tplMin(ov.querySelector('#dt-gs').value||'09:00'), n=parseInt(ov.querySelector('#dt-gn').value)||7,
+            len=parseInt(ov.querySelector('#dt-gl').value)||90, br=parseInt(ov.querySelector('#dt-gb').value)||0;
+      blocks = Array.from({length:n},(_,i)=>({start:_tplFmt(st+i*(len+br)), end:_tplFmt(st+i*(len+br)+len), type:(blocks[i]&&blocks[i].type)||'chess'}));
+      render();
+    };
+    ov.querySelector('#dt-clear').onclick = ()=>{ if(!confirm('Clear the day template?')) return; ls.set('sq_day_template',{blocks:[],tol:5,updatedAt:Date.now()}); pushSync(); ov.remove(); toast('Template cleared'); };
+    ov.querySelector('#dt-save').onclick = ()=>{
+      const clean = blocks.filter(b=>b.start&&b.end&&_tplMin(b.end)>_tplMin(b.start));
+      if(!clean.length){ toast('Add at least one valid block'); return; }
+      saveDayTemplate({blocks:clean, tol:parseInt(ov.querySelector('#dt-tol').value)||0});
+      ov.remove(); toast('Day template saved ✓');
+    };
+  }
+  ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); });
+  render(); document.body.appendChild(ov);
+}
 
 /* ── CHECK-IN FEATURE ───────────────────────────────── */
 let _ciTimeout=null, _ciInterval=null;
@@ -3507,6 +3643,11 @@ function missedCheckin(){
   if(_ciTimeout) clearTimeout(_ciTimeout);
   if(_ciInterval) clearInterval(_ciInterval);
   document.getElementById('checkin-banner')?.classList.remove('active');
+  // Record as time away from desk on the running timer (used by deviation detection)
+  if(activeTimer){
+    (activeTimer.missed = activeTimer.missed || []).push({at: ci.deadline || Date.now(), mins: 5});
+    ls.set('sq_active_timer', activeTimer);
+  }
   addStrike();
   try{ renderDaily(); }catch(e){}
   sendNotif('🔴 Strike','Missed check-in — round '+(ci.round||''));
@@ -3760,10 +3901,37 @@ const DEFAULT_HABITS = [
   { id:'dh2', name:'Fixed wake time — same every day',  emoji:'🔴', history:[] },
   { id:'dh3', name:'20-min morning buffer before chess', emoji:'🔴', history:[] },
 ];
+// Recurring binary weekly habit (done = any check-in during the Mon–Sun week; streak counts weeks).
+// Fixed id so cross-device merges de-duplicate it; seeded once per device.
+const WEEKLY_REVIEW_HABIT = { id:'weekly-review', name:'Weekly review done', emoji:'📋', weekly:true, history:[] };
+function _wkStart(k){ const d=new Date(k+'T12:00:00'); d.setDate(d.getDate()-((d.getDay()+6)%7)); return dayKey(d); }
+function weeklyDone(h,k){ const w=_wkStart(k); return (h.history||[]).some(x=>_wkStart(x)===w); }
+function weeklyStreak(h){
+  const set=new Set((h.history||[]).map(_wkStart));
+  const d=new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate()-((d.getDay()+6)%7));
+  let streak=0, first=true;
+  for(let i=0;i<260;i++){
+    if(set.has(dayKey(d))) streak++; else if(!first) break;   // current week may still be pending
+    first=false; d.setDate(d.getDate()-7);
+  }
+  return streak;
+}
+function weeklyLast8(h){
+  const set=new Set((h.history||[]).map(_wkStart)), out=[];
+  const d=new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate()-((d.getDay()+6)%7)-7*7);
+  for(let i=0;i<8;i++){ out.push({k:dayKey(d),hit:set.has(dayKey(d))}); d.setDate(d.getDate()+7); }
+  return out;
+}
 function getHabits(){
   try{
-    const h=ls.get('sq_habits','[]');
-    if(Array.isArray(h) && h.length>0) return h;
+    let h=ls.get('sq_habits','[]');
+    if(Array.isArray(h) && h.length>0){
+      if(!h.some(x=>x.id==='weekly-review') && !localStorage.getItem('sq_wr_seeded')){
+        h=[...h,{...WEEKLY_REVIEW_HABIT,history:[]}]; saveHabits(h);
+      }
+      localStorage.setItem('sq_wr_seeded','1');
+      return h;
+    }
     // First load — seed the foundation habits
     saveHabits(DEFAULT_HABITS);
     return DEFAULT_HABITS.map(h=>({...h}));
@@ -3814,6 +3982,17 @@ function cycleUrgency(id){
   pushSync();
 }
 
+// Task type (chess / review / admin / sport / other) — saved on the task, so it syncs with sq_tasks
+function cycleTaskType(id){
+  const all = getTasks();
+  const task = all.find(t => t.id === id); if(!task) return;
+  const cycle = [null, ...TASK_TYPES];
+  const next = cycle[(cycle.indexOf(task.type || null) + 1) % cycle.length];
+  saveTasks(all.map(t => t.id === id ? {...t, type: next, _updatedAt: Date.now()} : t));
+  renderTasks();
+  pushSync();
+}
+
 function deleteTask(id){
   saveTasks(getTasks().filter(t => t.id !== id));
   renderTasks();
@@ -3837,6 +4016,7 @@ function renderTasks(){
     return `<div class="task-item" data-u="${u}">
       <button class="task-urgency-btn" data-u="${u}" onclick="cycleUrgency('${t.id}')" title="Tap to set urgency">${URGENCY_ICON[u]}</button>
       <input type="checkbox" class="task-cb" ${t.done ? 'checked' : ''} onchange="toggleTask('${t.id}')">
+      <button onclick="cycleTaskType('${t.id}')" title="Tap to set task type" style="background:none;border:1px solid var(--b2);border-radius:10px;color:var(--muted2);font-family:var(--mono);font-size:9px;padding:1px 6px;cursor:pointer;flex-shrink:0">${t.type ? (TYPE_ICON[t.type]||'')+' '+t.type : '＋ type'}</button>
       <span class="task-text ${t.done ? 'done' : ''}">${t.text.replace(/</g,'&lt;')}</span>
       <button class="task-del" onclick="deleteTask('${t.id}')">✕</button>
     </div>`;
@@ -4226,6 +4406,15 @@ function renderSeason(){
       </div>
     </div>
     <div class="season-progress-track" style="margin-bottom:8px"><div class="season-progress-fill" style="width:${pct}%;background:${col}"></div></div>`;
+
+    // Linked problem + its measurable "solved when" criterion
+    const linkedProb = ah.problemId ? getProblems().find(p=>p.id===ah.problemId) : null;
+    if(linkedProb){
+      html+=`<div style="margin-bottom:8px;font-family:var(--mono)">
+        <div style="font-size:10px;color:var(--indigo)">🎯 ${esc(linkedProb.title)}</div>
+        ${linkedProb.solvedWhen?`<div style="font-size:10px;color:var(--muted2);margin-top:2px">Solved when: ${esc(linkedProb.solvedWhen)}</div>`:`<div style="font-size:9px;color:var(--muted);margin-top:2px">No "solved when" set — add one in Problems</div>`}
+      </div>`;
+    }
 
     if(isHabitDays){
       const dl=habitDaysLeft(ah);
@@ -4627,28 +4816,32 @@ function _askSessionQuality(sessionId){
     <div style="font-size:12px;color:var(--muted2);margin-bottom:4px">What did you work on?</div>
     <input id="sq-tag" list="sq-tag-list" placeholder="e.g. Calculation, Opening…" autocomplete="off" style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:7px;font-family:var(--mono);font-size:11px;border-radius:6px;margin-bottom:18px">
     <datalist id="sq-tag-list">${causesOpts}</datalist>
+    ${_devBlockHtml(sessionId)}
     <div style="display:flex;gap:8px">
-      <button onclick="document.getElementById('sq-quality-modal').remove()" style="flex:1;padding:8px;background:none;border:1px solid var(--b2);color:var(--muted2);font-family:var(--mono);font-size:10px;cursor:pointer;border-radius:6px">Skip</button>
+      <button onclick="_saveSessionQuality('${sessionId}',true)" style="flex:1;padding:8px;background:none;border:1px solid var(--b2);color:var(--muted2);font-family:var(--mono);font-size:10px;cursor:pointer;border-radius:6px">Skip</button>
       <button onclick="_saveSessionQuality('${sessionId}')" style="flex:1;padding:8px;background:var(--gold2);color:#000;border:none;font-family:var(--mono);font-size:11px;font-weight:800;cursor:pointer;border-radius:6px">Save</button>
     </div>
   </div>`;
   document.body.appendChild(ov);
 }
 
-function _saveSessionQuality(sessionId){
+function _saveSessionQuality(sessionId, skip){
   const ov=document.getElementById('sq-quality-modal'); if(!ov) return;
-  const q=parseInt(document.getElementById('sq-focus')?.value)||0;
-  const e=parseInt(document.getElementById('sq-energy')?.value)||0;
-  const tag=document.getElementById('sq-tag')?.value||null;
+  // Skip = don't record the sliders/tag, but still keep a "What happened?" note if one was typed
+  const q=skip?0:(parseInt(document.getElementById('sq-focus')?.value)||0);
+  const e=skip?0:(parseInt(document.getElementById('sq-energy')?.value)||0);
+  const tag=skip?null:(document.getElementById('sq-tag')?.value||null);
+  const note=(document.getElementById('sq-dev-note')?.value||'').trim();
   ov.remove();
   const all=getSess(), idx=all.findIndex(s=>s.id===sessionId);
   if(idx>=0){
     if(q) all[idx].quality=q;
     if(e) all[idx].energy=e;
     if(tag) all[idx].trainingTag=tag;
+    if(note) all[idx].devNote=note;
     ls.set('sq_sessions',all); sessions=all;
   }
-  if(q||e||tag) toast('Session logged ✓');
+  if(q||e||tag||note){ toast('Session logged ✓'); pushSync(); }
   renderLevers();
 }
 
@@ -5594,9 +5787,16 @@ function toggleHabit(id){
   const habits=getHabits();
   const h=habits.find(x=>x.id===id); if(!h) return;
   const k=habitKey();
-  const isChecking=!h.history.includes(k);
-  if(isChecking) h.history.push(k);
-  else h.history=h.history.filter(d=>d!==k);
+  let isChecking;
+  if(h.weekly){
+    isChecking=!weeklyDone(h,k);
+    if(isChecking) h.history.push(k);
+    else { const w=_wkStart(k); h.history=h.history.filter(d=>_wkStart(d)!==w); }
+  } else {
+    isChecking=!h.history.includes(k);
+    if(isChecking) h.history.push(k);
+    else h.history=h.history.filter(d=>d!==k);
+  }
   saveHabits(habits);
   renderHabits();
   if(isChecking){
@@ -5632,11 +5832,13 @@ function renderHabits(){
   if(btn) btn.classList.toggle('visible', isSat && habits.length>0);
   let html='';
   habits.forEach(h=>{
-    const doneToday=h.history.includes(today);
-    const streak=habitStreakCount(h);
+    const doneToday=h.weekly?weeklyDone(h,today):h.history.includes(today);
+    const streak=h.weekly?weeklyStreak(h):habitStreakCount(h);
     const last7=habitLast7(h);
     const DAY_LBL=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    const dots=last7.map((k,i)=>{
+    const dots=h.weekly
+      ? weeklyLast8(h).map((w,i)=>`<div class="habit-dot-col${i===7?' today':''}"><div class="habit-dot${w.hit?' hit':''}${i===7?' today-dot':''}"></div><div class="habit-day-lbl">${i===7?'now':'w-'+(7-i)}</div></div>`).join('')
+      : last7.map((k,i)=>{
       const hit=h.history.includes(k),isToday=i===6;
       const lbl=DAY_LBL[new Date(k+'T12:00:00').getDay()];
       return `<div class="habit-dot-col${isToday?' today':''}"><div class="habit-dot${hit?' hit':''}${isToday?' today-dot':''}"></div><div class="habit-day-lbl">${lbl}</div></div>`;
@@ -5650,7 +5852,7 @@ function renderHabits(){
         </div>
         <div class="habit-meta">
           <div class="habit-dots">${dots}</div>
-          <span class="habit-streak">${streak>0?'<b>'+streak+'</b> day streak':'—'}</span>
+          <span class="habit-streak">${streak>0?'<b>'+streak+'</b> '+(h.weekly?'week':'day')+' streak':'—'}</span>
         </div>
       </div>
       <button class="habit-check${doneToday?' checked':''}" onclick="toggleHabit('${h.id}')">${doneToday?'✓':''}</button>
@@ -7863,6 +8065,22 @@ let _cloudTimerCache = null;
 // Before the first sync we don't yet know what the cloud holds, so we skip writing activeTimer.
 let _cloudSyncDone = false;
 
+// Cloud sessions are the base; local-only sessions are added. For sessions on both sides, keep
+// locally-saved ratings / deviations / notes if the cloud copy doesn't have them yet.
+const _SESS_KEEP_FIELDS = ['quality','energy','trainingTag','devNote','deviations','blockIdx','blockType','jacob_hardness','jacob_focus'];
+function _mergeSessions(cloud, local){
+  const lMap = Object.fromEntries((local||[]).map(s=>[s.id,s]));
+  const cIds = new Set(cloud.map(s=>s.id));
+  const merged = cloud.map(c=>{
+    const l = lMap[c.id]; if(!l) return c;
+    const m = {...c};
+    _SESS_KEEP_FIELDS.forEach(f=>{ if(m[f]==null && l[f]!=null) m[f]=l[f]; });
+    return m;
+  });
+  (local||[]).forEach(s=>{ if(!cIds.has(s.id)) merged.push(s); });
+  return merged;
+}
+
 async function pushCloud(){
   const userId = getGUser(); if(!userId) return { ok: false, reason: 'not logged in' };
   const sess = getSess();
@@ -7883,6 +8101,7 @@ async function pushCloud(){
     delegatedReview: getReviewMgr(),
     reviewFeedback: ls.get('sq_review_feedback','[]'),
     problems: getProblems(),
+    dayTemplate: ls.get('sq_day_template','null'),
     ...(timerToWrite !== undefined ? { activeTimer: timerToWrite } : {}),
   };
   try {
@@ -7997,6 +8216,8 @@ function renderProblemCard(p){
       </div>
       <div class="pt-step-body">
         <textarea class="pt-final-inp" rows="3" placeholder="What exactly is happening? When? What does it cost you?" onblur="saveProblemField('${p.id}','problem',this.value)">${esc(p.problem||'')}</textarea>
+        <div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;margin:8px 0 3px">Solved when</div>
+        <input class="pt-final-inp" style="min-height:0;height:auto" placeholder="e.g. calculation focus avg ≥ 3.5 for 2 weeks" value="${esc(p.solvedWhen||'')}" onblur="saveProblemField('${p.id}','solvedWhen',this.value)">
       </div>
     </div>
 
@@ -8162,6 +8383,7 @@ function openProblemModal(id=null){
   document.getElementById('pt-modal-title').textContent = id ? 'Edit Problem' : 'New Problem';
   document.getElementById('pt-title').value   = p?.title||'';
   document.getElementById('pt-problem').value = p?.problem||'';
+  document.getElementById('pt-solved-when').value = p?.solvedWhen||'';
   document.getElementById('pt-modal-ov').classList.add('on');
   setTimeout(()=>document.getElementById('pt-title').focus(),60);
 }
@@ -8170,12 +8392,13 @@ function saveProblemModal(){
   const title = document.getElementById('pt-title').value.trim();
   if(!title){ toast('Name required',1500); return; }
   const problem = document.getElementById('pt-problem').value.trim();
+  const solvedWhen = document.getElementById('pt-solved-when').value.trim();
   const probs = getProblems();
   if(_ptEditId){
     const p = probs.find(x=>x.id===_ptEditId); if(!p) return;
-    p.title = title; p.problem = problem||p.problem; p.updatedAt = new Date().toISOString();
+    p.title = title; p.problem = problem||p.problem; p.solvedWhen = solvedWhen; p.updatedAt = new Date().toISOString();
   } else {
-    const newP = {id:uid(), title, problem, solutions:[], experiments:[], finalSolution:'', status:'open', createdAt:new Date().toISOString(), updatedAt:new Date().toISOString()};
+    const newP = {id:uid(), title, problem, solvedWhen, solutions:[], experiments:[], finalSolution:'', status:'open', createdAt:new Date().toISOString(), updatedAt:new Date().toISOString()};
     probs.push(newP);
     _ptExpanded.add(newP.id);
   }
@@ -9258,6 +9481,21 @@ try{ boot(); }catch(e){ if(window.console) console.warn('fighter layer failed',e
 .qs-foot{font-size:9px;color:var(--muted);letter-spacing:1px;padding-top:8px;border-top:1px solid var(--b1);}
 .qs-card.all .qs-foot{color:var(--gold2);}
 .qs-card.all{border-color:var(--gold);box-shadow:0 0 22px -10px var(--gold2);}
+.qs-edit{background:none;border:1px solid var(--b2);color:var(--muted2);font-size:11px;padding:1px 8px;border-radius:5px;cursor:pointer;margin-right:8px;}
+.qs-edit:hover{color:var(--gold2);border-color:var(--gold2);}
+#qe-ov{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:950;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 0 60px;}
+#qe-ov .qe-box{background:var(--b1);border:1px solid var(--b2);border-radius:12px;padding:20px 18px;width:360px;max-width:95vw;margin:auto;font-family:var(--mono);}
+.qe-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.qe-h b{font-family:var(--serif);font-size:17px;font-weight:900;}
+.qe-sub{font-size:10px;color:var(--muted2);margin-bottom:12px;line-height:1.5;}
+.qe-row{display:flex;align-items:center;gap:6px;padding:7px 0;border-top:1px solid var(--b2);}
+.qe-txt{flex:1;min-width:0;font-size:11px;color:var(--text);}
+.qe-stat{font-size:9px;flex-shrink:0;}
+.qe-row select,.qe-add select,.qe-add input{background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:5px;font-family:var(--mono);font-size:10px;border-radius:5px;}
+.qe-add{border-top:1px solid var(--b2);margin-top:8px;padding-top:12px;display:flex;flex-direction:column;gap:7px;}
+.qe-add label{font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;}
+.qe-del{background:none;border:none;color:var(--verm);cursor:pointer;font-size:14px;padding:0 2px;}
+.qe-btn{padding:8px;border-radius:6px;border:none;background:var(--gold2);color:#000;font-family:var(--mono);font-size:11px;font-weight:700;cursor:pointer;}
 
 /* streak flame */
 .streak-box{position:relative;}
@@ -9339,14 +9577,38 @@ function ctx(){
     if(!t) return;
     if(t.done&&t.doneDate&&new Date(t.doneDate)>=d0){ c.tDone++; if(t.urgency==='now') c.redDone++; }
     else if(!t.done&&t.urgency==='now') c.redOpen++; }); }catch(e){}
-  try{ var k=new Date().toISOString().slice(0,10); ((typeof getHabits==='function'?getHabits():[])||[]).forEach(function(h){ c.hAll++; if((h.history||[]).indexOf(k)>=0) c.hDone++; }); }catch(e){}
+  try{ var k=new Date().toISOString().slice(0,10); ((typeof getHabits==='function'?getHabits():[])||[]).forEach(function(h){ if(h.weekly) return; c.hAll++; if((h.history||[]).indexOf(k)>=0) c.hDone++; }); }catch(e){}
   return c;
 }
 function rng(seed){ var h=2166136261; for(var i=0;i<seed.length;i++){ h^=seed.charCodeAt(i); h=Math.imul(h,16777619); } var a=h>>>0;
   return function(){ a|=0; a=a+0x6D2B79F5|0; var t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+/* ── editable quest config: per-quest mode (auto | pin | off) + custom quests ── */
+var LS_QC='jx_quest_cfg';
+function qcfg(){ var c=lsGet(LS_QC,null)||{}; return {mode:c.mode||{}, custom:c.custom||[]}; }
+var KINDS={
+  hours:  {label:'Train X hours today',        unit:'h',   def:4},
+  rounds: {label:'X rounds of 25+ min',        unit:'',    def:3},
+  long:   {label:'One round of X+ minutes',    unit:'min', def:60},
+  focus:  {label:'A session with focus X+',    unit:'/10', def:7},
+  tasks:  {label:'Complete X tasks today',     unit:'',    def:3}
+};
+function customQuest(cu){
+  var t=+cu.target||1, k=cu.kind;
+  var q={id:cu.id, stat:cu.stat, text:cu.text, custom:true, kind:k, target:t};
+  if(k==='hours'){ q.f=function(c){ return [Math.min(t,c.mins/60),t]; }; q.show=function(p){ return hrs(p[0])+' / '+t+'h'; }; }
+  else if(k==='rounds'){ q.f=function(c){ return [Math.min(t,c.ss.filter(function(s){ return s.m>=25; }).length),t]; }; }
+  else if(k==='long'){ q.f=function(c){ return [c.ss.some(function(s){ return s.m>=t; })?1:0,1]; }; }
+  else if(k==='focus'){ q.f=function(c){ return [c.ss.some(function(s){ return s.q>=t; })?1:0,1]; }; }
+  else { q.f=function(c){ return [Math.min(t,c.tDone),t]; }; }
+  return q;
+}
+function allQuests(){ return QUESTS.concat(qcfg().custom.map(customQuest)); }
 function generate(c){
-  var r=rng('dojo'+dayId()), pool=QUESTS.filter(function(q){ return !q.ok||q.ok(c); }).map(function(q){ return {q:q,k:r()}; }).sort(function(a,b){ return a.k-b.k; });
+  var cfg=qcfg(), all=allQuests();
+  var pinned=all.filter(function(q){ return cfg.mode[q.id]==='pin'; }).slice(0,3);
+  var r=rng('dojo'+dayId()), pool=all.filter(function(q){ var m=cfg.mode[q.id]; return m!=='off'&&m!=='pin'&&(!q.ok||q.ok(c)); }).map(function(q){ return {q:q,k:r()}; }).sort(function(a,b){ return a.k-b.k; });
   var ids=[], used={};
+  pinned.forEach(function(q){ ids.push(q.id); used[q.stat]=1; });
   pool.forEach(function(p){ if(ids.length<3&&!used[p.q.stat]){ used[p.q.stat]=1; ids.push(p.q.id); } });
   pool.forEach(function(p){ if(ids.length<3&&ids.indexOf(p.q.id)<0) ids.push(p.q.id); });
   return {date:dayId(),ids:ids,done:{},all:false};
@@ -9366,7 +9628,7 @@ function refreshQuests(silent){
   if(!q||q.date!==dayId()||!q.ids||!q.ids.length) q=generate(c);
   var newly=[], allNew=false, rows='', nDone=0;
   q.ids.forEach(function(id){
-    var d=QUESTS.filter(function(x){ return x.id===id; })[0]; if(!d) return;
+    var d=allQuests().filter(function(x){ return x.id===id; })[0]; if(!d) return;
     var p=d.f(c), done=!!q.done[id]||(p[1]>0&&p[0]>=p[1]);
     if(done&&!q.done[id]){ q.done[id]=1; addBonus(d.stat,QB[d.stat]); newly.push(d); }
     if(done) nDone++;
@@ -9377,10 +9639,10 @@ function refreshQuests(silent){
       '<div class="qs-prog">'+show+'</div>'+
       '<div class="qs-rew" style="color:'+SC[d.stat]+';border-color:'+SC[d.stat]+'"><b>'+SK[d.stat]+'</b>+'+SN[d.stat]+'</div></div>';
   });
-  if(nDone>=q.ids.length&&q.ids.length&&!q.all){ q.all=true; allNew=true; q.ids.forEach(function(id){ var d=QUESTS.filter(function(x){ return x.id===id; })[0]; if(d) addBonus(d.stat,QB[d.stat]); }); }
+  if(nDone>=q.ids.length&&q.ids.length&&!q.all){ q.all=true; allNew=true; q.ids.forEach(function(id){ var d=allQuests().filter(function(x){ return x.id===id; })[0]; if(d) addBonus(d.stat,QB[d.stat]); }); }
   lsSet(LS_Q,q);
   el.classList.toggle('all',!!q.all);
-  el.innerHTML='<div class="qs-head"><div class="qs-title"><b>日課</b>Daily Quests</div><div class="qs-count">'+nDone+' / '+q.ids.length+'</div></div>'+rows+
+  el.innerHTML='<div class="qs-head"><div class="qs-title"><b>日課</b>Daily Quests</div><div style="display:flex;align-items:baseline"><button class="qs-edit" onclick="window.__editQuests()" title="Edit quests">✎ edit</button><div class="qs-count">'+nDone+' / '+q.ids.length+'</div></div></div>'+rows+
     '<div class="qs-foot">'+(q.all?'極 — all three done. Bonus paid to every stat. New quests at midnight.':'Each quest feeds its stat. Finish all three for a double bonus.')+'</div>';
   if(silent||(!newly.length&&!allNew)) return;
   var jx=J();
@@ -9391,6 +9653,58 @@ function refreshQuests(silent){
   if(allNew) say('🏆 日課達成 — all daily quests cleared. Double bonus paid.',4000);
   else say('✓ Quest cleared — +'+newly.map(function(d){ return SN[d.stat]; }).join(', +'));
 }
+
+/* ── in-app quest editor ── */
+function saveQcfg(cfg){
+  lsSet(LS_QC,cfg);
+  // Re-roll today's set with the new config, keeping anything already cleared.
+  // If all three were already cleared (bonus paid), leave today alone — changes apply tomorrow.
+  var old=lsGet(LS_Q,null);
+  if(!(old&&old.date===dayId()&&old.all)){
+    var q=generate(ctx());
+    if(old&&old.date===q.date){ q.done={}; q.ids.forEach(function(id){ if(old.done&&old.done[id]) q.done[id]=1; }); }
+    lsSet(LS_Q,q);
+  }
+  refreshQuests(true);
+}
+function openQuestEditor(){
+  var old=document.getElementById('qe-ov'); if(old) old.remove();
+  var ov=document.createElement('div'); ov.id='qe-ov';
+  function esc2(s){ return String(s).replace(/[&<>"]/g,function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]; }); }
+  function render(){
+    var cfg=qcfg(), all=allQuests(), rows='';
+    all.forEach(function(q){
+      var m=cfg.mode[q.id]||'auto', cond=(!q.custom&&q.ok)?' <span style="color:var(--muted)">· conditional</span>':'';
+      rows+='<div class="qe-row"><div class="qe-txt">'+esc2(q.text)+cond+'</div>'+
+        '<span class="qe-stat" style="color:'+SC[q.stat]+'">'+SK[q.stat]+'</span>'+
+        '<select data-id="'+q.id+'"><option value="auto"'+(m==='auto'?' selected':'')+'>Auto</option><option value="pin"'+(m==='pin'?' selected':'')+'>Pin</option><option value="off"'+(m==='off'?' selected':'')+'>Off</option></select>'+
+        (q.custom?'<button class="qe-del" data-del="'+q.id+'" title="Delete">✕</button>':'')+'</div>';
+    });
+    var kinds=Object.keys(KINDS).map(function(k){ return '<option value="'+k+'">'+KINDS[k].label+'</option>'; }).join('');
+    var stats=Object.keys(SN).map(function(s){ return '<option value="'+s+'">'+SK[s]+' '+SN[s]+'</option>'; }).join('');
+    ov.innerHTML='<div class="qe-box"><div class="qe-h"><b>日課 Edit quests</b><button class="qe-del" id="qe-x" style="color:var(--muted2);font-size:20px">✕</button></div>'+
+      '<div class="qe-sub"><b>Auto</b> = may be picked at random each day · <b>Pin</b> = always shown (max 3) · <b>Off</b> = never. Free slots are filled randomly from Auto quests.</div>'+rows+
+      '<div class="qe-add"><label>＋ Custom quest</label>'+
+      '<select id="qe-kind">'+kinds+'</select>'+
+      '<div style="display:flex;gap:6px"><input id="qe-target" type="number" min="1" step="0.5" value="'+KINDS.hours.def+'" style="width:70px"><select id="qe-stat" style="flex:1">'+stats+'</select></div>'+
+      '<input id="qe-text" placeholder="Name (optional)" style="width:100%;box-sizing:border-box">'+
+      '<button class="qe-btn" id="qe-add">Add quest</button></div></div>';
+    ov.querySelector('#qe-x').onclick=function(){ ov.remove(); };
+    [].forEach.call(ov.querySelectorAll('select[data-id]'),function(s){ s.onchange=function(){ var c=qcfg(); c.mode[s.dataset.id]=s.value; saveQcfg(c); render(); }; });
+    [].forEach.call(ov.querySelectorAll('[data-del]'),function(b){ b.onclick=function(){ var c=qcfg(); c.custom=c.custom.filter(function(x){ return x.id!==b.dataset.del; }); delete c.mode[b.dataset.del]; saveQcfg(c); render(); }; });
+    ov.querySelector('#qe-kind').onchange=function(){ ov.querySelector('#qe-target').value=KINDS[this.value].def; };
+    ov.querySelector('#qe-add').onclick=function(){
+      var kind=ov.querySelector('#qe-kind').value, target=parseFloat(ov.querySelector('#qe-target').value)||KINDS[kind].def;
+      var stat=ov.querySelector('#qe-stat').value, text=ov.querySelector('#qe-text').value.trim();
+      if(!text){ text=KINDS[kind].label.replace('X',target); }
+      var c=qcfg(); c.custom.push({id:'c'+Date.now().toString(36),kind:kind,target:target,stat:stat,text:text});
+      saveQcfg(c); render(); say('Quest added ✓');
+    };
+  }
+  ov.addEventListener('click',function(e){ if(e.target===ov) ov.remove(); });
+  render(); document.body.appendChild(ov);
+}
+window.__editQuests=openQuestEditor;
 
 /* ════ 4. STREAK FLAME ════ */
 function refreshFlame(){
@@ -9456,7 +9770,7 @@ function showGains(mins){
 /* ════ 8. HEADER MENU ════ */
 function buildMenu(){
   var hdr=document.querySelector('.hdr-right'); if(!hdr||document.getElementById('jx-menu')) return;
-  var move=[].filter.call(hdr.querySelectorAll('button'),function(b){ var oc=b.getAttribute('onclick')||''; return /exportData|import-inp|editSkills|signOut/.test(oc); });
+  var move=[].filter.call(hdr.querySelectorAll('button'),function(b){ var oc=b.getAttribute('onclick')||''; return /exportData|import-inp|editSkills|signOut|openDayTemplate/.test(oc); });
   if(!move.length) return;
   var wrap=document.createElement('span'); wrap.className='jx-menu'; wrap.id='jx-menu';
   var btn=document.createElement('button'); btn.className='sm-btn'; btn.type='button'; btn.textContent='☰ more';
