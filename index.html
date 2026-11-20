@@ -1388,7 +1388,7 @@ body.light .page-watermark { opacity: .2; }
         <button class="sm-btn" id="theme-btn" onclick="toggleTheme()">☀ light</button>
         <button class="sm-btn" id="user-btn" onclick="signOut()" style="display:none">sign out</button>
         <button class="sm-btn" id="sync-btn" onclick="manualSync()" style="display:none">⟳ sync</button>
-        <button class="sm-btn" onclick="openDayTemplate()">🗓 day template</button>
+        <button class="sm-btn" onclick="openDayTemplate()">🗓 day plan</button>
         <button class="sm-btn" id="presence-btn" onclick="togglePresence()" title="Presence auto-stop: OFF">👁 presence</button><span class="presence-dot" id="presence-dot"></span>
         <button class="sm-btn" onclick="exportData()">↓ backup</button>
         <button class="sm-btn" onclick="document.getElementById('import-inp').click()">↑ restore</button>
@@ -2423,6 +2423,7 @@ async function bootFromCloud(){
         ls.set('sq_breaks', extraB.length ? [...d.breaks,...extraB] : d.breaks);
       }
       if(d.dayTemplate){ const _lt = ls.get('sq_day_template','null'); if(!_lt || (d.dayTemplate.updatedAt||0) >= (_lt.updatedAt||0)) ls.set('sq_day_template', d.dayTemplate); }
+      if(d.planEvents){ const _lp = ls.get('sq_plan_events','null'); if(!_lp || d.planEvents.date > _lp.date || (d.planEvents.date===_lp.date && (d.planEvents.fetchedAt||0) > (_lp.fetchedAt||0))) ls.set('sq_plan_events', d.planEvents); }
       if(d.problems){
         const localP = ls.get('sq_problems','[]');
         const cloudPIds = new Set(d.problems.map(p=>p.id));
@@ -2649,6 +2650,7 @@ async function refreshFromCloud(){
         ls.set('sq_breaks', extraB.length ? [...d.breaks,...extraB] : d.breaks);
       }
       if(d.dayTemplate){ const _lt = ls.get('sq_day_template','null'); if(!_lt || (d.dayTemplate.updatedAt||0) >= (_lt.updatedAt||0)) ls.set('sq_day_template', d.dayTemplate); }
+      if(d.planEvents){ const _lp = ls.get('sq_plan_events','null'); if(!_lp || d.planEvents.date > _lp.date || (d.planEvents.date===_lp.date && (d.planEvents.fetchedAt||0) > (_lp.fetchedAt||0))) ls.set('sq_plan_events', d.planEvents); }
       if(d.problems){
         const localP = ls.get('sq_problems','[]');
         const cloudPIds = new Set(d.problems.map(p=>p.id));
@@ -3465,51 +3467,81 @@ function selSkill(id){ selSkillId=id; document.querySelectorAll('.skill-pill').f
 function togglePomo(){ const b=document.getElementById('pomo-btn'),r=document.getElementById('pomo-row'),on=b.classList.toggle('on'); r.classList.toggle('show',on); }
 function playBeep(){ try{ const ctx=new(window.AudioContext||window.webkitAudioContext)(); [880,1047].forEach((f,i)=>setTimeout(()=>{ const o=ctx.createOscillator(),g=ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.frequency.value=f; o.type='sine'; g.gain.setValueAtTime(.35,ctx.currentTime); g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.7); o.start(ctx.currentTime); o.stop(ctx.currentTime+.7); },i*350)); }catch(e){} }
 
-/* ── DAY TEMPLATE + DEVIATIONS ──────────────────────────
-   sq_day_template = { blocks:[{start:'09:00', end:'10:30', type:'chess'}...], tol:5, updatedAt }
-   Synced via Supabase (data.dayTemplate). Planned block times are compared with actual sessions;
-   deviations are stored on the session: { deviations:[{type,mins,...}], blockIdx, blockType, devNote } */
+/* ── AUTOMATIC DAY PLAN + DEVIATIONS ─────────────────────
+   Nothing to fill in by hand. The plan for a day =
+     (1) generated blocks from sq_day_template config { dayStart:'08:30', blocks:7, blockMins:90, breakMins:15, tol:5, useCalendar:true }
+     (2) that day's timed Google Calendar events (sq_plan_events, refreshed whenever Calendar syncs; shared across devices via Supabase).
+         An event replaces any generated block it covers by >=50%.
+   When a session is saved it is matched to a planned block and compared: late start (vs day start for the day's
+   first session, else vs the block), ended early, away from desk (missed check-ins).
+   Result is stored on the session: { deviations:[{type,mins,...}], blockStart, blockType, blockTitle, devNote }. */
 const TASK_TYPES = ['chess','review','admin','sport','other'];
 const TYPE_ICON  = { chess:'♟', review:'🔍', admin:'🗂', sport:'🏃', other:'•' };
 
-function getDayTemplate(){
-  const t = ls.get('sq_day_template','null');
-  return (t && Array.isArray(t.blocks) && t.blocks.length) ? t : null;
-}
-function saveDayTemplate(t){ t.updatedAt = Date.now(); ls.set('sq_day_template', t); pushSync(); }
+const DEFAULT_PLAN_CFG = { dayStart:'08:30', blocks:7, blockMins:90, breakMins:15, tol:5, useCalendar:true };
+function getPlanCfg(){ const t = ls.get('sq_day_template','null'); return {...DEFAULT_PLAN_CFG, ...((t && t.dayStart) ? t : {})}; }
+function savePlanCfg(c){ c.updatedAt = Date.now(); ls.set('sq_day_template', c); pushSync(); }
 function _tplMin(hhmm){ const p=String(hhmm||'0:0').split(':'); return (parseInt(p[0])||0)*60 + (parseInt(p[1])||0); }
 function _tplFmt(min){ min=((min%1440)+1440)%1440; return String(Math.floor(min/60)).padStart(2,'0')+':'+String(min%60).padStart(2,'0'); }
+function _hm(ms){ const d=new Date(ms); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
 
-// Which template block does this session belong to? Best overlap, must cover >=50% of the session.
+function getPlanEvents(d0){
+  const p = ls.get('sq_plan_events','null');
+  return (p && p.date===dayKey(d0) && Array.isArray(p.events)) ? p.events : [];
+}
+// Planned blocks for the day containing `ms` (optionally with a config override, used by the settings preview)
+function planBlocksFor(ms, cfgOverride){
+  const cfg = cfgOverride || getPlanCfg();
+  const d0 = new Date(ms); d0.setHours(0,0,0,0); const base = d0.getTime();
+  const st = _tplMin(cfg.dayStart);
+  let blocks = [];
+  for(let i=0;i<cfg.blocks;i++){
+    const s = st + i*(cfg.blockMins + cfg.breakMins);
+    blocks.push({ps:base+s*60000, pe:base+(s+cfg.blockMins)*60000, type:'chess', src:'template'});
+  }
+  if(cfg.useCalendar){
+    getPlanEvents(d0).forEach(ev=>{
+      const dur = ev.end - ev.start; if(dur < 10*60000 || dur > 6*3600000) return;     // ignore tiny / marathon events
+      blocks = blocks.filter(b => b.src!=='template' || (Math.min(b.pe,ev.end) - Math.max(b.ps,ev.start)) < 0.5*(b.pe-b.ps));
+      blocks.push({ps:ev.start, pe:ev.end, type:'calendar', src:'calendar', title:ev.title});
+    });
+  }
+  blocks.sort((a,b)=>a.ps-b.ps);
+  return blocks.map((b,i)=>({...b, idx:i}));
+}
+
+// Which planned block does this session belong to? Best overlap, must cover >=50% of the session.
 function _blockForSession(startMs, endMs){
-  const tpl = getDayTemplate(); if(!tpl) return null;
-  const d0 = new Date(startMs); d0.setHours(0,0,0,0);
   let best = null, bestOv = 0;
-  tpl.blocks.forEach((b,i)=>{
-    const ps = d0.getTime() + _tplMin(b.start)*60000, pe = d0.getTime() + _tplMin(b.end)*60000;
-    const ov = Math.min(endMs,pe) - Math.max(startMs,ps);
-    if(ov > bestOv){ bestOv = ov; best = {idx:i, block:b, ps, pe}; }
+  planBlocksFor(startMs).forEach(b=>{
+    const ov = Math.min(endMs,b.pe) - Math.max(startMs,b.ps);
+    if(ov > bestOv){ bestOv = ov; best = b; }
   });
   if(!best || bestOv < 0.5*(endMs-startMs)) return null;
   return best;
 }
 
-// Called when a block (session) is saved. Mutates sess: blockIdx, blockType, deviations.
-//  - late start / ended early: planned (template) vs actual, beyond the tolerance.
-//    Only judged when the session is >=60% of the planned block length (short pomodoro rounds inside a block aren't "early").
-//  - away: missed check-ins that fell inside the session.
+// Called when a block (session) is saved. Mutates sess: blockIdx/blockStart/blockType/blockTitle, deviations.
 function _detectDeviations(sess, missed){
   try{
-    const tpl = getDayTemplate();
-    const tol = ((tpl && tpl.tol) || 5) * 60000;
-    const devs = [];
+    const cfg = getPlanCfg(), tol = cfg.tol*60000, devs = [];
+    const day0 = new Date(sess.startTime); day0.setHours(0,0,0,0);
+    const dayStartMs = day0.getTime() + _tplMin(cfg.dayStart)*60000;
+    const sameDay = x => new Date(x.startTime||0).toDateString() === day0.toDateString();
+    const others = getSess().filter(x => x.id!==sess.id && sameDay(x));
+    const firstOfDay = !others.some(x => x.startTime < sess.startTime);
     const m = _blockForSession(sess.startTime, sess.endTime);
     if(m){
-      sess.blockIdx = m.idx; sess.blockType = m.block.type || null;
-      if((sess.endTime - sess.startTime) >= 0.6*(m.pe - m.ps)){
-        if(sess.startTime - m.ps > tol) devs.push({type:'late_start', mins:Math.round((sess.startTime - m.ps)/60000)});
-        if(m.pe - sess.endTime > tol)   devs.push({type:'early_end',  mins:Math.round((m.pe - sess.endTime)/60000)});
-      }
+      sess.blockIdx = m.idx; sess.blockStart = m.ps; sess.blockType = m.type; if(m.title) sess.blockTitle = m.title;
+      const firstInBlock = !others.some(x => x.blockStart === m.ps);
+      let ref = null, refKind = 'block';
+      if(firstOfDay){ ref = Math.min(dayStartMs, m.ps); refKind = ref===m.ps ? 'block' : 'day'; }
+      else if(firstInBlock) ref = m.ps;
+      if(ref!=null && sess.startTime - ref > tol) devs.push({type:'late_start', mins:Math.round((sess.startTime - ref)/60000), ref:refKind});
+      if((sess.endTime - sess.startTime) >= 0.6*(m.pe - m.ps) && m.pe - sess.endTime > tol)
+        devs.push({type:'early_end', mins:Math.round((m.pe - sess.endTime)/60000)});
+    } else if(firstOfDay && sess.startTime - dayStartMs > tol){
+      devs.push({type:'late_start', mins:Math.round((sess.startTime - dayStartMs)/60000), ref:'day'});
     }
     const away = (missed||[]).filter(x => x.at >= sess.startTime && x.at <= sess.endTime + 60000);
     if(away.length) devs.push({type:'away', count:away.length, mins:away.reduce((a,x)=>a+(x.mins||5),0)});
@@ -3517,7 +3549,7 @@ function _detectDeviations(sess, missed){
   }catch(e){ console.warn('deviation detect failed', e); }
 }
 function _devLabel(d){
-  if(d.type==='late_start') return `Late start +${d.mins}m`;
+  if(d.type==='late_start') return `Late start +${d.mins}m${d.ref==='day'?' (day starts '+getPlanCfg().dayStart+')':''}`;
   if(d.type==='early_end')  return `Ended early −${d.mins}m`;
   if(d.type==='away')       return `Away from desk ~${d.mins}m`;
   return d.type;
@@ -3534,66 +3566,87 @@ function _devBlockHtml(sessionId){
   </div>`;
 }
 
+// Today's timed events from every selected Google calendar → sq_plan_events (called after each Calendar sync)
+async function refreshPlanEvents(token){
+  const d0 = new Date(); d0.setHours(0,0,0,0); const d1 = new Date(d0); d1.setDate(d1.getDate()+1);
+  const hdr = {Authorization:`Bearer ${token}`};
+  const cr = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList', {headers:hdr});
+  if(!cr.ok) return false;
+  const cals = ((await cr.json()).items||[]).filter(c=>c.selected!==false);
+  const out = [], seen = new Set(); let okCount = 0;
+  await Promise.all(cals.map(async cal=>{
+    try{
+      const r = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal.id)}/events?timeMin=${encodeURIComponent(d0.toISOString())}&timeMax=${encodeURIComponent(d1.toISOString())}&singleEvents=true&orderBy=startTime&maxResults=50`, {headers:hdr});
+      if(!r.ok) return; okCount++;
+      ((await r.json()).items||[]).forEach(ev=>{
+        if(ev.status==='cancelled' || !ev.start?.dateTime || !ev.end?.dateTime) return;       // all-day events aren't blocks
+        if(ev.transparency==='transparent') return;                                         // marked "free"
+        const me = (ev.attendees||[]).find(a=>a.self); if(me && me.responseStatus==='declined') return;
+        if(seen.has(ev.id)) return; seen.add(ev.id);
+        out.push({id:ev.id, title:ev.summary||'Event', start:new Date(ev.start.dateTime).getTime(), end:new Date(ev.end.dateTime).getTime()});
+      });
+    }catch(e){}
+  }));
+  if(!okCount) return false;                                                                // never overwrite with a failed fetch
+  out.sort((a,b)=>a.start-b.start);
+  ls.set('sq_plan_events', {date:dayKey(d0), fetchedAt:Date.now(), events:out});
+  pushSync();
+  return true;
+}
+
 function openDayTemplate(){
   document.getElementById('dt-ov')?.remove();
-  const cur = getDayTemplate() || {blocks:[], tol:5};
-  let blocks = cur.blocks.map(b=>({...b}));
   const ov = document.createElement('div'); ov.id='dt-ov';
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:950;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 0 60px';
   const inp = 'background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:6px;font-family:var(--mono);font-size:11px;border-radius:5px;';
   const lbl = 'font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;margin-bottom:3px';
-  function render(){
-    const rows = blocks.map((b,i)=>`<div style="display:flex;align-items:center;gap:5px;margin-bottom:6px">
-      <span style="font-family:var(--mono);font-size:10px;color:var(--muted2);width:16px">${i+1}</span>
-      <input type="time" data-i="${i}" data-f="start" value="${b.start}" style="${inp}width:88px">
-      <span style="color:var(--muted2)">–</span>
-      <input type="time" data-i="${i}" data-f="end" value="${b.end}" style="${inp}width:88px">
-      <select data-i="${i}" data-f="type" style="${inp}flex:1">${TASK_TYPES.map(t=>`<option value="${t}"${(b.type||'chess')===t?' selected':''}>${TYPE_ICON[t]} ${t}</option>`).join('')}</select>
-      <button data-rm="${i}" style="background:none;border:none;color:var(--verm);cursor:pointer;font-size:14px">✕</button>
-    </div>`).join('') || `<div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:8px">No blocks yet — generate below or add one.</div>`;
-    ov.innerHTML = `<div style="background:var(--b1);border:1px solid var(--b2);border-radius:12px;padding:20px 18px;width:370px;max-width:95vw;margin:auto">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <div style="font-family:var(--serif);font-size:18px;font-weight:900">🗓 Day template</div>
-        <button id="dt-x" style="background:none;border:none;color:var(--muted2);font-size:20px;cursor:pointer">✕</button>
-      </div>
-      <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:12px;line-height:1.5">Planned block times. Actual sessions are compared against these to flag late starts, early finishes and time away.</div>
-      <div style="${lbl}">Generate</div>
-      <div style="display:flex;gap:6px;align-items:flex-end;margin-bottom:14px">
-        <div><div style="${lbl}">Start</div><input id="dt-gs" type="time" value="${blocks[0]?.start||'09:00'}" style="${inp}width:88px"></div>
-        <div><div style="${lbl}">Blocks</div><input id="dt-gn" type="number" min="1" max="12" value="7" style="${inp}width:46px"></div>
-        <div><div style="${lbl}">Min</div><input id="dt-gl" type="number" min="15" value="90" style="${inp}width:50px"></div>
-        <div><div style="${lbl}">Break</div><input id="dt-gb" type="number" min="0" value="15" style="${inp}width:46px"></div>
-        <button id="dt-gen" style="padding:7px 10px;background:var(--s2);border:1px solid var(--b2);color:var(--text);font-family:var(--mono);font-size:10px;cursor:pointer;border-radius:5px">Fill</button>
-      </div>
-      <div style="${lbl}">Blocks</div>
-      ${rows}
-      <button id="dt-add" style="width:100%;margin:4px 0 14px;padding:7px;background:var(--s2);border:1px solid var(--b2);color:var(--muted2);font-family:var(--mono);font-size:10px;cursor:pointer;border-radius:6px">＋ Add block</button>
-      <div style="${lbl}">Tolerance (min before it counts as a deviation)</div>
-      <input id="dt-tol" type="number" min="0" value="${cur.tol||5}" style="${inp}width:70px;margin-bottom:16px">
-      <div style="display:flex;gap:8px">
-        <button id="dt-clear" style="padding:9px;background:none;border:1px solid var(--b2);color:var(--muted2);font-family:var(--mono);font-size:11px;cursor:pointer;border-radius:6px">Clear</button>
-        <button id="dt-save" style="flex:1;padding:9px;background:var(--gold2);color:#000;border:none;font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer;border-radius:6px">Save template</button>
-      </div></div>`;
-    ov.querySelector('#dt-x').onclick = ()=>ov.remove();
-    ov.querySelectorAll('[data-f]').forEach(el=>{ el.onchange = ()=>{ blocks[+el.dataset.i][el.dataset.f] = el.value; }; });
-    ov.querySelectorAll('[data-rm]').forEach(b=>{ b.onclick = ()=>{ blocks.splice(+b.dataset.rm,1); render(); }; });
-    ov.querySelector('#dt-add').onclick = ()=>{ const last=blocks[blocks.length-1]; const st=last?_tplMin(last.end)+15:540; blocks.push({start:_tplFmt(st), end:_tplFmt(st+90), type:'chess'}); render(); };
-    ov.querySelector('#dt-gen').onclick = ()=>{
-      const st=_tplMin(ov.querySelector('#dt-gs').value||'09:00'), n=parseInt(ov.querySelector('#dt-gn').value)||7,
-            len=parseInt(ov.querySelector('#dt-gl').value)||90, br=parseInt(ov.querySelector('#dt-gb').value)||0;
-      blocks = Array.from({length:n},(_,i)=>({start:_tplFmt(st+i*(len+br)), end:_tplFmt(st+i*(len+br)+len), type:(blocks[i]&&blocks[i].type)||'chess'}));
-      render();
-    };
-    ov.querySelector('#dt-clear').onclick = ()=>{ if(!confirm('Clear the day template?')) return; ls.set('sq_day_template',{blocks:[],tol:5,updatedAt:Date.now()}); pushSync(); ov.remove(); toast('Template cleared'); };
-    ov.querySelector('#dt-save').onclick = ()=>{
-      const clean = blocks.filter(b=>b.start&&b.end&&_tplMin(b.end)>_tplMin(b.start));
-      if(!clean.length){ toast('Add at least one valid block'); return; }
-      saveDayTemplate({blocks:clean, tol:parseInt(ov.querySelector('#dt-tol').value)||0});
-      ov.remove(); toast('Day template saved ✓');
-    };
-  }
+  const cfg = getPlanCfg();
+  const gc = getGCal();
+  ov.innerHTML = `<div style="background:var(--b1);border:1px solid var(--b2);border-radius:12px;padding:20px 18px;width:370px;max-width:95vw;margin:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div style="font-family:var(--serif);font-size:18px;font-weight:900">🗓 Day plan</div>
+      <button id="dt-x" style="background:none;border:none;color:var(--muted2);font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-bottom:12px;line-height:1.5">Automatic: every day starts at the time below, with your Google Calendar events added as planned blocks. Sessions are compared against this plan to flag late starts, early finishes and time away.</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+      <div><div style="${lbl}">Day starts</div><input id="dt-start" type="time" value="${cfg.dayStart}" style="${inp}width:88px"></div>
+      <div><div style="${lbl}">Blocks</div><input id="dt-n" type="number" min="1" max="12" value="${cfg.blocks}" style="${inp}width:50px"></div>
+      <div><div style="${lbl}">Block min</div><input id="dt-len" type="number" min="15" value="${cfg.blockMins}" style="${inp}width:56px"></div>
+      <div><div style="${lbl}">Break min</div><input id="dt-br" type="number" min="0" value="${cfg.breakMins}" style="${inp}width:52px"></div>
+      <div><div style="${lbl}">Tolerance</div><input id="dt-tol" type="number" min="0" value="${cfg.tol}" style="${inp}width:56px"></div>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--text);margin-bottom:6px;cursor:pointer"><input id="dt-cal" type="checkbox" ${cfg.useCalendar?'checked':''}> Use Google Calendar events as planned blocks</label>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <button id="dt-refresh" style="padding:5px 9px;background:var(--s2);border:1px solid var(--b2);color:var(--muted2);font-family:var(--mono);font-size:10px;cursor:pointer;border-radius:5px">↻ Refresh calendar</button>
+      <span id="dt-cal-status" style="font-family:var(--mono);font-size:9px;color:var(--muted2)">${gc?.token?'Calendar connected':'Calendar not connected — events come from another device if it is'}</span>
+    </div>
+    <div style="${lbl}">Today's plan</div>
+    <div id="dt-preview" style="font-family:var(--mono);font-size:11px;margin-bottom:16px"></div>
+    <button id="dt-save" style="width:100%;padding:9px;background:var(--gold2);color:#000;border:none;font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer;border-radius:6px">Save</button>
+  </div>`;
+  const read = () => ({
+    dayStart: ov.querySelector('#dt-start').value || '08:30',
+    blocks: parseInt(ov.querySelector('#dt-n').value) || 7,
+    blockMins: parseInt(ov.querySelector('#dt-len').value) || 90,
+    breakMins: parseInt(ov.querySelector('#dt-br').value) || 0,
+    tol: parseInt(ov.querySelector('#dt-tol').value) || 0,
+    useCalendar: ov.querySelector('#dt-cal').checked,
+  });
+  const preview = () => {
+    const bl = planBlocksFor(Date.now(), read());
+    ov.querySelector('#dt-preview').innerHTML = bl.map(b=>`<div style="display:flex;gap:8px;padding:3px 0;border-bottom:1px solid var(--b2);color:${b.src==='calendar'?'var(--indigo)':'var(--text)'}"><span style="width:92px;flex-shrink:0">${_hm(b.ps)}–${_hm(b.pe)}</span><span>${b.src==='calendar'?'📅 '+esc(b.title):'♟ block '+(b.idx+1)}</span></div>`).join('') || '—';
+  };
+  ['#dt-start','#dt-n','#dt-len','#dt-br','#dt-cal'].forEach(sel=>ov.querySelector(sel).addEventListener('input',preview));
+  ov.querySelector('#dt-x').onclick = ()=>ov.remove();
+  ov.querySelector('#dt-refresh').onclick = async ()=>{
+    const g = getGCal(); const st = ov.querySelector('#dt-cal-status');
+    if(!g?.token){ st.textContent='Connect Google Calendar on the main screen first'; return; }
+    st.textContent='Refreshing…';
+    try{ const ok = await refreshPlanEvents(g.token); st.textContent = ok ? 'Updated ✓' : 'Could not read calendar'; preview(); }catch(e){ st.textContent='Could not read calendar'; }
+  };
+  ov.querySelector('#dt-save').onclick = ()=>{ savePlanCfg(read()); ov.remove(); toast('Day plan saved ✓'); };
   ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); });
-  render(); document.body.appendChild(ov);
+  document.body.appendChild(ov); preview();
 }
 
 /* ── CHECK-IN FEATURE ───────────────────────────────── */
@@ -3727,6 +3780,7 @@ async function fetchGCal(token){
     }));
     const sorted=evs.filter(ev=>{const end=ev.end?.dateTime?new Date(ev.end.dateTime):null;return!end||end>now;}).sort((a,b)=>(a.start?.dateTime||a.start?.date||'').localeCompare(b.start?.dateTime||b.start?.date||''));
     renderGCalEvs(sorted.filter(ev=>!dismissedEvs.has(ev.id)));
+    refreshPlanEvents(token).catch(()=>{});   // keep today's planned blocks (for deviation detection) in sync
   }catch(e){el.innerHTML='<div style="font-size:10px;color:var(--verm)">Could not load events.</div>';}
 }
 function renderGCalConn(){ document.getElementById('gcal-content').innerHTML='<div class="gcal-connect"><span>Connect Google Calendar to see upcoming events</span><button class="gcal-conn-btn" onclick="connectGCal()">Connect →</button></div>'; }
@@ -8067,7 +8121,7 @@ let _cloudSyncDone = false;
 
 // Cloud sessions are the base; local-only sessions are added. For sessions on both sides, keep
 // locally-saved ratings / deviations / notes if the cloud copy doesn't have them yet.
-const _SESS_KEEP_FIELDS = ['quality','energy','trainingTag','devNote','deviations','blockIdx','blockType','jacob_hardness','jacob_focus'];
+const _SESS_KEEP_FIELDS = ['quality','energy','trainingTag','devNote','deviations','blockIdx','blockStart','blockType','blockTitle','jacob_hardness','jacob_focus'];
 function _mergeSessions(cloud, local){
   const lMap = Object.fromEntries((local||[]).map(s=>[s.id,s]));
   const cIds = new Set(cloud.map(s=>s.id));
@@ -8102,6 +8156,7 @@ async function pushCloud(){
     reviewFeedback: ls.get('sq_review_feedback','[]'),
     problems: getProblems(),
     dayTemplate: ls.get('sq_day_template','null'),
+    planEvents: ls.get('sq_plan_events','null'),
     ...(timerToWrite !== undefined ? { activeTimer: timerToWrite } : {}),
   };
   try {
