@@ -8580,6 +8580,17 @@ function saveProblems(arr){ ls.set('sq_problems',arr); pushSync(); }
   }
   ls.set('sq_water_problem_seeded', true);
 }catch(e){ console.error('water seed', e); } })();
+
+/* one-time: seed the protein problem */
+(function(){ try{
+  if(ls.get('sq_protein_problem_seeded','false')) return;
+  const probs = getProblems();
+  if(!probs.some(p=>p.id==='protein-115')){
+    probs.push({id:'protein-115', title:'Not reaching my daily protein', problem:"Meals give ~20-30 g protein each, so 3 meals land around 75-90 g and I miss the ~115 g target. Logging every meal by photo is too much friction.", solvedWhen:'Protein source in every meal + one protein snack/shake, on 5 of 7 days', solutions:[{id:uid(), text:'A protein source in every meal, plus once a day a protein snack or shake'}], experiments:[], finalSolution:'', status:'open', createdAt:new Date().toISOString(), updatedAt:new Date().toISOString()});
+    saveProblems(probs);
+  }
+  ls.set('sq_protein_problem_seeded', true);
+}catch(e){ console.error('protein seed', e); } })();
 // keep sq_methods key populated for backup compatibility
 function getMethods(){ return getProblems(); }
 function saveMethods(arr){ saveProblems(arr); }
