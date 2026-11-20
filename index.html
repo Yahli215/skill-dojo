@@ -1499,11 +1499,17 @@ body.light .page-watermark { opacity: .2; }
       </div>
     </div>
 
+    <!-- Night check-in (morning, about last night) -->
+    <div id="night-card"></div>
+
     <!-- Season card -->
     <div id="season-card"></div>
 
     <!-- Training Levers card -->
     <div id="levers-card"></div>
+
+    <!-- Body: water / protein / fitness plan -->
+    <div id="body-card"></div>
 
     <!-- Daily + report -->
     <div class="two-col">
@@ -2424,6 +2430,9 @@ async function bootFromCloud(){
       }
       if(d.dayTemplate){ const _lt = ls.get('sq_day_template','null'); if(!_lt || (d.dayTemplate.updatedAt||0) >= (_lt.updatedAt||0)) ls.set('sq_day_template', d.dayTemplate); }
       if(d.planEvents){ const _lp = ls.get('sq_plan_events','null'); if(!_lp || d.planEvents.date > _lp.date || (d.planEvents.date===_lp.date && (d.planEvents.fetchedAt||0) > (_lp.fetchedAt||0))) ls.set('sq_plan_events', d.planEvents); }
+      if(d.nightChecks){ ls.set('sq_night_checks', _mergeNight(d.nightChecks, ls.get('sq_night_checks','{}'))); }
+      if(d.nightItems){ const _ln = ls.get('sq_night_items','null'); if(!_ln || (d.nightItems.updatedAt||0) >= (_ln.updatedAt||0)) ls.set('sq_night_items', d.nightItems); }
+      if(d.body){ ls.set('sq_body', _mergeBody(d.body, ls.get('sq_body','null'))); }
       if(d.problems){
         const localP = ls.get('sq_problems','[]');
         const cloudPIds = new Set(d.problems.map(p=>p.id));
@@ -2651,6 +2660,9 @@ async function refreshFromCloud(){
       }
       if(d.dayTemplate){ const _lt = ls.get('sq_day_template','null'); if(!_lt || (d.dayTemplate.updatedAt||0) >= (_lt.updatedAt||0)) ls.set('sq_day_template', d.dayTemplate); }
       if(d.planEvents){ const _lp = ls.get('sq_plan_events','null'); if(!_lp || d.planEvents.date > _lp.date || (d.planEvents.date===_lp.date && (d.planEvents.fetchedAt||0) > (_lp.fetchedAt||0))) ls.set('sq_plan_events', d.planEvents); }
+      if(d.nightChecks){ ls.set('sq_night_checks', _mergeNight(d.nightChecks, ls.get('sq_night_checks','{}'))); }
+      if(d.nightItems){ const _ln = ls.get('sq_night_items','null'); if(!_ln || (d.nightItems.updatedAt||0) >= (_ln.updatedAt||0)) ls.set('sq_night_items', d.nightItems); }
+      if(d.body){ ls.set('sq_body', _mergeBody(d.body, ls.get('sq_body','null'))); }
       if(d.problems){
         const localP = ls.get('sq_problems','[]');
         const cloudPIds = new Set(d.problems.map(p=>p.id));
@@ -2767,6 +2779,8 @@ async function manualSync(){
 /* ── RENDER ─────────────────────────────────────────── */
 function renderApp(){
   try { renderPills(); }    catch(e){ console.error('renderPills:', e); }
+  try { renderNight(); }    catch(e){ console.error('renderNight:', e); }
+  try { renderBody(); }     catch(e){ console.error('renderBody:', e); }
   try { renderSeason(); }   catch(e){ console.error('renderSeason:', e); }
   try { renderLevers(); }   catch(e){ console.error('renderLevers:', e); }
   try { renderDaily(); }    catch(e){ console.error('renderDaily:', e); }
@@ -2873,7 +2887,7 @@ function renderDaily(){
           const rank=sk?getRank(sk.totalMins):RANKS[0];
           const timeStr=s.start?new Date(s.start).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
           const row=document.createElement('div'); row.className='today-sess-row';
-          row.innerHTML=`<div class="tsr-emoji">${sk?.emoji||'⚡'}</div><div class="tsr-info"><div class="tsr-name" style="color:${rank.color}">${esc(sk?.name||'—')}</div><div class="tsr-meta">${timeStr}${s.description&&s.description!=='Session'?' · '+esc(s.description):''}</div></div><div class="tsr-dur">${fmtDur(s.duration)}</div><button class="sess-del" onclick="delSess('${s.id}')" title="Delete">✕</button>`;
+          row.innerHTML=`<div class="tsr-emoji">${sk?.emoji||'⚡'}</div><div class="tsr-info"><div class="tsr-name" style="color:${rank.color}">${esc(sk?.name||'—')}</div><div class="tsr-meta">${timeStr}${s.description&&s.description!=='Session'?' · '+esc(s.description):''}${s.note?' · 📝 '+esc(s.note):''}${s.devNote?' · ❓ '+esc(s.devNote):''}</div></div><div class="tsr-dur">${fmtDur(s.duration)}</div><button class="sess-del" onclick="delSess('${s.id}')" title="Delete">✕</button>`;
           listEl.appendChild(row);
         });
       }
@@ -3463,7 +3477,7 @@ function tickTimer(){
   } catch(e) { console.error('tickTimer error:', e); }
 }
 
-function selSkill(id){ selSkillId=id; document.querySelectorAll('.skill-pill').forEach(b=>b.classList.toggle('sel',b.dataset.id===id)); document.getElementById('start-btn').disabled=false; }
+function selSkill(id){ try{ _showLastNote(id); }catch(e){} selSkillId=id; document.querySelectorAll('.skill-pill').forEach(b=>b.classList.toggle('sel',b.dataset.id===id)); document.getElementById('start-btn').disabled=false; }
 function togglePomo(){ const b=document.getElementById('pomo-btn'),r=document.getElementById('pomo-row'),on=b.classList.toggle('on'); r.classList.toggle('show',on); }
 function playBeep(){ try{ const ctx=new(window.AudioContext||window.webkitAudioContext)(); [880,1047].forEach((f,i)=>setTimeout(()=>{ const o=ctx.createOscillator(),g=ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.frequency.value=f; o.type='sine'; g.gain.setValueAtTime(.35,ctx.currentTime); g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+.7); o.start(ctx.currentTime); o.stop(ctx.currentTime+.7); },i*350)); }catch(e){} }
 
@@ -3647,6 +3661,253 @@ function openDayTemplate(){
   ov.querySelector('#dt-save').onclick = ()=>{ savePlanCfg(read()); ov.remove(); toast('Day plan saved ✓'); };
   ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); });
   document.body.appendChild(ov); preview();
+}
+
+/* ── NIGHT CHECK-IN (filled in the morning, about last night) ─────────
+   sq_night_checks = { 'YYYY-MM-DD': { date, at, quality(1-10), items:[{id,text,done}], note } }   (date = the morning it was filled in)
+   sq_night_items  = { items:[{id,text}], updatedAt }   — your planned night things, editable.
+   Both sync through Supabase (data.nightChecks / data.nightItems). */
+const DEFAULT_NIGHT_ITEMS = [
+  {id:'bed',     text:'Went to bed on time'},
+  {id:'asleep',  text:'Actually fell asleep on time'},
+  {id:'mask',    text:'Took the mask'},
+  {id:'clothes', text:'Slept in comfortable clothes'},
+];
+function getNightItems(){ const c = ls.get('sq_night_items','null'); return (c && Array.isArray(c.items) && c.items.length) ? c.items : DEFAULT_NIGHT_ITEMS.map(x=>({...x})); }
+function saveNightItems(items){ ls.set('sq_night_items', {items, updatedAt:Date.now()}); pushSync(); }
+function getNightChecks(){ return ls.get('sq_night_checks','{}'); }
+function saveNightCheck(entry){ const all = getNightChecks(); all[entry.date] = entry; ls.set('sq_night_checks', all); pushSync(); }
+function _mergeNight(cloud, local){
+  const out = {...(cloud||{})};
+  Object.keys(local||{}).forEach(k=>{ if(!out[k] || ((local[k].at||0) > (out[k].at||0))) out[k] = local[k]; });
+  return out;
+}
+
+function renderNight(){
+  const el = document.getElementById('night-card'); if(!el) return;
+  const all = getNightChecks(), cur = all[todayKey()];
+  const dots = [];
+  for(let i=6;i>=0;i--){
+    const d = new Date(); d.setDate(d.getDate()-i); const e = all[dayKey(d)];
+    let col = 'var(--b2)', tip = dayKey(d)+' — no check-in';
+    if(e){ const n = (e.items||[]).length, ok = (e.items||[]).filter(x=>x.done).length;
+      col = (n && ok===n) ? 'var(--green2)' : ok>0 ? 'var(--gold2)' : 'var(--verm)'; tip = dayKey(d)+' — slept '+(e.quality||'?')+'/10 · '+ok+'/'+n; }
+    dots.push(`<span title="${tip}" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${col};margin-right:4px"></span>`);
+  }
+  let body;
+  if(!cur){
+    body = `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text)">How did last night go?</div>
+      <button onclick="openNightCheck()" style="padding:6px 12px;background:var(--gold2);color:#000;border:none;font-family:var(--mono);font-size:11px;font-weight:700;cursor:pointer;border-radius:6px">Check in →</button></div>`;
+  } else {
+    const it = cur.items||[], ok = it.filter(x=>x.done).length, missed = it.filter(x=>!x.done);
+    body = `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text)">Slept <b style="color:var(--gold2)">${cur.quality||'?'}</b>/10 · <b style="color:${ok===it.length?'var(--green2)':'var(--gold2)'}">${ok}/${it.length}</b> done${missed.length?'<span style="color:var(--muted2)"> · missed: '+missed.map(x=>esc(x.text)).join(', ')+'</span>':''}</div>
+      <button onclick="openNightCheck()" style="padding:3px 9px;background:none;border:1px solid var(--b2);color:var(--muted2);font-family:var(--mono);font-size:10px;cursor:pointer;border-radius:6px">edit</button></div>`
+      + (cur.note?`<div style="font-family:var(--mono);font-size:10px;color:var(--muted2);margin-top:4px">${esc(cur.note)}</div>`:'');
+  }
+  el.innerHTML = `<div class="qs-card nc-card" style="${cur?'':'border-color:var(--gold2);'}margin-bottom:14px">
+    <div class="qs-head"><div class="qs-title"><b>夜</b>Night check-in</div><div>${dots.join('')}</div></div>${body}</div>`;
+}
+
+function openNightCheck(){
+  document.getElementById('nc-ov')?.remove();
+  const k = todayKey(), prev = getNightChecks()[k];
+  let items = getNightItems();
+  const state = {};                       // id -> done
+  items.forEach(i=>{ const p = prev && (prev.items||[]).find(x=>x.id===i.id); state[i.id] = p ? !!p.done : false; });
+  let quality = prev ? (prev.quality||5) : 5, note = prev ? (prev.note||'') : '', editing = false;
+  const ov = document.createElement('div'); ov.id = 'nc-ov';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:950;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 0 60px';
+  const inp = 'background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:7px;font-family:var(--mono);font-size:11px;border-radius:6px;';
+  function render(){
+    if(editing){
+      ov.innerHTML = `<div style="background:var(--b1);border:1px solid var(--b2);border-radius:12px;padding:20px 18px;width:340px;max-width:95vw;margin:auto;font-family:var(--mono)">
+        <div style="font-family:var(--serif);font-size:17px;font-weight:900;margin-bottom:4px">Edit your night list</div>
+        <div style="font-size:10px;color:var(--muted2);margin-bottom:12px">The planned things you check each morning.</div>
+        ${items.map((i,n)=>`<div style="display:flex;gap:6px;margin-bottom:6px"><input data-n="${n}" value="${esc(i.text)}" style="${inp}flex:1"><button data-rm="${n}" style="background:none;border:none;color:var(--verm);font-size:14px;cursor:pointer">✕</button></div>`).join('')}
+        <div style="display:flex;gap:6px;margin:8px 0 14px"><input id="nc-new" placeholder="Add a planned thing…" style="${inp}flex:1"><button id="nc-add" style="padding:6px 10px;background:var(--s2);border:1px solid var(--b2);color:var(--text);cursor:pointer;border-radius:6px;font-family:var(--mono);font-size:11px">＋</button></div>
+        <button id="nc-done" style="width:100%;padding:9px;background:var(--gold2);color:#000;border:none;font-size:12px;font-weight:700;cursor:pointer;border-radius:6px;font-family:var(--mono)">Done</button></div>`;
+      ov.querySelectorAll('[data-n]').forEach(e=>{ e.oninput = ()=>{ items[+e.dataset.n].text = e.value; }; });
+      ov.querySelectorAll('[data-rm]').forEach(b=>{ b.onclick = ()=>{ items.splice(+b.dataset.rm,1); render(); }; });
+      const add = ()=>{ const v=ov.querySelector('#nc-new').value.trim(); if(!v) return; const id='n'+Date.now().toString(36); items.push({id,text:v}); state[id]=false; render(); };
+      ov.querySelector('#nc-add').onclick = add;
+      ov.querySelector('#nc-new').onkeydown = e=>{ if(e.key==='Enter') add(); };
+      ov.querySelector('#nc-done').onclick = ()=>{ items = items.filter(i=>i.text.trim()); saveNightItems(items); editing=false; render(); };
+      return;
+    }
+    ov.innerHTML = `<div style="background:var(--b1);border:1px solid var(--b2);border-radius:12px;padding:20px 18px;width:340px;max-width:95vw;margin:auto;font-family:var(--mono)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div style="font-family:var(--serif);font-size:18px;font-weight:900">🌙 Last night</div><button id="nc-x" style="background:none;border:none;color:var(--muted2);font-size:20px;cursor:pointer">✕</button></div>
+      <div style="font-size:12px;color:var(--muted2);margin-bottom:4px">How I slept &nbsp;<span id="nc-qv" style="color:var(--gold2);font-weight:800;font-size:16px">${quality}</span><span style="font-size:11px"> / 10</span></div>
+      <input id="nc-q" type="range" min="1" max="10" value="${quality}" style="width:100%;margin-bottom:16px;accent-color:var(--gold2)">
+      ${items.map(i=>`<div data-t="${i.id}" style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--b2);cursor:pointer">
+        <span style="width:22px;height:22px;border-radius:5px;border:1.5px solid ${state[i.id]?'var(--green2)':'var(--b2)'};background:${state[i.id]?'var(--green2)':'transparent'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">${state[i.id]?'✓':''}</span>
+        <span style="font-size:12px;color:var(--text)">${esc(i.text)}</span></div>`).join('')}
+      <input id="nc-note" placeholder="Anything to note? (optional)" value="${esc(note)}" style="${inp}width:100%;box-sizing:border-box;margin:12px 0 14px">
+      <div style="display:flex;gap:8px"><button id="nc-edit" style="padding:9px;background:none;border:1px solid var(--b2);color:var(--muted2);font-size:11px;cursor:pointer;border-radius:6px;font-family:var(--mono)">edit list</button>
+      <button id="nc-save" style="flex:1;padding:9px;background:var(--gold2);color:#000;border:none;font-size:12px;font-weight:700;cursor:pointer;border-radius:6px;font-family:var(--mono)">Save</button></div></div>`;
+    ov.querySelector('#nc-x').onclick = ()=>ov.remove();
+    ov.querySelector('#nc-q').oninput = e=>{ quality = +e.target.value; ov.querySelector('#nc-qv').textContent = quality; };
+    ov.querySelector('#nc-note').oninput = e=>{ note = e.target.value; };
+    ov.querySelectorAll('[data-t]').forEach(r=>{ r.onclick = ()=>{ state[r.dataset.t] = !state[r.dataset.t]; render(); }; });
+    ov.querySelector('#nc-edit').onclick = ()=>{ editing = true; render(); };
+    ov.querySelector('#nc-save').onclick = ()=>{
+      saveNightCheck({date:k, at:Date.now(), quality, note:note.trim(), items:items.map(i=>({id:i.id,text:i.text,done:!!state[i.id]}))});
+      ov.remove(); renderNight(); toast('🌙 Night check-in saved ✓');
+    };
+  }
+  ov.addEventListener('click', e=>{ if(e.target===ov) ov.remove(); });
+  render(); document.body.appendChild(ov);
+}
+setInterval(()=>{ try{ renderNight(); }catch(e){} }, 10*60000);                       // flips to a fresh prompt after midnight
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden){ try{ renderNight(); }catch(e){} } });
+
+/* ── BODY: water, protein, fitness plan ───────────────────
+   sq_body = { cfg:{waterGoal,proteinGoal,waterBtns,proteinBtns,at}, water:{date:{v,at}}, protein:{date:{v,at}},
+               fit:{date:{done,at}}, plans:{weekStartMonday:{days:[7 texts],at}} }   — synced via Supabase (data.body).
+   Water/protein are tap-to-log (no supported way to pull Tami4 consumption automatically). A week without its own plan
+   inherits the most recent earlier week's plan. */
+const BODY_DEFAULT_CFG = { waterGoal:3000, proteinGoal:140, waterBtns:[250,500,1000], proteinBtns:[10,20,30] };
+const BODY_DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+function getBody(){
+  const b = ls.get('sq_body','null') || {};
+  return { cfg:{...BODY_DEFAULT_CFG, ...(b.cfg||{})}, water:b.water||{}, protein:b.protein||{}, fit:b.fit||{}, wchk:b.wchk||{}, plans:b.plans||{} };
+}
+function saveBody(b){ ls.set('sq_body', b); pushSync(); }
+function _mergeBody(cloud, local){
+  cloud = cloud || {}; local = local || {};
+  const out = { cfg:cloud.cfg||{}, water:{...(cloud.water||{})}, protein:{...(cloud.protein||{})}, fit:{...(cloud.fit||{})}, wchk:{...(cloud.wchk||{})}, plans:{...(cloud.plans||{})} };
+  if(local.cfg && (local.cfg.at||0) > (out.cfg.at||0)) out.cfg = local.cfg;
+  ['water','protein','fit','wchk','plans'].forEach(m=>{ Object.keys(local[m]||{}).forEach(k=>{ if(!out[m][k] || ((local[m][k].at||0) > (out[m][k].at||0))) out[m][k] = local[m][k]; }); });
+  return out;
+}
+function _addDays(k, n){ const d = new Date(k+'T12:00:00'); d.setDate(d.getDate()+n); return dayKey(d); }
+function getWeekPlan(b, ws){
+  if(b.plans[ws]) return b.plans[ws].days.slice();
+  const prev = Object.keys(b.plans).filter(x=>x<ws).sort();
+  return prev.length ? b.plans[prev[prev.length-1]].days.slice() : ['','','','','','',''];
+}
+function bodyWeekStats(b, ws){
+  const days = Array.from({length:7},(_,i)=>_addDays(ws,i)), plan = getWeekPlan(b, ws);
+  const planned = plan.filter(t=>t && t.trim()).length;
+  const done = days.filter((d,i)=>plan[i] && plan[i].trim() && b.fit[d] && b.fit[d].done).length;
+  const vals = m => days.map(d=>(b[m][d] && b[m][d].v) || 0);
+  const w = vals('water'), p = vals('protein');
+  const avg = a => { const l = a.filter(v=>v>0); return l.length ? Math.round(l.reduce((x,y)=>x+y,0)/l.length) : null; };
+  return { days, plan, planned, done, avgW:avg(w), avgP:avg(p), hitW:w.filter(v=>v>=b.cfg.waterGoal).length, hitP:p.filter(v=>v>=b.cfg.proteinGoal).length, logW:w.filter(v=>v>0).length, logP:p.filter(v=>v>0).length };
+}
+const _bodyLast = {};
+function bodyAdd(kind, delta){
+  const b = getBody(), k = todayKey(); const cur = (b[kind][k] && b[kind][k].v) || 0;
+  b[kind][k] = { v:Math.max(0, cur+delta), at:Date.now() }; _bodyLast[kind] = delta; saveBody(b); renderBody();
+}
+function bodyCustom(kind){
+  const v = parseFloat(prompt(kind==='water' ? 'How many ml?' : 'How many grams of protein?'));
+  if(v > 0) bodyAdd(kind, Math.round(v));
+}
+function bodySet(kind){
+  const cur=(getBody()[kind][todayKey()]||{}).v||0;
+  const v=parseFloat(prompt(kind==='water'?'Total water today (ml) — e.g. 1200 from the Tami4 app:':'Total protein today (g):', cur));
+  if(isNaN(v)||v<0) return; bodyAdd(kind, Math.round(v)-cur);
+}
+function bodyToggleWater(){
+  const b=getBody(), k=todayKey(); b.wchk[k]={done:!(b.wchk[k]&&b.wchk[k].done), at:Date.now()}; saveBody(b); renderBody();
+}
+function bodyUndo(kind){ if(!_bodyLast[kind]){ toast('Nothing to undo'); return; } const d = _bodyLast[kind]; _bodyLast[kind] = 0; bodyAdd(kind, -d); }
+function bodyToggleFit(){
+  const b = getBody(), k = todayKey(); b.fit[k] = { done: !(b.fit[k] && b.fit[k].done), at:Date.now() }; saveBody(b); renderBody();
+}
+function renderBody(){
+  const el = document.getElementById('body-card'); if(!el) return;
+  const b = getBody(), k = todayKey(), c = b.cfg;
+  const wv = (b.water[k] && b.water[k].v) || 0, pv = (b.protein[k] && b.protein[k].v) || 0;
+  const ws = _wkStart(k), plan = getWeekPlan(b, ws), todayPlan = (plan[(new Date().getDay()+6)%7] || '').trim();
+  const fitDone = !!(b.fit[k] && b.fit[k].done);
+  const wDone = !!(b.wchk[k] && b.wchk[k].done), late = new Date().getHours() >= 16;
+  const L = ml => (ml/1000).toFixed(1).replace(/\.0$/,'')+' L';
+  const BTN = 'padding:4px 9px;background:var(--s2);border:1px solid var(--b2);color:var(--text);font-family:var(--mono);font-size:10px;cursor:pointer;border-radius:6px;';
+  const bar = (v,g,col) => `<div class="qs-mini" style="max-width:none;margin:5px 0 7px"><i style="width:${Math.min(100,g?v/g*100:0)}%;background:${col}"></i></div>`;
+  const row = (label, now, goal, leftTxt, col, kind, btns, fmt) => `<div class="qs-row" style="display:block;padding:9px 0">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text)">${label} <b style="color:${col}">${fmt(now)}</b> <span style="color:var(--muted2)">/ ${fmt(goal)}</span> <span style="color:${now>=goal?'var(--green2)':'var(--muted2)'};font-size:10px">· ${now>=goal?'goal reached ✓':leftTxt+' left'}</span></div>
+      ${bar(now,goal,col)}
+      <div style="display:flex;flex-wrap:wrap;gap:5px">${btns.map(n=>`<button style="${BTN}" onclick="bodyAdd('${kind}',${n})">+${kind==='water'&&n>=1000?(n/1000)+' L':n}</button>`).join('')}<button style="${BTN}" onclick="bodyCustom('${kind}')">＋…</button><button style="${BTN}" onclick="bodySet('${kind}')">=</button><button style="${BTN}color:var(--muted2)" onclick="bodyUndo('${kind}')">↶</button></div></div>`;
+  const lw = bodyWeekStats(b, _addDays(ws,-7));
+  const lwTxt = (lw.planned||lw.logP||lw.days.some(d=>b.wchk[d]&&b.wchk[d].done)) ? `Last week: ${lw.planned?lw.done+'/'+lw.planned+' workouts':'no plan'}${lw.avgP?' · protein avg '+lw.avgP+' g':''}${' · water checks '+lw.days.filter(d=>b.wchk[d]&&b.wchk[d].done).length+'/7'}` : 'Last week: nothing logged yet';
+  el.innerHTML = `<div class="qs-card" style="margin-bottom:14px">
+    <div class="qs-head"><div class="qs-title"><b>体</b>Body</div><button class="qs-edit" onclick="openBodyPlan()">plan &amp; goals</button></div>
+    <div class="qs-row" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text);min-width:0">💧 By 16:00 check how much you drank (Tami4) &amp; adjust${wDone?'':(late?' <b style="color:var(--verm)">· now</b>':'')}</div>
+      <button onclick="bodyToggleWater()" style="${BTN}${wDone?'background:var(--green);border-color:var(--green);color:#fff;':''}">${wDone?'✓ Done':'Done?'}</button></div>
+    ${row('🥩 Protein', pv, c.proteinGoal, Math.max(0,c.proteinGoal-pv)+' g', 'var(--gold2)', 'protein', c.proteinBtns, v=>v+' g')}
+    <div class="qs-row" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--text);min-width:0">🏃 Today: ${todayPlan?'<b>'+esc(todayPlan)+'</b>':'<span style="color:var(--muted2)">no workout planned</span>'}</div>
+      ${todayPlan?`<button onclick="bodyToggleFit()" style="${BTN}${fitDone?'background:var(--green);border-color:var(--green);color:#fff;':''}">${fitDone?'✓ Done':'Done?'}</button>`:''}</div>
+    <div class="qs-foot">${lwTxt}</div></div>`;
+}
+
+function openBodyPlan(){
+  document.getElementById('bd-ov')?.remove();
+  const b = getBody(), k = todayKey(), ws = _wkStart(k), lws = _addDays(ws,-7);
+  const plan = getWeekPlan(b, ws), fit = {};
+  for(let i=0;i<7;i++){ const d=_addDays(ws,i); fit[d] = !!(b.fit[d] && b.fit[d].done); }
+  const lw = bodyWeekStats(b, lws), L = ml => (ml/1000).toFixed(1).replace(/\.0$/,'')+' L';
+  const ov = document.createElement('div'); ov.id = 'bd-ov';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:950;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 0 60px';
+  const inp = 'background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:6px;font-family:var(--mono);font-size:11px;border-radius:5px;';
+  const lbl = 'font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted2);text-transform:uppercase;margin:12px 0 4px';
+  const rows = () => Array.from({length:7},(_,i)=>{ const d=_addDays(ws,i), isFuture=d>k;
+    return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+      <span style="width:30px;font-family:var(--mono);font-size:10px;color:${d===k?'var(--gold2)':'var(--muted2)'}">${BODY_DAYS[i]}</span>
+      <input data-d="${i}" value="${esc(plan[i]||'')}" placeholder="rest / e.g. Run 8 km + push-ups" style="${inp}flex:1;min-width:0">
+      <button data-f="${d}" ${isFuture?'disabled':''} style="width:28px;height:28px;border-radius:6px;border:1px solid ${fit[d]?'var(--green2)':'var(--b2)'};background:${fit[d]?'var(--green2)':'transparent'};color:#fff;cursor:pointer;opacity:${isFuture?.3:1}">${fit[d]?'✓':''}</button></div>`; }).join('');
+  const lwRows = lw.days.map((d,i)=>{ const t=(lw.plan[i]||'').trim(); if(!t) return ''; const dn=b.fit[d]&&b.fit[d].done;
+    return `<div style="font-family:var(--mono);font-size:10px;color:var(--muted2);padding:2px 0"><span style="color:${dn?'var(--green2)':'var(--verm)'}">${dn?'✓':'✗'}</span> ${BODY_DAYS[i]} · ${esc(t)}</div>`; }).join('');
+  ov.innerHTML = `<div style="background:var(--b1);border:1px solid var(--b2);border-radius:12px;padding:20px 18px;width:380px;max-width:95vw;margin:auto;font-family:var(--mono)">
+    <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-family:var(--serif);font-size:18px;font-weight:900">体 Plan &amp; goals</div><button id="bd-x" style="background:none;border:none;color:var(--muted2);font-size:20px;cursor:pointer">✕</button></div>
+    <div style="${lbl}">This week — workout plan (tick = done)</div>
+    <div id="bd-rows">${rows()}</div>
+    <div style="${lbl}">Last week</div>
+    <div style="font-size:11px;color:var(--text);margin-bottom:6px">${lw.planned?lw.done+' / '+lw.planned+' workouts':'no workouts planned'}${lw.avgP?' · protein avg '+lw.avgP+' g ('+lw.hitP+'/'+lw.logP+' days at goal)':''}${lw.avgW?' · water avg '+L(lw.avgW)+' ('+lw.hitW+'/'+lw.logW+' days at goal)':''}</div>
+    ${lwRows}
+    <div style="${lbl}">Daily goals</div>
+    <div style="display:flex;gap:8px"><div style="flex:1"><div style="font-size:9px;color:var(--muted2)">Water (ml)</div><input id="bd-wg" type="number" min="0" step="100" value="${b.cfg.waterGoal}" style="${inp}width:100%;box-sizing:border-box"></div>
+      <div style="flex:1"><div style="font-size:9px;color:var(--muted2)">Protein (g)</div><input id="bd-pg" type="number" min="0" step="5" value="${b.cfg.proteinGoal}" style="${inp}width:100%;box-sizing:border-box"></div></div>
+    <div style="${lbl}">Quick buttons (comma separated)</div>
+    <div style="display:flex;gap:8px"><input id="bd-wb" value="${b.cfg.waterBtns.join(', ')}" style="${inp}flex:1;min-width:0"><input id="bd-pb" value="${b.cfg.proteinBtns.join(', ')}" style="${inp}flex:1;min-width:0"></div>
+    <div style="font-size:9px;color:var(--muted);margin-top:3px">water (ml) · protein (g)</div>
+    <button id="bd-save" style="width:100%;margin-top:16px;padding:9px;background:var(--gold2);color:#000;border:none;font-size:12px;font-weight:700;cursor:pointer;border-radius:6px;font-family:var(--mono)">Save</button></div>`;
+  const bindRows = () => {
+    ov.querySelectorAll('[data-d]').forEach(e=>{ e.oninput = ()=>{ plan[+e.dataset.d] = e.value; }; });
+    ov.querySelectorAll('[data-f]').forEach(btn=>{ btn.onclick = ()=>{ fit[btn.dataset.f] = !fit[btn.dataset.f]; ov.querySelector('#bd-rows').innerHTML = rows(); bindRows(); }; });
+  };
+  bindRows();
+  ov.querySelector('#bd-x').onclick = ()=>ov.remove();
+  ov.addEventListener('click', e=>{ if(e.target===ov) ov.remove(); });
+  ov.querySelector('#bd-save').onclick = ()=>{
+    const nums = s => s.split(',').map(x=>parseInt(x)).filter(x=>x>0);
+    const nb = getBody(), now = Date.now();
+    nb.plans[ws] = { days: plan.map(t=>(t||'').trim()), at: now };
+    Object.keys(fit).forEach(d=>{ const was = !!(nb.fit[d] && nb.fit[d].done); if(was !== fit[d]) nb.fit[d] = { done:fit[d], at:now }; });
+    const wb = nums(ov.querySelector('#bd-wb').value), pb = nums(ov.querySelector('#bd-pb').value);
+    nb.cfg = { waterGoal: parseInt(ov.querySelector('#bd-wg').value)||3000, proteinGoal: parseInt(ov.querySelector('#bd-pg').value)||140,
+               waterBtns: wb.length?wb:BODY_DEFAULT_CFG.waterBtns, proteinBtns: pb.length?pb:BODY_DEFAULT_CFG.proteinBtns, at: now };
+    saveBody(nb); ov.remove(); renderBody(); toast('Body plan saved ✓');
+  };
+  document.body.appendChild(ov);
+}
+setInterval(()=>{ try{ renderBody(); }catch(e){} }, 10*60000);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden){ try{ renderBody(); }catch(e){} } });
+
+/* last note written for a skill, shown when you pick that skill (so "bring drinks after fitness" isn't lost) */
+function _showLastNote(skillId){
+  document.getElementById('last-note-hint')?.remove();
+  const cut = Date.now() - 14*864e5;
+  const s = getSess().filter(x=>x.skillId===skillId && x.note && (x.startTime||0) >= cut).sort((a,b)=>(b.startTime||0)-(a.startTime||0))[0];
+  const host = document.getElementById('skill-pills'); if(!s || !host) return;
+  const el = document.createElement('div'); el.id = 'last-note-hint';
+  el.style.cssText = 'font-family:var(--mono);font-size:10px;color:var(--gold2);margin:6px 0 2px';
+  el.textContent = '📝 Last note: ' + s.note;
+  host.insertAdjacentElement('afterend', el);
 }
 
 /* ── CHECK-IN FEATURE ───────────────────────────────── */
@@ -4962,6 +5223,8 @@ function _askSessionQuality(sessionId){
     <div style="font-size:12px;color:var(--muted2);margin-bottom:4px">What did you work on?</div>
     <input id="sq-tag" list="sq-tag-list" placeholder="e.g. Calculation, Opening…" autocomplete="off" style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:7px;font-family:var(--mono);font-size:11px;border-radius:6px;margin-bottom:18px">
     <datalist id="sq-tag-list">${causesOpts}</datalist>
+    <div style="font-size:12px;color:var(--muted2);margin-bottom:4px">Note <span style="font-size:10px">(optional)</span></div>
+    <input id="sq-note" placeholder="e.g. bring drinks after fitness if time is left" autocomplete="off" style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:7px;font-family:var(--mono);font-size:11px;border-radius:6px;margin-bottom:18px">
     ${_devBlockHtml(sessionId)}
     <div style="display:flex;gap:8px">
       <button onclick="_saveSessionQuality('${sessionId}',true)" style="flex:1;padding:8px;background:none;border:1px solid var(--b2);color:var(--muted2);font-family:var(--mono);font-size:10px;cursor:pointer;border-radius:6px">Skip</button>
@@ -4978,6 +5241,7 @@ function _saveSessionQuality(sessionId, skip){
   const e=skip?0:(parseInt(document.getElementById('sq-energy')?.value)||0);
   const tag=skip?null:(document.getElementById('sq-tag')?.value||null);
   const note=(document.getElementById('sq-dev-note')?.value||'').trim();
+  const gnote=(document.getElementById('sq-note')?.value||'').trim();
   ov.remove();
   const all=getSess(), idx=all.findIndex(s=>s.id===sessionId);
   if(idx>=0){
@@ -4985,9 +5249,11 @@ function _saveSessionQuality(sessionId, skip){
     if(e) all[idx].energy=e;
     if(tag) all[idx].trainingTag=tag;
     if(note) all[idx].devNote=note;
+    if(gnote) all[idx].note=gnote;
     ls.set('sq_sessions',all); sessions=all;
   }
-  if(q||e||tag||note){ toast('Session logged ✓'); pushSync(); }
+  if(q||e||tag||note||gnote){ toast('Session logged ✓'); pushSync(); }
+  try{ renderDaily(); }catch(_){}
   renderLevers();
 }
 
@@ -8213,7 +8479,7 @@ let _cloudSyncDone = false;
 
 // Cloud sessions are the base; local-only sessions are added. For sessions on both sides, keep
 // locally-saved ratings / deviations / notes if the cloud copy doesn't have them yet.
-const _SESS_KEEP_FIELDS = ['quality','energy','trainingTag','devNote','deviations','blockIdx','blockStart','blockType','blockTitle','jacob_hardness','jacob_focus'];
+const _SESS_KEEP_FIELDS = ['quality','energy','trainingTag','note','devNote','deviations','blockIdx','blockStart','blockType','blockTitle','jacob_hardness','jacob_focus'];
 function _mergeSessions(cloud, local){
   const lMap = Object.fromEntries((local||[]).map(s=>[s.id,s]));
   const cIds = new Set(cloud.map(s=>s.id));
@@ -8249,6 +8515,9 @@ async function pushCloud(){
     problems: getProblems(),
     dayTemplate: ls.get('sq_day_template','null'),
     planEvents: ls.get('sq_plan_events','null'),
+    nightChecks: ls.get('sq_night_checks','{}'),
+    nightItems: ls.get('sq_night_items','null'),
+    body: ls.get('sq_body','null'),
     ...(timerToWrite !== undefined ? { activeTimer: timerToWrite } : {}),
   };
   try {
