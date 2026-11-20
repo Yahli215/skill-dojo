@@ -2494,7 +2494,7 @@ function boot(){
   initGCal();
   initCheckinState();
   setInterval(checkNudges, 60000);
-  setInterval(()=>{ const d=getGCal(); if(!d?.token)return; if(window.google?.accounts) doGCalAuth(false); }, 45*60*1000);
+  setInterval(()=>{ if(getCalUrl() || !localStorage.getItem('sq_gcal_granted')) return; const d=getGCal(); if(!d?.token || d.expires-Date.now()<5*60000) _armGcalRefresh(); }, 60000);
   // Auto-sync every 60s: pull first if cloud is newer, then push
   // This ensures server-side changes (e.g. habit additions) are never overwritten
   let _lastPullAt = Date.now();
@@ -3618,7 +3618,7 @@ function openDayTemplate(){
     <label style="display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--text);margin-bottom:6px;cursor:pointer"><input id="dt-cal" type="checkbox" ${cfg.useCalendar?'checked':''}> Use Google Calendar events as planned blocks</label>
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
       <button id="dt-refresh" style="padding:5px 9px;background:var(--s2);border:1px solid var(--b2);color:var(--muted2);font-family:var(--mono);font-size:10px;cursor:pointer;border-radius:5px">↻ Refresh calendar</button>
-      <span id="dt-cal-status" style="font-family:var(--mono);font-size:9px;color:var(--muted2)">${gc?.token?'Calendar connected':'Calendar not connected — events come from another device if it is'}</span>
+      <span id="dt-cal-status" style="font-family:var(--mono);font-size:9px;color:var(--muted2)">${(getCalUrl()||gc?.token)?'Calendar connected':'Calendar not connected — events come from another device if it is'}</span>
     </div>
     <div style="${lbl}">Today's plan</div>
     <div id="dt-preview" style="font-family:var(--mono);font-size:11px;margin-bottom:16px"></div>
@@ -3640,9 +3640,9 @@ function openDayTemplate(){
   ov.querySelector('#dt-x').onclick = ()=>ov.remove();
   ov.querySelector('#dt-refresh').onclick = async ()=>{
     const g = getGCal(); const st = ov.querySelector('#dt-cal-status');
-    if(!g?.token){ st.textContent='Connect Google Calendar on the main screen first'; return; }
+    if(!getCalUrl() && !g?.token){ st.textContent='Connect your calendar on the main screen first'; return; }
     st.textContent='Refreshing…';
-    try{ const ok = await refreshPlanEvents(g.token); st.textContent = ok ? 'Updated ✓' : 'Could not read calendar'; preview(); }catch(e){ st.textContent='Could not read calendar'; }
+    try{ const ok = getCalUrl() ? await fetchCalBridge() : await refreshPlanEvents(g.token); st.textContent = ok ? 'Updated ✓' : 'Could not read calendar'; preview(); }catch(e){ st.textContent='Could not read calendar'; }
   };
   ov.querySelector('#dt-save').onclick = ()=>{ savePlanCfg(read()); ov.remove(); toast('Day plan saved ✓'); };
   ov.addEventListener('click',e=>{ if(e.target===ov) ov.remove(); });
@@ -3739,37 +3739,129 @@ function dismissBreakChip(){
 /* ── GOOGLE CALENDAR ────────────────────────────────── */
 const GCAL_COLORS=['#4285f4','#0f9d58','#db4437','#f4b400','#ab47bc','#00acc1','#ff7043','#9e9e9e'];
 
-function connectGCal(){
+/* ── CALENDAR LINK (Apps Script, no expiring sign-in) ───
+   A tiny Google Apps Script (calendar-bridge.gs) runs as you, reads your calendars and returns JSON at a private URL.
+   Paste that URL once per device. No OAuth token, nothing expires, recurring events are already expanded by Google. */
+const getCalUrl = () => localStorage.getItem('sq_cal_url') || '';
+async function fetchCalBridge(){
+  const base = getCalUrl(); if(!base) return false;
+  const el = document.getElementById('gcal-content');
+  if(el && !el.querySelector('.gcal-events')) el.innerHTML = '<div style="font-size:10px;color:var(--muted)">Loading…</div>';
+  try{
+    const r = await fetch(base + (base.includes('?')?'&':'?') + 'days=7', {cache:'no-store'});
+    const j = await r.json();
+    if(!Array.isArray(j)) throw new Error(j && j.error || 'bad response');
+    // today's timed events → planned blocks (deviation detection)
+    const d0 = new Date(); d0.setHours(0,0,0,0); const d1 = d0.getTime()+86400000;
+    const plan = j.filter(e=>!e.allDay && !e.free && e.start>=d0.getTime() && e.start<d1).map(e=>({id:e.id,title:e.title,start:e.start,end:e.end})).sort((a,b)=>a.start-b.start);
+    ls.set('sq_plan_events', {date:dayKey(d0), fetchedAt:Date.now(), events:plan}); pushSync();
+    // upcoming list
+    const now = Date.now();
+    const evs = j.filter(e=>e.end>now).sort((a,b)=>a.start-b.start).map(e=>({
+      id:e.id, summary:e.title, _cn:e.cal||'', _cc:e.color||GCAL_COLORS[0],
+      start: e.allDay ? {date:new Date(e.start).toISOString().slice(0,10)} : {dateTime:new Date(e.start).toISOString()},
+      end:   e.allDay ? {date:new Date(e.end).toISOString().slice(0,10)}   : {dateTime:new Date(e.end).toISOString()}
+    })).filter(ev=>!dismissedEvs.has(ev.id));
+    renderGCalEvs(evs);
+    return true;
+  }catch(e){
+    console.warn('Calendar link failed:', e);
+    if(el) el.innerHTML = '<div class="gcal-connect"><span>Could not read the calendar link</span><button class="gcal-conn-btn" onclick="connectGCal()">Fix link →</button></div>';
+    return false;
+  }
+}
+setInterval(()=>{ if(getCalUrl() && !document.hidden) fetchCalBridge(); }, 10*60000);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && getCalUrl()) fetchCalBridge(); });
+
+function connectGCal(){   // opens the one-time link setup
+  document.getElementById('cal-ov')?.remove();
+  const ov = document.createElement('div'); ov.id='cal-ov';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:950;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 0 60px';
+  ov.innerHTML = `<div style="background:var(--b1);border:1px solid var(--b2);border-radius:12px;padding:20px 18px;width:380px;max-width:95vw;margin:auto;font-family:var(--mono)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-family:var(--serif);font-size:18px;font-weight:900">📅 Calendar link</div><button id="cal-x" style="background:none;border:none;color:var(--muted2);font-size:20px;cursor:pointer">✕</button></div>
+    <div style="font-size:10px;color:var(--muted2);line-height:1.6;margin-bottom:12px">One-time setup, never expires:<br>1. Open <b>script.google.com</b> → New project → paste the contents of <b>calendar-bridge.gs</b> (in your skill-dojo folder).<br>2. Deploy → New deployment → Web app → Execute as <b>Me</b>, access <b>Anyone</b> → authorize.<br>3. Copy the Web app URL, add <b>?k=YOUR_KEY</b> (the key in the script) and paste it below.</div>
+    <input id="cal-url" placeholder="https://script.google.com/macros/s/…/exec?k=…" value="${esc(getCalUrl())}" style="width:100%;box-sizing:border-box;background:var(--s2);border:1px solid var(--b2);color:var(--text);padding:8px;font-family:var(--mono);font-size:11px;border-radius:6px;margin-bottom:8px">
+    <div id="cal-status" style="font-size:10px;color:var(--muted2);min-height:14px;margin-bottom:10px"></div>
+    <div style="display:flex;gap:8px"><button id="cal-clear" style="padding:9px;background:none;border:1px solid var(--b2);color:var(--muted2);font-size:11px;cursor:pointer;border-radius:6px">Remove</button><button id="cal-save" style="flex:1;padding:9px;background:var(--gold2);color:#000;border:none;font-size:12px;font-weight:700;cursor:pointer;border-radius:6px">Save &amp; test</button></div>
+    <div style="margin-top:14px;font-size:10px"><a href="#" id="cal-oauth" style="color:var(--muted2)">or use Google sign-in instead (expires every hour)</a></div>
+  </div>`;
+  document.body.appendChild(ov);
+  const st = ov.querySelector('#cal-status');
+  ov.querySelector('#cal-x').onclick = ()=>ov.remove();
+  ov.addEventListener('click', e=>{ if(e.target===ov) ov.remove(); });
+  ov.querySelector('#cal-oauth').onclick = e=>{ e.preventDefault(); ov.remove(); connectGCalOAuth(); };
+  ov.querySelector('#cal-clear').onclick = ()=>{ localStorage.removeItem('sq_cal_url'); ov.remove(); renderGCalConn(); toast('Calendar link removed'); };
+  ov.querySelector('#cal-save').onclick = async ()=>{
+    const u = ov.querySelector('#cal-url').value.trim();
+    if(!/^https:\/\/script\.google(usercontent)?\.com\//.test(u)){ st.style.color='var(--verm)'; st.textContent='That doesn\'t look like an Apps Script web app URL'; return; }
+    st.style.color='var(--muted2)'; st.textContent='Testing…';
+    localStorage.setItem('sq_cal_url', u);
+    const ok = await fetchCalBridge();
+    if(ok){ toast('📅 Calendar connected'); ov.remove(); }
+    else { localStorage.removeItem('sq_cal_url'); st.style.color='var(--verm)'; st.textContent='Could not read it — check the key (?k=…) and that access is set to Anyone'; }
+  };
+}
+
+function connectGCalOAuth(){
   _tc = null;
+  window._gcManual = true;
   toast('Connecting…');
   if(!window.google){ toast('❌ Google script not loaded'); return; }
   if(!window.google.accounts){ toast('❌ google.accounts missing'); return; }
   if(!window.google.accounts.oauth2){ toast('❌ oauth2 missing'); return; }
-  doGCalAuth(true);
+  // First time: pick the account. After that: no account picker, Google just re-issues the token.
+  doGCalAuth(!localStorage.getItem('sq_gcal_granted'));
 }
 function getTC(){ if(_tc) return _tc; _tc=google.accounts.oauth2.initTokenClient({client_id:GCAL_CLIENT_ID,scope:'https://www.googleapis.com/auth/calendar.readonly',callback:resp=>{
   console.log('GCal callback:', resp);
   if(resp.error){
-    toast('❌ GCal error: '+resp.error);
-    if(!_gcExp){ saveGCal(null); renderGCalConn(); }
-    _gcExp=false; return;
+    // A failed silent refresh must NOT forget the connection — just offer a one-tap refresh
+    if(window._gcManual) toast('❌ GCal error: '+resp.error);
+    window._gcManual=false; _gcExp=false; _gcalShowReconnect(); return;
   }
-  _gcExp=false; saveGCal({token:resp.access_token,expires:Date.now()+(resp.expires_in||3600)*1000}); fetchGCal(resp.access_token);
+  window._gcManual=false; _gcExp=false;
+  localStorage.setItem('sq_gcal_granted','1');
+  const expires=Date.now()+(resp.expires_in||3600)*1000;
+  saveGCal({token:resp.access_token,expires}); fetchGCal(resp.access_token);
+  setTimeout(_armGcalRefresh, Math.max(0, expires-Date.now()-3*60000));   // renew shortly before it expires
+},error_callback:e=>{
+  // popup blocked / closed — keep the connection, show the one-tap refresh button
+  if(window._gcManual) toast('❌ Calendar popup: '+((e&&e.type)||'closed')+' — allow popups for this site');
+  window._gcManual=false; _gcExp=false; _gcalShowReconnect();
 }}); return _tc; }
 function doGCalAuth(ex){ _gcExp=!!ex; getTC().requestAccessToken({prompt:ex?'select_account':''}); }
+function _gcalShowReconnect(){
+  const el=document.getElementById('gcal-content'); if(!el) return;
+  el.innerHTML='<div class="gcal-connect"><span>Calendar needs a quick refresh (one tap)</span><button class="gcal-conn-btn" onclick="connectGCalOAuth()">Refresh →</button></div>';
+}
+// Google only allows a token request from a real tap/click. So when the saved token has expired we wait for the
+// next tap anywhere in the app and renew it then (no account picker, no consent screen once granted).
+let _gcArmed=false, _gcLastTry=0;
+function _armGcalRefresh(){
+  if(_gcArmed) return; _gcArmed=true;
+  const h=()=>{
+    if(Date.now()-_gcLastTry < 10*60000) return;          // after a failed try, back off 10 min
+    _gcLastTry=Date.now();
+    document.removeEventListener('pointerdown',h,true); _gcArmed=false;
+    if(window.google?.accounts?.oauth2) doGCalAuth(false);
+  };
+  document.addEventListener('pointerdown',h,true);
+}
 function initGCal(){
-  const d=getGCal(); if(!d?.token){ renderGCalConn(); return; }
-  // GSI loaded in <head> — if not ready yet, wait for it
-  if(window.google?.accounts){ doGCalAuth(false); return; }
-  const wait = setInterval(()=>{ if(window.google?.accounts){ clearInterval(wait); doGCalAuth(false); } }, 100);
-  setTimeout(()=>clearInterval(wait), 5000);
+  if(getCalUrl()){ fetchCalBridge(); return; }
+  const d=getGCal();
+  const granted=!!localStorage.getItem('sq_gcal_granted')||!!d?.token;
+  // Saved token still valid → use it directly, no Google round-trip at all
+  if(d?.token && d.expires>Date.now()+60000){ fetchGCal(d.token); setTimeout(_armGcalRefresh, Math.max(0,d.expires-Date.now()-3*60000)); return; }
+  if(granted){ _gcalShowReconnect(); _armGcalRefresh(); return; }
+  renderGCalConn();
 }
 async function fetchGCal(token){
   const el=document.getElementById('gcal-content'); el.innerHTML='<div style="font-size:10px;color:var(--muted)">Loading…</div>';
   try{
     const now=new Date(),tmin=new Date(now.getTime()-30*60000),tmax=new Date(now); tmax.setDate(now.getDate()+7);
     const cr=await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList',{headers:{Authorization:`Bearer ${token}`}});
-    if(cr.status===401){saveGCal(null);renderGCalConn();return;}
+    if(cr.status===401){saveGCal(null);_gcalShowReconnect();_armGcalRefresh();return;}
     const cd=await cr.json(); const cals=(cd.items||[]).filter(c=>c.selected!==false);
     const evs=[];
     await Promise.all(cals.map(async(cal,idx)=>{
