@@ -9769,28 +9769,52 @@ function questCard(){
   if(fg&&fg.parentNode===host) host.insertBefore(el,fg.nextSibling); else host.insertBefore(el,host.firstChild);
   return el;
 }
+/* Daily quests = the habits you are running experiments on this week (Habits tab → active, except routine checklists).
+   Tap a row to check it off for today. With no active habit experiments the old game quests are shown instead. */
+function habitDefs(){
+  var hm=null; try{ hm=(typeof getHabitMgr==='function')?getHabitMgr():null; }catch(e){}
+  var out=[]; if(!hm) return out;
+  (hm.active||[]).forEach(function(h,i){
+    if(h.type==='routine-checklist') return;
+    var name=String(h.tool||h.problem||'Habit').trim();
+    out.push({id:'hb_'+h.id, stat:'discipline', habitIdx:i,
+      text:(typeof esc==='function'?esc(name):name),
+      f:function(){ return [(typeof expCheckedToday==='function'&&expCheckedToday(h))?1:0,1]; },
+      show:function(){ return (typeof expWeekCount==='function'?expWeekCount(h):0)+'/7 this week'; }});
+  });
+  return out;
+}
+window.__toggleHabitQuest=function(i){
+  try{ if(typeof toggleDailyCheck==='function') toggleDailyCheck(i); }catch(e){}
+  try{ refreshQuests(false); }catch(e){}
+};
 function refreshQuests(silent){
   var el=questCard(); if(!el) return;
   var c=ctx(), q=lsGet(LS_Q,null);
-  if(!q||q.date!==dayId()||!q.ids||!q.ids.length) q=generate(c);
+  var hd=habitDefs(), habitMode=hd.length>0, pool=habitMode?hd:allQuests();
+  if(habitMode){
+    var hids=hd.map(function(x){ return x.id; });
+    if(!q||q.date!==dayId()||q.mode!=='habits') q={date:dayId(),mode:'habits',ids:hids,done:{},all:false};
+    else { var keep={}; hids.forEach(function(id){ if(q.done&&q.done[id]) keep[id]=1; }); q.ids=hids; q.done=keep; }
+  } else if(!q||q.date!==dayId()||!q.ids||!q.ids.length||q.mode==='habits') q=generate(c);
   var newly=[], allNew=false, rows='', nDone=0;
   q.ids.forEach(function(id){
-    var d=allQuests().filter(function(x){ return x.id===id; })[0]; if(!d) return;
-    var p=d.f(c), done=!!q.done[id]||(p[1]>0&&p[0]>=p[1]);
+    var d=pool.filter(function(x){ return x.id===id; })[0]; if(!d) return;
+    var p=d.f(c), done=habitMode?(p[0]>=1):(!!q.done[id]||(p[1]>0&&p[0]>=p[1]));
     if(done&&!q.done[id]){ q.done[id]=1; addBonus(d.stat,QB[d.stat]); newly.push(d); }
     if(done) nDone++;
     var pct=done?100:Math.max(0,Math.min(100,p[0]/(p[1]||1)*100));
     var show=done?'done':(d.show?d.show(p):(Math.floor(p[0])+' / '+p[1]));
-    rows+='<div class="qs-row'+(done?' done':'')+'" data-q="'+id+'"><div class="qs-seal">済</div>'+
+    rows+='<div class="qs-row'+(done?' done':'')+'" data-q="'+id+'"'+(d.habitIdx!=null?' onclick="window.__toggleHabitQuest('+d.habitIdx+')" style="cursor:pointer"':'')+'><div class="qs-seal">済</div>'+
       '<div class="qs-text">'+d.text+'<div class="qs-mini"><i style="width:'+pct.toFixed(0)+'%;background:'+SC[d.stat]+'"></i></div></div>'+
       '<div class="qs-prog">'+show+'</div>'+
       '<div class="qs-rew" style="color:'+SC[d.stat]+';border-color:'+SC[d.stat]+'"><b>'+SK[d.stat]+'</b>+'+SN[d.stat]+'</div></div>';
   });
-  if(nDone>=q.ids.length&&q.ids.length&&!q.all){ q.all=true; allNew=true; q.ids.forEach(function(id){ var d=allQuests().filter(function(x){ return x.id===id; })[0]; if(d) addBonus(d.stat,QB[d.stat]); }); }
+  if(nDone>=q.ids.length&&q.ids.length&&!q.all){ q.all=true; allNew=true; q.ids.forEach(function(id){ var d=pool.filter(function(x){ return x.id===id; })[0]; if(d) addBonus(d.stat,QB[d.stat]); }); }
   lsSet(LS_Q,q);
   el.classList.toggle('all',!!q.all);
-  el.innerHTML='<div class="qs-head"><div class="qs-title"><b>日課</b>Daily Quests</div><div style="display:flex;align-items:baseline"><button class="qs-edit" onclick="window.__editQuests()" title="Edit quests">✎ edit</button><div class="qs-count">'+nDone+' / '+q.ids.length+'</div></div></div>'+rows+
-    '<div class="qs-foot">'+(q.all?'極 — all three done. Bonus paid to every stat. New quests at midnight.':'Each quest feeds its stat. Finish all three for a double bonus.')+'</div>';
+  el.innerHTML='<div class="qs-head"><div class="qs-title"><b>日課</b>Daily Quests</div><div style="display:flex;align-items:baseline">'+(habitMode?'<button class="qs-edit" onclick="switchView(\'habits\')" title="Manage habit experiments">✎ habits</button>':'<button class="qs-edit" onclick="window.__editQuests()" title="Edit quests">✎ edit</button>')+'<div class="qs-count">'+nDone+' / '+q.ids.length+'</div></div></div>'+rows+
+    '<div class="qs-foot">'+(habitMode?(q.all?'極 — every habit checked today. Bonus paid. Resets at midnight.':'Your habit experiments this week — tap one to check it off. Checking them all pays a double bonus.'):(q.all?'極 — all three done. Bonus paid to every stat. New quests at midnight.':'Each quest feeds its stat. Finish all three for a double bonus.'))+'</div>';
   if(silent||(!newly.length&&!allNew)) return;
   var jx=J();
   if(jx&&jx.on()&&el.offsetParent!==null){
@@ -10194,6 +10218,27 @@ function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){}
 function say(m,ms){ try{ if(typeof toast==='function') toast(m,ms||3800); }catch(e){} }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 function roads(){ return lsGet(LS,[])||[]; }
+/* Long game = the chess skills you are improving this season (Season setup → ♟ Chess skills focus).
+   One road per skill with a rep target: done = sessions of the linked skill since the season started
+   (or sessions whose description contains the skill name when no skill is linked). */
+function syncChessRoads(){
+  var s=null; try{ s=(typeof getSeason==='function')?getSeason():null; }catch(e){}
+  var rs=roads(), changed=false, want={};
+  var list=(s&&s.chessSkills)||[];
+  list.forEach(function(cs,i){
+    var total=+(cs.totalReps||cs.weeklyReps||0); if(!(total>0)) return;
+    var id='cs-'+cs.id; want[id]=1;
+    var startIso=(s.startDate||new Date().toISOString().slice(0,10))+'T00:00:00';
+    var kw=cs.skillId?'':String(cs.name||'').toLowerCase().slice(0,30);
+    var r=rs.filter(function(x){ return x.id===id; })[0];
+    if(!r){ rs.push({id:id,auto:true,name:cs.name,total:total,stage:10,skillId:cs.skillId||'',keyword:kw,start:startIso,adj:0,paid:0,min:1,art:i%ART.length}); changed=true; return; }
+    if(r.start!==startIso){ r.start=startIso; r.adj=0; r.paid=0; r.finished=null; changed=true; }   // new season → start again
+    if(r.name!==cs.name||r.total!==total||(r.skillId||'')!==(cs.skillId||'')||(r.keyword||'')!==kw){ r.name=cs.name; r.total=total; r.skillId=cs.skillId||''; r.keyword=kw; changed=true; }
+  });
+  var kept=rs.filter(function(r){ return !r.auto||want[r.id]; });
+  if(kept.length!==rs.length) changed=true;
+  if(changed) lsSet(LS,kept);
+}
 function sess(){ try{ return (typeof getSess==='function'?getSess():[])||[]; }catch(e){ return []; } }
 function skillList(){ try{ return (typeof skills!=='undefined'&&skills)||[]; }catch(e){ return []; } }
 var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -10229,10 +10274,10 @@ var ART=[
 
 /* ── counting ── */
 function countFor(r,list){
-  var n=0, recent=0, t0=+new Date(r.start), cut=Date.now()-14*864e5, kw=(r.keyword||'').toLowerCase();
+  var n=0, recent=0, t0=+new Date(r.start), cut=Date.now()-14*864e5, kw=(r.keyword||'').toLowerCase(), minM=(r.min!=null?r.min:MIN);
   (list||sess()).forEach(function(s){
     var st=s.startTime||s.start; if(!st) return; var x=+new Date(st);
-    if(x<t0||(+s.mins||0)<MIN) return;
+    if(x<t0||(+s.mins||0)<minM) return;
     if(r.skillId&&s.skillId!==r.skillId) return;
     if(kw&&String(s.description||'').toLowerCase().indexOf(kw)<0) return;
     n++; if(x>=cut) recent++;
@@ -10269,7 +10314,7 @@ function cardHTML(r,c){
   else eta='<b>完 — the whole road walked.</b> The painting is yours.';
   var sk=skillList().filter(function(s){ return s.id===r.skillId; })[0];
   return '<div class="lr-card'+(fin?' done':'')+'" data-id="'+r.id+'"><div class="lr-head"><div>'+
-    '<div class="lr-label"><b>長道</b>Long Road'+(sk?' · '+esc(sk.emoji||'')+' '+esc(sk.name):'')+(r.keyword?' · “'+esc(r.keyword)+'”':'')+'</div>'+
+    '<div class="lr-label"><b>長道</b>'+(r.auto?'Chess skill':'Long Road')+(sk?' · '+esc(sk.emoji||'')+' '+esc(sk.name):'')+(r.keyword?' · “'+esc(r.keyword)+'”':'')+'</div>'+
     '<div class="lr-name">'+esc(r.name)+'</div>'+
     '<div class="lr-stage">'+(fin?'All '+stages+' stages cleared':'Stage '+st+' of '+stages+' — '+inSt+' of '+stLen+(stLen-inSt===1?' · one more clears it':''))+'</div></div>'+
     '<div class="lr-big'+(half&&!fin?' left':'')+'"><div class="lr-big-num">'+(fin?'完':(half?left:done))+'</div><div class="lr-big-lbl">'+(fin?'complete':(half?'left of '+r.total:'done of '+r.total))+'</div></div></div>'+
@@ -10277,11 +10322,12 @@ function cardHTML(r,c){
     '<div class="lr-grid" style="grid-template-columns:repeat('+cols+',1fr);grid-template-rows:repeat('+stages+',1fr)">'+tiles+'</div>'+
     '<div class="lr-rows" style="grid-template-rows:repeat('+stages+',1fr)">'+rows+'</div></div>'+
     '<div class="lr-foot"><span>'+eta+'</span><span class="lr-acts"><button data-act="minus" title="Remove one manually counted session">−1</button><button data-act="plus" title="Count a session done away from the timer">+1</button>'+
-    '<button data-act="del"'+(armDel===r.id?' class="warn"':'')+'>'+(armDel===r.id?'delete? click again':'✕')+'</button></span></div></div>';
+    (r.auto?'':'<button data-act="del"'+(armDel===r.id?' class="warn"':'')+'>'+(armDel===r.id?'delete? click again':'✕')+'</button>')+'</span></div></div>';
 }
 var lastHTML='';
 function refresh(){
   var el=host(); if(!el) return;
+  try{ syncChessRoads(); }catch(e){ if(window.console) console.warn('chess roads sync failed',e); }
   var rs=roads(), list=sess(), html='', changed=false, events=[];
   rs.forEach(function(r){
     var c=countFor(r,list), S=r.stage||10, stagesDone=Math.floor(c.done/S)+((c.done===r.total&&r.total%S)?1:0);
@@ -10295,7 +10341,7 @@ function refresh(){
     r._done=c.done;
   });
   if(changed) lsSet(LS,rs.map(function(r){ var o={}; for(var k in r) if(k.charAt(0)!=='_') o[k]=r[k]; return o; }));
-  html+=formOpen?'':'<button class="lr-new" data-act="new">＋ New long road — a big project split into stages</button>';
+  html+=formOpen?'':'<button class="lr-new" data-act="addskill">＋ Add a chess skill I\'m improving</button>';
   if(html!==lastHTML){ document.getElementById('lr-list').innerHTML=html; lastHTML=html; }
   rs.forEach(function(r){ seen[r.id]=r._done; });
   if(!first) events.forEach(function(m,i){ setTimeout(function(){ say(m,4500); var f=window.__fighter; if(f){ f.refresh(); f.flex(); } },i*900); });
@@ -10318,6 +10364,7 @@ function openForm(){
 function closeForm(){ formOpen=false; lastHTML=''; document.getElementById('lr-formbox').innerHTML=''; refresh(); }
 function onClick(e){
   var b=e.target.closest('[data-act]'); if(!b) return; var act=b.getAttribute('data-act');
+  if(act==='addskill'){ try{ openSeasonSetup(); setTimeout(function(){ try{ _openAddChessSkill(); }catch(e){} },80); }catch(e){} return; }
   if(act==='new') return openForm();
   if(act==='cancel') return closeForm();
   if(act==='save'){
@@ -10357,7 +10404,7 @@ function hook(name,after){
 }
 function boot(){
   refresh();
-  ['renderApp','renderDaily'].forEach(function(n){ hook(n); });
+  ['renderApp','renderDaily','renderSeason'].forEach(function(n){ hook(n); });
   hook('showRoundComplete',function(a){ try{ roundLines(a[0]); }catch(e){} });
   setInterval(refresh,60000);
   window.__roads={refresh:refresh};
