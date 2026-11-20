@@ -3832,12 +3832,10 @@ function renderBody(){
       ${bar(now,goal,col)}
       <div style="display:flex;flex-wrap:wrap;gap:5px">${btns.map(n=>`<button style="${BTN}" onclick="bodyAdd('${kind}',${n})">+${kind==='water'&&n>=1000?(n/1000)+' L':n}</button>`).join('')}<button style="${BTN}" onclick="bodyCustom('${kind}')">＋…</button><button style="${BTN}" onclick="bodySet('${kind}')">=</button><button style="${BTN}color:var(--muted2)" onclick="bodyUndo('${kind}')">↶</button></div></div>`;
   const lw = bodyWeekStats(b, _addDays(ws,-7));
-  const lwTxt = (lw.planned||lw.logP||lw.days.some(d=>b.wchk[d]&&b.wchk[d].done)) ? `Last week: ${lw.planned?lw.done+'/'+lw.planned+' workouts':'no plan'}${lw.avgP?' · protein avg '+lw.avgP+' g':''}${' · water checks '+lw.days.filter(d=>b.wchk[d]&&b.wchk[d].done).length+'/7'}` : 'Last week: nothing logged yet';
+  const lwTxt = (lw.planned||lw.logP||lw.days.some(d=>b.wchk[d]&&b.wchk[d].done)) ? `Last week: ${lw.planned?lw.done+'/'+lw.planned+' workouts':'no plan'}${lw.avgP?' · protein avg '+lw.avgP+' g':''}` : 'Last week: nothing logged yet';
   el.innerHTML = `<div class="qs-card" style="margin-bottom:14px">
     <div class="qs-head"><div class="qs-title"><b>体</b>Body</div><button class="qs-edit" onclick="openBodyPlan()">plan &amp; goals</button></div>
-    <div class="qs-row" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0">
-      <div style="font-family:var(--mono);font-size:11px;color:var(--text);min-width:0">💧 By 16:00 check how much you drank (Tami4) &amp; adjust${wDone?'':(late?' <b style="color:var(--verm)">· now</b>':'')}</div>
-      <button onclick="bodyToggleWater()" style="${BTN}${wDone?'background:var(--green);border-color:var(--green);color:#fff;':''}">${wDone?'✓ Done':'Done?'}</button></div>
+
     ${row('🥩 Protein', pv, c.proteinGoal, Math.max(0,c.proteinGoal-pv)+' g', 'var(--gold2)', 'protein', c.proteinBtns, v=>v+' g')}
     <div class="qs-row" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0">
       <div style="font-family:var(--mono);font-size:11px;color:var(--text);min-width:0">🏃 Today: ${todayPlan?'<b>'+esc(todayPlan)+'</b>':'<span style="color:var(--muted2)">no workout planned</span>'}</div>
@@ -8571,6 +8569,17 @@ function deleteBadgeFromForm(){}
 
 function getProblems(){ return ls.get('sq_problems','[]'); }
 function saveProblems(arr){ ls.set('sq_problems',arr); pushSync(); }
+
+/* one-time: seed the water problem so it can be turned into a habit from the Problems tab */
+(function(){ try{
+  if(ls.get('sq_water_problem_seeded','false')) return;
+  const probs = getProblems();
+  if(!probs.some(p=>p.id==='water-16')){
+    probs.push({id:'water-16', title:'Not drinking enough water', problem:"I don't track how much I drink during the day, so I end up behind on my daily goal (Tami4 shows it in the app).", solvedWhen:'Hit the daily water goal (3 L in Tami4) on 5 of 7 days', solutions:[{id:uid(), text:'By 16:00 check how much you drank (Tami4 app) and adjust the rest of the day'}], experiments:[], finalSolution:'', status:'open', createdAt:new Date().toISOString(), updatedAt:new Date().toISOString()});
+    saveProblems(probs);
+  }
+  ls.set('sq_water_problem_seeded', true);
+}catch(e){ console.error('water seed', e); } })();
 // keep sq_methods key populated for backup compatibility
 function getMethods(){ return getProblems(); }
 function saveMethods(arr){ saveProblems(arr); }
