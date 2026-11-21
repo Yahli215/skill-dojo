@@ -1508,9 +1508,6 @@ body.light .page-watermark { opacity: .2; }
     <!-- Training Levers card -->
     <div id="levers-card"></div>
 
-    <!-- Body: water / protein / fitness plan -->
-    <div id="body-card"></div>
-
     <!-- Daily + report -->
     <div class="two-col">
       <div>
@@ -2780,7 +2777,6 @@ async function manualSync(){
 function renderApp(){
   try { renderPills(); }    catch(e){ console.error('renderPills:', e); }
   try { renderNight(); }    catch(e){ console.error('renderNight:', e); }
-  try { renderBody(); }     catch(e){ console.error('renderBody:', e); }
   try { renderSeason(); }   catch(e){ console.error('renderSeason:', e); }
   try { renderLevers(); }   catch(e){ console.error('renderLevers:', e); }
   try { renderDaily(); }    catch(e){ console.error('renderDaily:', e); }
